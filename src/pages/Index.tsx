@@ -50,15 +50,15 @@ const Index = () => {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6, duration: 0.4 }}
-          className="flex flex-col gap-4 mt-8 w-full max-w-md"
+          className="flex flex-col items-center gap-4 mt-8 w-full max-w-md mx-auto"
         >
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="w-full">
             <Button onClick={() => navigate('/dashboard')} size="lg" className="w-full">Student Portal</Button>
           </motion.div>
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="w-full">
             <Button onClick={() => navigate('/office')} size="lg" className="w-full">Campus Office Portal</Button>
           </motion.div>
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="w-full">
             <Button onClick={() => navigate('/admin')} size="lg" className="w-full">Super Admin Portal</Button>
           </motion.div>
         </motion.div>
