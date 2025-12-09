@@ -348,55 +348,85 @@ export type Database = {
       }
       profiles: {
         Row: {
+          allergies: string | null
           avatar_url: string | null
+          blood_type: string | null
           campus: Database["public"]["Enums"]["campus_location"] | null
+          chronic_conditions: string | null
           course: string | null
           created_at: string
+          disability_status: string | null
           email: string
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
+          emergency_contact_relationship: string | null
           first_name: string | null
           full_name: string | null
           id: string
           last_name: string | null
+          medical_aid_name: string | null
+          medical_aid_number: string | null
           phone_number: string | null
           profile_completed: boolean | null
           residence: Database["public"]["Enums"]["residence_name"] | null
           residence_id: number | null
+          special_needs: string | null
           student_number: string | null
           updated_at: string
           year_of_study: number | null
         }
         Insert: {
+          allergies?: string | null
           avatar_url?: string | null
+          blood_type?: string | null
           campus?: Database["public"]["Enums"]["campus_location"] | null
+          chronic_conditions?: string | null
           course?: string | null
           created_at?: string
+          disability_status?: string | null
           email: string
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          emergency_contact_relationship?: string | null
           first_name?: string | null
           full_name?: string | null
           id: string
           last_name?: string | null
+          medical_aid_name?: string | null
+          medical_aid_number?: string | null
           phone_number?: string | null
           profile_completed?: boolean | null
           residence?: Database["public"]["Enums"]["residence_name"] | null
           residence_id?: number | null
+          special_needs?: string | null
           student_number?: string | null
           updated_at?: string
           year_of_study?: number | null
         }
         Update: {
+          allergies?: string | null
           avatar_url?: string | null
+          blood_type?: string | null
           campus?: Database["public"]["Enums"]["campus_location"] | null
+          chronic_conditions?: string | null
           course?: string | null
           created_at?: string
+          disability_status?: string | null
           email?: string
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          emergency_contact_relationship?: string | null
           first_name?: string | null
           full_name?: string | null
           id?: string
           last_name?: string | null
+          medical_aid_name?: string | null
+          medical_aid_number?: string | null
           phone_number?: string | null
           profile_completed?: boolean | null
           residence?: Database["public"]["Enums"]["residence_name"] | null
           residence_id?: number | null
+          special_needs?: string | null
           student_number?: string | null
           updated_at?: string
           year_of_study?: number | null
