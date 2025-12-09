@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { motion } from 'framer-motion';
-import { Shield, LayoutDashboard, AlertCircle, Megaphone, Home, MessageSquare, CheckSquare, MapPin, Users } from 'lucide-react';
+import { Shield, LayoutDashboard, AlertCircle, Megaphone, Home, MessageSquare, CheckSquare, MapPin, Users, BarChart3 } from 'lucide-react';
 import tutLogo from '@/assets/tut-logo.png';
 import { AdminOverview } from '@/components/admin/AdminOverview';
 import { AdminIncidents } from '@/components/admin/AdminIncidents';
@@ -16,6 +16,7 @@ import { ResolveCases } from '@/components/admin/ResolveCases';
 import { StaffCommunication } from '@/components/admin/StaffCommunication';
 import { RealTimeIncidents } from '@/components/admin/RealTimeIncidents';
 import { ResidenceSection } from '@/components/student/ResidenceSection';
+import { IncidentAnalytics } from '@/components/admin/IncidentAnalytics';
 import { CasesProvider } from '@/contexts/CasesContext';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
@@ -38,7 +39,7 @@ const campusDisplayNames: Record<string, string> = {
 const Security = () => {
   const navigate = useNavigate();
   const { userProfile, signOut } = useAuth();
-  const [activeView, setActiveView] = useState<'overview' | 'incidents' | 'announcements' | 'summary' | 'resolve' | 'communication' | 'residences' | 'students'>('overview');
+  const [activeView, setActiveView] = useState<'overview' | 'incidents' | 'announcements' | 'summary' | 'resolve' | 'communication' | 'residences' | 'students' | 'analytics'>('overview');
   const [campusStudentCount, setCampusStudentCount] = useState(0);
   const [campusIncidentCount, setCampusIncidentCount] = useState(0);
 
@@ -140,7 +141,7 @@ const Security = () => {
             transition={{ delay: 0.2, duration: 0.4 }}
           >
             <Card className="p-2 mb-6 shadow-large">
-              <div className="grid grid-cols-2 md:grid-cols-8 gap-2">
+              <div className="grid grid-cols-3 md:grid-cols-9 gap-2">
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                   <Button variant={activeView === 'overview' ? 'default' : 'ghost'} onClick={() => setActiveView('overview')} className="w-full transition-all">
                     <LayoutDashboard className="h-4 w-4 mr-2" /><span className="hidden sm:inline">Overview</span>
@@ -149,6 +150,11 @@ const Security = () => {
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                   <Button variant={activeView === 'incidents' ? 'default' : 'ghost'} onClick={() => setActiveView('incidents')} className="w-full transition-all">
                     <AlertCircle className="h-4 w-4 mr-2" /><span className="hidden sm:inline">Incidents</span>
+                  </Button>
+                </motion.div>
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <Button variant={activeView === 'analytics' ? 'default' : 'ghost'} onClick={() => setActiveView('analytics')} className="w-full transition-all">
+                    <BarChart3 className="h-4 w-4 mr-2" /><span className="hidden sm:inline">Analytics</span>
                   </Button>
                 </motion.div>
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
@@ -195,6 +201,7 @@ const Security = () => {
           >
             {activeView === 'overview' && <AdminOverview />}
             {activeView === 'incidents' && <AdminIncidents />}
+            {activeView === 'analytics' && <IncidentAnalytics />}
             {activeView === 'students' && <CampusStudentsList campus={userProfile?.campus} />}
             {activeView === 'announcements' && <AdminAnnouncements />}
             {activeView === 'summary' && (

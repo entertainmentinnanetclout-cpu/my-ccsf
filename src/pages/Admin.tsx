@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { motion } from 'framer-motion';
-import { Shield, LayoutDashboard, AlertCircle, Megaphone, Home, MessageSquare, CheckSquare } from 'lucide-react';
+import { Shield, LayoutDashboard, AlertCircle, Megaphone, Home, MessageSquare, CheckSquare, BarChart3, Images } from 'lucide-react';
 import tutLogo from '@/assets/tut-logo.png';
 import { AdminOverview } from '@/components/admin/AdminOverview';
 import { AdminIncidents } from '@/components/admin/AdminIncidents';
@@ -15,11 +15,13 @@ import { ResolveCases } from '@/components/admin/ResolveCases';
 import { StaffCommunication } from '@/components/admin/StaffCommunication';
 import { RealTimeIncidents } from '@/components/admin/RealTimeIncidents';
 import { ResidenceSection } from '@/components/student/ResidenceSection';
+import { IncidentAnalytics } from '@/components/admin/IncidentAnalytics';
+import { CarouselManager } from '@/components/admin/CarouselManager';
 import { CasesProvider } from '@/contexts/CasesContext';
 
 const Admin = () => {
   const navigate = useNavigate();
-  const [activeView, setActiveView] = useState<'overview' | 'incidents' | 'announcements' | 'summary' | 'resolve' | 'communication' | 'residences'>('overview');
+  const [activeView, setActiveView] = useState<'overview' | 'incidents' | 'announcements' | 'summary' | 'resolve' | 'communication' | 'residences' | 'analytics' | 'carousel'>('overview');
 
   return (
     <CasesProvider>
@@ -73,7 +75,7 @@ const Admin = () => {
             transition={{ delay: 0.2, duration: 0.4 }}
           >
             <Card className="p-2 mb-6 shadow-large">
-              <div className="grid grid-cols-2 md:grid-cols-7 gap-2">
+              <div className="grid grid-cols-3 md:grid-cols-9 gap-2">
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                   <Button variant={activeView === 'overview' ? 'default' : 'ghost'} onClick={() => setActiveView('overview')} className="w-full transition-all">
                     <LayoutDashboard className="h-4 w-4 mr-2" /><span className="hidden sm:inline">Overview</span>
@@ -82,6 +84,11 @@ const Admin = () => {
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                   <Button variant={activeView === 'incidents' ? 'default' : 'ghost'} onClick={() => setActiveView('incidents')} className="w-full transition-all">
                     <AlertCircle className="h-4 w-4 mr-2" /><span className="hidden sm:inline">Incidents</span>
+                  </Button>
+                </motion.div>
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <Button variant={activeView === 'analytics' ? 'default' : 'ghost'} onClick={() => setActiveView('analytics')} className="w-full transition-all">
+                    <BarChart3 className="h-4 w-4 mr-2" /><span className="hidden sm:inline">Analytics</span>
                   </Button>
                 </motion.div>
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
@@ -109,6 +116,11 @@ const Admin = () => {
                     <Shield className="h-4 w-4 mr-2" /><span className="hidden sm:inline">Residences</span>
                   </Button>
                 </motion.div>
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <Button variant={activeView === 'carousel' ? 'default' : 'ghost'} onClick={() => setActiveView('carousel')} className="w-full transition-all">
+                    <Images className="h-4 w-4 mr-2" /><span className="hidden sm:inline">Carousel</span>
+                  </Button>
+                </motion.div>
               </div>
             </Card>
           </motion.div>
@@ -123,6 +135,7 @@ const Admin = () => {
           >
             {activeView === 'overview' && <AdminOverview />}
             {activeView === 'incidents' && <AdminIncidents />}
+            {activeView === 'analytics' && <IncidentAnalytics />}
             {activeView === 'announcements' && <AdminAnnouncements />}
             {activeView === 'summary' && (
               <div className="space-y-4">
@@ -134,6 +147,7 @@ const Admin = () => {
             {activeView === 'resolve' && <ResolveCases />}
             {activeView === 'communication' && <StaffCommunication />}
             {activeView === 'residences' && <ResidenceSection />}
+            {activeView === 'carousel' && <CarouselManager />}
           </motion.div>
 
           {/* Footer */}
