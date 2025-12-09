@@ -45,8 +45,7 @@ export const EmergencyReport = () => {
       const { error } = await supabase.from('incidents').insert({
         title: '🚨 EMERGENCY ALERT',
         description,
-        category: 'emergency',
-        status: 'pending',
+        category: 'Assault common',
         reporter_id: user?.id,
         is_anonymous: false,
         location_lat: location.lat,
