@@ -1,15 +1,17 @@
-import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Newspaper, Clock, ChevronRight } from 'lucide-react';
+import campusEntrance from '@/assets/campus-polokwane-entrance.jpg';
+import campusSecurity from '@/assets/campus-security-staff.jpg';
+import campusHall from '@/assets/campus-tut-hall.jpg';
 
 const newsItems = [
   {
     id: 1,
     title: 'New Security Measures at Main Gate',
     summary: 'Enhanced biometric access control system installed for improved campus security.',
-    image: 'https://images.unsplash.com/photo-1562774053-701939374585?w=400',
+    image: campusEntrance,
     category: 'Security',
     date: '2 hours ago',
   },
@@ -17,7 +19,7 @@ const newsItems = [
     id: 2,
     title: 'Safety Workshop Next Week',
     summary: 'Join us for a comprehensive personal safety awareness workshop at the Student Center.',
-    image: 'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=400',
+    image: campusSecurity,
     category: 'Events',
     date: '5 hours ago',
   },
@@ -25,7 +27,7 @@ const newsItems = [
     id: 3,
     title: 'CCTV Upgrade Complete',
     summary: 'All campus buildings now equipped with HD surveillance cameras for 24/7 monitoring.',
-    image: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=400',
+    image: campusHall,
     category: 'Infrastructure',
     date: '1 day ago',
   },
