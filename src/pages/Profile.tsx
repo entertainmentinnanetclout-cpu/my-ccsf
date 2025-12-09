@@ -1,129 +1,77 @@
-import { useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
-import { User, Mail, Phone, Building2, ArrowLeft, Save } from 'lucide-react';
+import { Card } from '@/components/ui/card';
+import { motion } from 'framer-motion';
+import { Shield, User } from 'lucide-react';
+import tutLogo from '@/assets/tut-logo.png';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useToast } from '@/hooks/use-toast';
 
 const Profile = () => {
-  const { user } = useAuth();
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  
-  const [fullName, setFullName] = useState(user?.user_metadata?.full_name || '');
-  const [phone, setPhone] = useState('');
-  const [studentNumber, setStudentNumber] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-
-  const handleSave = async () => {
-    setIsLoading(true);
-    // TODO: Implement profile update with Supabase
-    setTimeout(() => {
-      toast({
-        title: 'Profile updated',
-        description: 'Your profile has been saved successfully.',
-      });
-      setIsLoading(false);
-    }, 1000);
-  };
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-4">
-      <div className="container mx-auto max-w-2xl">
-        <Button 
-          variant="ghost" 
-          onClick={() => navigate(-1)}
-          className="mb-6"
+    <div className="min-h-screen bg-gradient-primary user-theme">
+      <motion.header
+        initial={{ y: -100, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.5, ease: 'easeInOut' }}
+        className="sticky top-0 z-50 bg-gradient-to-r from-secondary/95 to-primary/95 border-b border-white/10 shadow-large backdrop-blur-md"
+      >
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center gap-3">
+            <motion.img
+              src={tutLogo}
+              alt="TUT Logo"
+              className="h-10 logo-glow"
+            />
+            <div>
+              <div className="flex items-center gap-2">
+                <Shield className="h-5 w-5 text-white animate-pulse" />
+                <h1 className="text-xl font-bold text-white">Campus Community Safety Forum</h1>
+              </div>
+              <p className="text-sm text-white/90 font-semibold">Profile Settings</p>
+            </div>
+          </div>
+        </div>
+      </motion.header>
+
+      <main className="container mx-auto px-4 py-6">
+        <motion.div
+          initial={{ opacity: 0, y: 25 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2, duration: 0.4 }}
         >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
-        </Button>
-
-        <Card className="bg-white/70 backdrop-blur">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" />
-              Profile Settings
-            </CardTitle>
-            <CardDescription>
-              Manage your personal information
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <Input
-                  id="email"
-                  type="email"
-                  value={user?.email || ''}
-                  disabled
-                  className="pl-10 bg-slate-100"
-                />
+          <Card className="p-6 shadow-large max-w-md mx-auto">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center">
+                <User className="h-8 w-8 text-primary" />
               </div>
-              <p className="text-xs text-slate-500">Email cannot be changed</p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="fullName">Full Name</Label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <Input
-                  id="fullName"
-                  type="text"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  className="pl-10"
-                  placeholder="Enter your full name"
-                />
+              <div>
+                <h2 className="text-xl font-bold">Profile Settings</h2>
+                <p className="text-muted-foreground text-sm">Manage your account information</p>
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="phone">Phone Number</Label>
-              <div className="relative">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <Input
-                  id="phone"
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className="pl-10"
-                  placeholder="Enter your phone number"
-                />
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="fullName">Full Name</Label>
+                <Input id="fullName" placeholder="Enter your full name" />
               </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="studentNumber">Student Number</Label>
-              <div className="relative">
-                <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <Input
-                  id="studentNumber"
-                  type="text"
-                  value={studentNumber}
-                  onChange={(e) => setStudentNumber(e.target.value)}
-                  className="pl-10"
-                  placeholder="Enter your student number"
-                />
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input id="email" type="email" placeholder="Enter your email" />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="studentNumber">Student Number</Label>
+                <Input id="studentNumber" placeholder="Enter your student number" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone Number</Label>
+                <Input id="phone" type="tel" placeholder="Enter your phone number" />
+              </div>
+              <Button className="w-full">Save Changes</Button>
             </div>
-
-            <Button 
-              onClick={handleSave} 
-              className="w-full bg-gradient-to-r from-green-500 to-emerald-600"
-              disabled={isLoading}
-            >
-              <Save className="h-4 w-4 mr-2" />
-              {isLoading ? 'Saving...' : 'Save Changes'}
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+          </Card>
+        </motion.div>
+      </main>
     </div>
   );
 };
