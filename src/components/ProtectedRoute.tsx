@@ -1,38 +1,39 @@
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import type { AppRole } from '@/types/database';
+import { Loader2 } from 'lucide-react';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  allowedRoles?: AppRole[];
+  adminOnly?: boolean;
 }
 
-export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
-  const { user, role, loading } = useAuth();
-  const location = useLocation();
+export const ProtectedRoute = ({ children, adminOnly = false }: ProtectedRouteProps) => {
+  const { user, userRole, loading } = useAuth();
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
-  if (!user) {
-    return <Navigate to="/auth" state={{ from: location }} replace />;
-  }
+  // Auth temporarily disabled - allow all access
+  // if (!user) {
+  //   return <Navigate to="/auth" replace />;
+  // }
 
-  if (allowedRoles && role && !allowedRoles.includes(role)) {
-    // Redirect to appropriate dashboard based on role
-    if (role === 'admin') {
-      return <Navigate to="/admin" replace />;
-    } else if (role === 'security') {
-      return <Navigate to="/office" replace />;
-    } else {
-      return <Navigate to="/dashboard" replace />;
-    }
-  }
+  // if (adminOnly) {
+  //   if (userRole !== 'admin' && userRole !== 'security') {
+  //     return <Navigate to="/dashboard" replace />;
+  //   }
+  //   if (userRole === 'security' && !window.location.pathname.startsWith('/security')) {
+  //     return <Navigate to="/security" replace />;
+  //   }
+  //   if (userRole === 'admin' && window.location.pathname.startsWith('/security')) {
+  //     return <Navigate to="/admin" replace />;
+  //   }
+  // }
 
   return <>{children}</>;
-}
+};

@@ -1,211 +1,208 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { 
-  Shield, Bell, AlertTriangle, MapPin, FileText, User, LogOut, 
-  Plus, Clock, CheckCircle, XCircle, ChevronRight, Menu, X
-} from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useNavigate } from 'react-router-dom';
-import ReportIncidentDialog from '@/components/student/ReportIncidentDialog';
-import IncidentList from '@/components/student/IncidentList';
-import AnnouncementsList from '@/components/shared/AnnouncementsList';
-import AlertsBanner from '@/components/shared/AlertsBanner';
+import { Card } from '@/components/ui/card';
+import { motion } from 'framer-motion';
+import { Shield, Plus, List, LogOut, Menu, Map, MessageCircle, Home, MapPin } from 'lucide-react';
+import tutLogo from '@/assets/tut-logo.png';
 
 const Dashboard = () => {
   const { user, signOut } = useAuth();
-  const navigate = useNavigate();
-  const [showReportDialog, setShowReportDialog] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  const handleSignOut = async () => {
-    await signOut();
-    navigate('/');
-  };
-
-  // Mock stats
-  const stats = {
-    totalReports: 3,
-    pending: 1,
-    resolved: 2,
-    rejected: 0,
-  };
+  const [activeView, setActiveView] = useState<'home' | 'report' | 'incidents' | 'map' | 'messages'>('home');
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [userCampus] = useState<string>('Polokwane Campus');
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+    <div className="min-h-screen bg-gradient-primary user-theme" data-testid="ready-dashboard">
       {/* Header */}
-      <header className="bg-white/80 backdrop-blur-lg border-b border-slate-200 sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center">
-                <Shield className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <h1 className="text-lg font-bold text-slate-900">My CCSF</h1>
-                <p className="text-xs text-slate-500">Student Portal</p>
-              </div>
-            </div>
-
-            {/* Desktop Nav */}
-            <nav className="hidden md:flex items-center gap-4">
-              <Button variant="ghost" size="sm" onClick={() => navigate('/profile')}>
-                <User className="h-4 w-4 mr-2" />
-                Profile
-              </Button>
-              <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={handleSignOut}>
-                <LogOut className="h-4 w-4 mr-2" />
-                Sign Out
-              </Button>
-            </nav>
-
-            {/* Mobile Menu Toggle */}
-            <Button variant="ghost" size="sm" className="md:hidden" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </Button>
-          </div>
-
-          {/* Mobile Menu */}
-          {mobileMenuOpen && (
-            <nav className="md:hidden mt-4 pb-2 flex flex-col gap-2">
-              <Button variant="ghost" size="sm" className="justify-start" onClick={() => navigate('/profile')}>
-                <User className="h-4 w-4 mr-2" />
-                Profile
-              </Button>
-              <Button variant="ghost" size="sm" className="justify-start text-red-600" onClick={handleSignOut}>
-                <LogOut className="h-4 w-4 mr-2" />
-                Sign Out
-              </Button>
-            </nav>
-          )}
-        </div>
-      </header>
-
-      {/* Alerts Banner */}
-      <AlertsBanner />
-
-      <main className="container mx-auto px-4 py-8">
-        {/* Welcome Section */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-slate-900 mb-2">
-            Welcome back{user?.user_metadata?.full_name ? `, ${user.user_metadata.full_name}` : ''}!
-          </h2>
-          <p className="text-slate-600">Report incidents, view announcements, and stay safe on campus.</p>
-        </div>
-
-        {/* Quick Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <Card className="bg-white/70 backdrop-blur">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-slate-500">Total Reports</p>
-                  <p className="text-2xl font-bold text-slate-900">{stats.totalReports}</p>
-                </div>
-                <FileText className="h-8 w-8 text-blue-500 opacity-50" />
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-white/70 backdrop-blur">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-slate-500">Pending</p>
-                  <p className="text-2xl font-bold text-amber-600">{stats.pending}</p>
-                </div>
-                <Clock className="h-8 w-8 text-amber-500 opacity-50" />
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-white/70 backdrop-blur">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-slate-500">Resolved</p>
-                  <p className="text-2xl font-bold text-green-600">{stats.resolved}</p>
-                </div>
-                <CheckCircle className="h-8 w-8 text-green-500 opacity-50" />
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-white/70 backdrop-blur">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-slate-500">Rejected</p>
-                  <p className="text-2xl font-bold text-red-600">{stats.rejected}</p>
-                </div>
-                <XCircle className="h-8 w-8 text-red-500 opacity-50" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Report Button */}
-        <Button 
-          onClick={() => setShowReportDialog(true)}
-          className="w-full md:w-auto mb-8 bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 shadow-lg"
-          size="lg"
+      <div className="relative">
+        <motion.header
+          initial={{ y: -100, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.5, ease: 'easeInOut' }}
+          className="sticky top-0 z-40 bg-gradient-to-r from-secondary/95 to-primary/95 border-b border-white/10 shadow-large backdrop-blur-md"
         >
-          <AlertTriangle className="h-5 w-5 mr-2" />
-          Report an Incident
-        </Button>
+          <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <motion.img
+                  src={tutLogo}
+                  alt="TUT Logo"
+                  className="h-8 sm:h-10 logo-glow"
+                  whileHover={{ scale: 1.1, rotate: 5 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                />
+                <div className="hidden sm:block">
+                  <div className="flex items-center gap-2">
+                    <Shield className="h-5 w-5 text-white animate-pulse" />
+                    <h1 className="text-lg sm:text-xl font-bold text-white">Campus Community Safety Forum</h1>
+                  </div>
+                  <p className="text-xs sm:text-sm text-white/70">CCSF Student Portal</p>
+                </div>
+              </div>
 
-        {/* Main Content Tabs */}
-        <Tabs defaultValue="incidents" className="space-y-6">
-          <TabsList className="bg-white/70 backdrop-blur">
-            <TabsTrigger value="incidents">My Incidents</TabsTrigger>
-            <TabsTrigger value="announcements">Announcements</TabsTrigger>
-            <TabsTrigger value="resources">Safety Resources</TabsTrigger>
-          </TabsList>
+              <div className="flex items-center gap-2 sm:gap-3">
+                {/* Campus Indicator */}
+                <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 bg-white/10 rounded-full">
+                  <MapPin className="h-3.5 w-3.5 text-white" />
+                  <span className="text-xs sm:text-sm font-medium text-white">{userCampus}</span>
+                </div>
 
-          <TabsContent value="incidents">
-            <IncidentList />
-          </TabsContent>
-
-          <TabsContent value="announcements">
-            <AnnouncementsList />
-          </TabsContent>
-
-          <TabsContent value="resources">
-            <div className="grid md:grid-cols-2 gap-6">
-              <Card className="bg-white/70 backdrop-blur">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <MapPin className="h-5 w-5 text-blue-500" />
-                    Campus Map
-                  </CardTitle>
-                  <CardDescription>View safety points and emergency exits</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button variant="outline" className="w-full">
-                    Open Campus Map <ChevronRight className="h-4 w-4 ml-2" />
+                <motion.div whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.95 }}>
+                  <Button variant="default" size="icon" onClick={signOut} className="hidden sm:flex">
+                    <LogOut className="h-5 w-5" />
                   </Button>
-                </CardContent>
-              </Card>
-              <Card className="bg-white/70 backdrop-blur">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Bell className="h-5 w-5 text-amber-500" />
-                    Emergency Contacts
-                  </CardTitle>
-                  <CardDescription>Quick access to important numbers</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <p className="text-sm"><strong>Campus Security:</strong> 012 345 6789</p>
-                  <p className="text-sm"><strong>Emergency:</strong> 10111</p>
-                  <p className="text-sm"><strong>Medical:</strong> 10177</p>
-                </CardContent>
-              </Card>
+                </motion.div>
+                <motion.div whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.95 }}>
+                  <Button
+                    variant="default"
+                    size="icon"
+                    onClick={() => setShowMobileMenu(!showMobileMenu)}
+                    className="sm:hidden"
+                  >
+                    <Menu className="h-5 w-5" />
+                  </Button>
+                </motion.div>
+              </div>
             </div>
-          </TabsContent>
-        </Tabs>
-      </main>
+          </div>
+        </motion.header>
 
-      {/* Report Incident Dialog */}
-      <ReportIncidentDialog open={showReportDialog} onOpenChange={setShowReportDialog} />
+        {/* Mobile Menu */}
+        {showMobileMenu && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="absolute top-full right-2 sm:right-4 z-50 mt-2 w-48 p-2 bg-card rounded-2xl shadow-large sm:hidden"
+          >
+            <div className="flex items-center gap-2 px-3 py-2 mb-2 bg-primary/10 rounded-lg">
+              <MapPin className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium">{userCampus}</span>
+            </div>
+            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+              <Button onClick={signOut} variant="destructive" className="w-full">
+                <LogOut className="h-4 w-4 mr-2" />
+                Sign Out
+              </Button>
+            </motion.div>
+          </motion.div>
+        )}
+      </div>
+
+      {/* Main Content */}
+      <main className="container mx-auto px-3 sm:px-4 pb-6">
+        {/* Navigation Tabs */}
+        <motion.div
+          initial={{ opacity: 0, y: 25 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4, duration: 0.4 }}
+        >
+          <Card className="p-1.5 sm:p-2 mb-4 sm:mb-6 shadow-large">
+            <div className="grid grid-cols-5 gap-1 sm:gap-2">
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button
+                  variant={activeView === 'home' ? 'default' : 'ghost'}
+                  onClick={() => setActiveView('home')}
+                  className="w-full transition-all text-xs sm:text-sm px-1 sm:px-3"
+                  size="sm"
+                >
+                  <Home className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Home</span>
+                </Button>
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button
+                  variant={activeView === 'incidents' ? 'default' : 'ghost'}
+                  onClick={() => setActiveView('incidents')}
+                  className="w-full transition-all text-xs sm:text-sm px-1 sm:px-3"
+                  size="sm"
+                >
+                  <List className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Incidents</span>
+                </Button>
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button
+                  variant={activeView === 'report' ? 'default' : 'ghost'}
+                  onClick={() => setActiveView('report')}
+                  className="w-full transition-all text-xs sm:text-sm px-1 sm:px-3"
+                  size="sm"
+                >
+                  <Plus className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Report</span>
+                </Button>
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button
+                  variant={activeView === 'map' ? 'default' : 'ghost'}
+                  onClick={() => setActiveView('map')}
+                  className="w-full transition-all text-xs sm:text-sm px-1 sm:px-3"
+                  size="sm"
+                >
+                  <Map className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Map</span>
+                </Button>
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button
+                  variant={activeView === 'messages' ? 'default' : 'ghost'}
+                  onClick={() => setActiveView('messages')}
+                  className="w-full transition-all text-xs sm:text-sm px-1 sm:px-3"
+                  size="sm"
+                >
+                  <MessageCircle className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Messages</span>
+                </Button>
+              </motion.div>
+            </div>
+          </Card>
+        </motion.div>
+
+        {/* Content Views */}
+        <motion.div
+          key={activeView}
+          initial={{ opacity: 0, x: 20, scale: 0.97 }}
+          animate={{ opacity: 1, x: 0, scale: 1 }}
+          exit={{ opacity: 0, x: -20, scale: 0.97 }}
+          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        >
+          {activeView === 'home' && (
+            <Card className="p-6 shadow-large">
+              <h2 className="text-xl font-bold mb-4">Welcome to CCSF</h2>
+              <p className="text-muted-foreground">Stay informed about campus safety updates and announcements.</p>
+            </Card>
+          )}
+          {activeView === 'incidents' && (
+            <Card className="p-6 shadow-large">
+              <h2 className="text-xl font-bold mb-4">My Incidents</h2>
+              <p className="text-muted-foreground">View your reported incidents here.</p>
+            </Card>
+          )}
+          {activeView === 'report' && (
+            <Card className="p-6 shadow-large">
+              <h2 className="text-xl font-bold mb-4">Report an Incident</h2>
+              <p className="text-muted-foreground">Submit a new incident report.</p>
+            </Card>
+          )}
+          {activeView === 'map' && (
+            <Card className="p-6 shadow-large">
+              <h2 className="text-xl font-bold mb-4">Campus Map</h2>
+              <p className="text-muted-foreground">View campus safety zones and locations.</p>
+            </Card>
+          )}
+          {activeView === 'messages' && (
+            <Card className="p-6 shadow-large">
+              <h2 className="text-xl font-bold mb-4">Messages</h2>
+              <p className="text-muted-foreground">Chat with campus security.</p>
+            </Card>
+          )}
+        </motion.div>
+
+        {/* Footer */}
+        <footer className="mt-8 sm:mt-12 pb-6 text-center text-xs sm:text-sm">
+          <p className="text-white font-medium">Powered By Campus Protection Service</p>
+        </footer>
+      </main>
     </div>
   );
 };

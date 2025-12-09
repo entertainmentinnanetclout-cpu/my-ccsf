@@ -1,146 +1,119 @@
 import { useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { 
-  Shield, BarChart3, FileText, Users, Bell, Settings, LogOut, 
-  Menu, X, MapPin, AlertTriangle, TrendingUp, Building2
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNavigate } from 'react-router-dom';
-import AdminDashboardStats from '@/components/admin/AdminDashboardStats';
-import AllIncidentsList from '@/components/admin/AllIncidentsList';
-import CampusOverview from '@/components/admin/CampusOverview';
-import AnnouncementManager from '@/components/admin/AnnouncementManager';
-import AlertManager from '@/components/admin/AlertManager';
-import StaffChat from '@/components/shared/StaffChat';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { motion } from 'framer-motion';
+import { Shield, LayoutDashboard, AlertCircle, Megaphone, Home, MessageSquare, CheckSquare } from 'lucide-react';
+import tutLogo from '@/assets/tut-logo.png';
 
 const Admin = () => {
-  const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  const handleSignOut = async () => {
-    await signOut();
-    navigate('/');
-  };
+  const [activeView, setActiveView] = useState<'overview' | 'incidents' | 'announcements' | 'summary' | 'resolve' | 'communication' | 'residences'>('overview');
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+    <div className="min-h-screen bg-gradient-admin admin-theme" data-testid="ready-admin">
       {/* Header */}
-      <header className="bg-black/30 backdrop-blur-lg border-b border-white/10 sticky top-0 z-50">
+      <motion.header
+        initial={{ y: -100, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.5, ease: 'easeInOut' }}
+        className="sticky top-0 z-50 bg-gradient-to-r from-secondary/95 to-primary/95 border-b border-white/10 shadow-large backdrop-blur-md"
+      >
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center">
-                <Shield className="h-5 w-5 text-white" />
-              </div>
+              <motion.img
+                src={tutLogo}
+                alt="TUT Logo"
+                className="h-10 logo-glow"
+                whileHover={{ scale: 1.1, rotate: -5 }}
+                transition={{ type: "spring", stiffness: 300, damping: 20 }}
+              />
               <div>
-                <h1 className="text-lg font-bold text-white">My CCSF</h1>
-                <p className="text-xs text-purple-300">SuperAdmin Portal</p>
+                <div className="flex items-center gap-2">
+                  <Shield className="h-5 w-5 text-white animate-pulse" />
+                  <h1 className="text-xl font-bold text-white">Campus Community Safety Forum</h1>
+                </div>
+                <p className="text-sm text-white/90 font-semibold">CCSF Admin Console</p>
               </div>
             </div>
 
-            {/* Desktop Nav */}
-            <nav className="hidden md:flex items-center gap-4">
-              <span className="text-sm text-purple-200">
-                {user?.user_metadata?.full_name || user?.email}
-              </span>
-              <Button variant="ghost" size="sm" className="text-purple-200 hover:text-white hover:bg-white/10" onClick={handleSignOut}>
-                <LogOut className="h-4 w-4 mr-2" />
-                Sign Out
+            <motion.div whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.95 }}>
+              <Button variant="default" size="icon" onClick={() => navigate('/')}>
+                <Home className="h-5 w-5" />
               </Button>
-            </nav>
-
-            {/* Mobile Menu Toggle */}
-            <Button variant="ghost" size="sm" className="md:hidden text-white" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </Button>
+            </motion.div>
           </div>
-
-          {/* Mobile Menu */}
-          {mobileMenuOpen && (
-            <nav className="md:hidden mt-4 pb-2 flex flex-col gap-2">
-              <Button variant="ghost" size="sm" className="justify-start text-purple-200" onClick={handleSignOut}>
-                <LogOut className="h-4 w-4 mr-2" />
-                Sign Out
-              </Button>
-            </nav>
-          )}
         </div>
-      </header>
+      </motion.header>
 
-      <main className="container mx-auto px-4 py-8">
-        {/* Welcome Section */}
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold text-white mb-2">SuperAdmin Dashboard</h2>
-          <p className="text-purple-200">Nationwide oversight and system administration</p>
-        </div>
+      {/* Main Content */}
+      <main className="container mx-auto px-4 py-6">
+        {/* Navigation Tabs */}
+        <motion.div
+          initial={{ opacity: 0, y: 25 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2, duration: 0.4 }}
+        >
+          <Card className="p-2 mb-6 shadow-large">
+            <div className="grid grid-cols-2 md:grid-cols-7 gap-2">
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button variant={activeView === 'overview' ? 'default' : 'ghost'} onClick={() => setActiveView('overview')} className="w-full transition-all">
+                  <LayoutDashboard className="h-4 w-4 mr-2" /><span className="hidden sm:inline">Overview</span>
+                </Button>
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button variant={activeView === 'incidents' ? 'default' : 'ghost'} onClick={() => setActiveView('incidents')} className="w-full transition-all">
+                  <AlertCircle className="h-4 w-4 mr-2" /><span className="hidden sm:inline">Incidents</span>
+                </Button>
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button variant={activeView === 'announcements' ? 'default' : 'ghost'} onClick={() => setActiveView('announcements')} className="w-full transition-all">
+                  <Megaphone className="h-4 w-4 mr-2" /><span className="hidden sm:inline">Announcements</span>
+                </Button>
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button variant={activeView === 'summary' ? 'default' : 'ghost'} onClick={() => setActiveView('summary')} className="w-full transition-all">
+                  <LayoutDashboard className="h-4 w-4 mr-2" /><span className="hidden sm:inline">Summary</span>
+                </Button>
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button variant={activeView === 'resolve' ? 'default' : 'ghost'} onClick={() => setActiveView('resolve')} className="w-full transition-all">
+                  <CheckSquare className="h-4 w-4 mr-2" /><span className="hidden sm:inline">Resolve Cases</span>
+                </Button>
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button variant={activeView === 'communication' ? 'default' : 'ghost'} onClick={() => setActiveView('communication')} className="w-full transition-all">
+                  <MessageSquare className="h-4 w-4 mr-2" /><span className="hidden sm:inline">Communication</span>
+                </Button>
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button variant={activeView === 'residences' ? 'default' : 'ghost'} onClick={() => setActiveView('residences')} className="w-full transition-all">
+                  <Shield className="h-4 w-4 mr-2" /><span className="hidden sm:inline">Residences</span>
+                </Button>
+              </motion.div>
+            </div>
+          </Card>
+        </motion.div>
 
-        {/* Dashboard Stats */}
-        <AdminDashboardStats />
+        {/* Content Views */}
+        <motion.div
+          key={activeView}
+          initial={{ opacity: 0, x: 20, scale: 0.97 }}
+          animate={{ opacity: 1, x: 0, scale: 1 }}
+          exit={{ opacity: 0, x: -20, scale: 0.97 }}
+          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        >
+          <Card className="p-6 shadow-large">
+            <h2 className="text-xl font-bold mb-4 capitalize">{activeView}</h2>
+            <p className="text-muted-foreground">Admin {activeView} content will be displayed here.</p>
+          </Card>
+        </motion.div>
 
-        {/* Main Content Tabs */}
-        <Tabs defaultValue="overview" className="space-y-6 mt-8">
-          <TabsList className="bg-white/10 backdrop-blur border border-white/10">
-            <TabsTrigger value="overview" className="data-[state=active]:bg-white/20 text-white">
-              <BarChart3 className="h-4 w-4 mr-2" />
-              Overview
-            </TabsTrigger>
-            <TabsTrigger value="incidents" className="data-[state=active]:bg-white/20 text-white">
-              <FileText className="h-4 w-4 mr-2" />
-              All Cases
-            </TabsTrigger>
-            <TabsTrigger value="campuses" className="data-[state=active]:bg-white/20 text-white">
-              <Building2 className="h-4 w-4 mr-2" />
-              Campuses
-            </TabsTrigger>
-            <TabsTrigger value="announcements" className="data-[state=active]:bg-white/20 text-white">
-              <Bell className="h-4 w-4 mr-2" />
-              Announcements
-            </TabsTrigger>
-            <TabsTrigger value="alerts" className="data-[state=active]:bg-white/20 text-white">
-              <AlertTriangle className="h-4 w-4 mr-2" />
-              Alerts
-            </TabsTrigger>
-            <TabsTrigger value="chat" className="data-[state=active]:bg-white/20 text-white">
-              <Users className="h-4 w-4 mr-2" />
-              Staff Chat
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="overview">
-            <CampusOverview />
-          </TabsContent>
-
-          <TabsContent value="incidents">
-            <AllIncidentsList />
-          </TabsContent>
-
-          <TabsContent value="campuses">
-            <CampusOverview detailed />
-          </TabsContent>
-
-          <TabsContent value="announcements">
-            <AnnouncementManager />
-          </TabsContent>
-
-          <TabsContent value="alerts">
-            <AlertManager />
-          </TabsContent>
-
-          <TabsContent value="chat">
-            <Card className="bg-white/10 backdrop-blur border-white/20">
-              <CardHeader>
-                <CardTitle className="text-white">Staff Communication</CardTitle>
-                <CardDescription className="text-purple-200">Chat with campus office staff nationwide</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <StaffChat isAdmin />
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+        {/* Footer */}
+        <footer className="mt-12 pb-6 text-center text-sm text-muted-foreground">
+          <p>Powered By Campus Protection Service</p>
+        </footer>
       </main>
     </div>
   );

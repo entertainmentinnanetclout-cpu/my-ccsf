@@ -1,148 +1,95 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import type { AppRole } from '@/types/database';
+import { useNavigate } from 'react-router-dom';
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
-  role: AppRole | null;
-  campusId: string | null;
+  userRole: string | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signUp: (email: string, password: string, fullName: string, role?: AppRole) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [role, setRole] = useState<AppRole | null>(null);
-  const [campusId, setCampusId] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        // Defer role fetching to avoid deadlock
-        if (session?.user) {
-          setTimeout(() => {
-            fetchUserRole(session.user.id);
-            fetchUserCampus(session.user.id);
-          }, 0);
-        } else {
-          setRole(null);
-          setCampusId(null);
-        }
-      }
-    );
+    // Auth temporarily disabled - set loading to false immediately
+    setLoading(false);
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchUserRole(session.user.id);
-        fetchUserCampus(session.user.id);
-      }
-      setLoading(false);
-    });
+    // Commented out for temporary no-auth mode
+    // const fetchSession = async () => {
+    //   const { data: { session } } = await supabase.auth.getSession();
+    //   setSession(session);
+    //   setUser(session?.user ?? null);
+    //   setLoading(false);
 
-    return () => subscription.unsubscribe();
+    //   if (session?.user) {
+    //     const { data: roleData } = await supabase
+    //       .from('user_roles')
+    //       .select('role')
+    //       .eq('user_id', session.user.id)
+    //       .order('role', { ascending: true })
+    //       .limit(1)
+    //       .maybeSingle();
+    //     setUserRole(roleData?.role || null);
+    //   }
+    // };
+
+    // fetchSession();
+
+    // const { data: { subscription } } = supabase.auth.onAuthStateChange(
+    //   (_event, session) => {
+    //     setSession(session);
+    //     setUser(session?.user ?? null);
+    //     setLoading(false);
+
+    //     if (session?.user) {
+    //       supabase
+    //         .from('user_roles')
+    //         .select('role')
+    //         .eq('user_id', session.user.id)
+    //         .order('role', { ascending: true })
+    //         .limit(1)
+    //         .maybeSingle()
+    //         .then(({ data: roleData }) => {
+    //           setUserRole(roleData?.role || null);
+    //         });
+    //     } else {
+    //       setUserRole(null);
+    //     }
+    //   }
+    // );
+
+    // return () => subscription.unsubscribe();
   }, []);
 
-  const fetchUserRole = async (userId: string) => {
-    const { data, error } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', userId)
-      .maybeSingle();
-
-    if (!error && data) {
-      setRole(data.role as AppRole);
-    }
-  };
-
-  const fetchUserCampus = async (userId: string) => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('campus_id')
-      .eq('id', userId)
-      .maybeSingle();
-
-    if (!error && data) {
-      setCampusId(data.campus_id);
-    }
-  };
-
-  const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    return { error: error as Error | null };
-  };
-
-  const signUp = async (email: string, password: string, fullName: string, role: AppRole = 'student') => {
-    const redirectUrl = `${window.location.origin}/`;
-    
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: {
-          full_name: fullName,
-          role: role,
-        },
-      },
-    });
-
-    if (!error && data.user) {
-      // Create user role entry
-      await supabase.from('user_roles').insert({
-        user_id: data.user.id,
-        role: role,
-      });
-    }
-
-    return { error: error as Error | null };
-  };
-
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
-    setRole(null);
-    setCampusId(null);
-  };
+    setUserRole(null);
+    navigate('/auth');
+  }, [navigate]);
 
   return (
-    <AuthContext.Provider value={{
-      user,
-      session,
-      role,
-      campusId,
-      loading,
-      signIn,
-      signUp,
-      signOut,
-    }}>
+    <AuthContext.Provider value={{ user, session, userRole, loading, signOut }}>
       {children}
     </AuthContext.Provider>
   );
-}
+};
 
-export function useAuth() {
+export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-}
+};
