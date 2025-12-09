@@ -3,25 +3,20 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { motion } from 'framer-motion';
-import { Shield, LayoutDashboard, AlertCircle, Megaphone, Home, MessageSquare, CheckSquare, BarChart3, Images } from 'lucide-react';
+import { Shield, LayoutDashboard, AlertCircle, Megaphone, Home, MessageSquare, BarChart3, Images } from 'lucide-react';
 import tutLogo from '@/assets/tut-logo.png';
 import { AdminOverview } from '@/components/admin/AdminOverview';
 import { AdminIncidents } from '@/components/admin/AdminIncidents';
 import { AdminAnnouncements } from '@/components/admin/AdminAnnouncements';
-import { AlertsPanel } from '@/components/admin/Dashboard/AlertsPanel';
-import { TrafficSummary } from '@/components/admin/Dashboard/TrafficSummary';
-import { CCTVStatus } from '@/components/admin/Dashboard/CCTVStatus';
-import { ResolveCases } from '@/components/admin/ResolveCases';
 import { StaffCommunication } from '@/components/admin/StaffCommunication';
 import { RealTimeIncidents } from '@/components/admin/RealTimeIncidents';
-import { ResidenceSection } from '@/components/student/ResidenceSection';
 import { IncidentAnalytics } from '@/components/admin/IncidentAnalytics';
 import { CarouselManager } from '@/components/admin/CarouselManager';
 import { CasesProvider } from '@/contexts/CasesContext';
 
 const Admin = () => {
   const navigate = useNavigate();
-  const [activeView, setActiveView] = useState<'overview' | 'incidents' | 'announcements' | 'summary' | 'resolve' | 'communication' | 'residences' | 'analytics' | 'carousel'>('overview');
+  const [activeView, setActiveView] = useState<'overview' | 'incidents' | 'analytics' | 'announcements' | 'communication' | 'carousel'>('overview');
 
   return (
     <CasesProvider>
@@ -74,51 +69,36 @@ const Admin = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2, duration: 0.4 }}
           >
-            <Card className="p-2 mb-6 shadow-large">
-              <div className="grid grid-cols-3 md:grid-cols-9 gap-2">
+            <Card className="p-3 mb-6 shadow-large">
+              <div className="flex flex-wrap justify-center gap-2">
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Button variant={activeView === 'overview' ? 'default' : 'ghost'} onClick={() => setActiveView('overview')} className="w-full transition-all">
-                    <LayoutDashboard className="h-4 w-4 mr-2" /><span className="hidden sm:inline">Overview</span>
+                  <Button variant={activeView === 'overview' ? 'default' : 'ghost'} onClick={() => setActiveView('overview')} className="transition-all">
+                    <LayoutDashboard className="h-4 w-4 mr-2" />Overview
                   </Button>
                 </motion.div>
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Button variant={activeView === 'incidents' ? 'default' : 'ghost'} onClick={() => setActiveView('incidents')} className="w-full transition-all">
-                    <AlertCircle className="h-4 w-4 mr-2" /><span className="hidden sm:inline">Incidents</span>
+                  <Button variant={activeView === 'incidents' ? 'default' : 'ghost'} onClick={() => setActiveView('incidents')} className="transition-all">
+                    <AlertCircle className="h-4 w-4 mr-2" />Incidents
                   </Button>
                 </motion.div>
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Button variant={activeView === 'analytics' ? 'default' : 'ghost'} onClick={() => setActiveView('analytics')} className="w-full transition-all">
-                    <BarChart3 className="h-4 w-4 mr-2" /><span className="hidden sm:inline">Analytics</span>
+                  <Button variant={activeView === 'analytics' ? 'default' : 'ghost'} onClick={() => setActiveView('analytics')} className="transition-all">
+                    <BarChart3 className="h-4 w-4 mr-2" />Analytics
                   </Button>
                 </motion.div>
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Button variant={activeView === 'announcements' ? 'default' : 'ghost'} onClick={() => setActiveView('announcements')} className="w-full transition-all">
-                    <Megaphone className="h-4 w-4 mr-2" /><span className="hidden sm:inline">Announcements</span>
+                  <Button variant={activeView === 'announcements' ? 'default' : 'ghost'} onClick={() => setActiveView('announcements')} className="transition-all">
+                    <Megaphone className="h-4 w-4 mr-2" />Announcements
                   </Button>
                 </motion.div>
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Button variant={activeView === 'summary' ? 'default' : 'ghost'} onClick={() => setActiveView('summary')} className="w-full transition-all">
-                    <LayoutDashboard className="h-4 w-4 mr-2" /><span className="hidden sm:inline">Summary</span>
+                  <Button variant={activeView === 'communication' ? 'default' : 'ghost'} onClick={() => setActiveView('communication')} className="transition-all">
+                    <MessageSquare className="h-4 w-4 mr-2" />Staff Chat
                   </Button>
                 </motion.div>
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Button variant={activeView === 'resolve' ? 'default' : 'ghost'} onClick={() => setActiveView('resolve')} className="w-full transition-all">
-                    <CheckSquare className="h-4 w-4 mr-2" /><span className="hidden sm:inline">Resolve Cases</span>
-                  </Button>
-                </motion.div>
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Button variant={activeView === 'communication' ? 'default' : 'ghost'} onClick={() => setActiveView('communication')} className="w-full transition-all">
-                    <MessageSquare className="h-4 w-4 mr-2" /><span className="hidden sm:inline">Communication</span>
-                  </Button>
-                </motion.div>
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Button variant={activeView === 'residences' ? 'default' : 'ghost'} onClick={() => setActiveView('residences')} className="w-full transition-all">
-                    <Shield className="h-4 w-4 mr-2" /><span className="hidden sm:inline">Residences</span>
-                  </Button>
-                </motion.div>
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Button variant={activeView === 'carousel' ? 'default' : 'ghost'} onClick={() => setActiveView('carousel')} className="w-full transition-all">
-                    <Images className="h-4 w-4 mr-2" /><span className="hidden sm:inline">Carousel</span>
+                  <Button variant={activeView === 'carousel' ? 'default' : 'ghost'} onClick={() => setActiveView('carousel')} className="transition-all">
+                    <Images className="h-4 w-4 mr-2" />Carousel
                   </Button>
                 </motion.div>
               </div>
@@ -137,16 +117,7 @@ const Admin = () => {
             {activeView === 'incidents' && <AdminIncidents />}
             {activeView === 'analytics' && <IncidentAnalytics />}
             {activeView === 'announcements' && <AdminAnnouncements />}
-            {activeView === 'summary' && (
-              <div className="space-y-4">
-                <AlertsPanel />
-                <TrafficSummary />
-                <CCTVStatus />
-              </div>
-            )}
-            {activeView === 'resolve' && <ResolveCases />}
             {activeView === 'communication' && <StaffCommunication />}
-            {activeView === 'residences' && <ResidenceSection />}
             {activeView === 'carousel' && <CarouselManager />}
           </motion.div>
 
