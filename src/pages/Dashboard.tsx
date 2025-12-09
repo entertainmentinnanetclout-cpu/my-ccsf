@@ -40,8 +40,9 @@ const Dashboard = () => {
             'garankuwa': 'Ga-Rankuwa Campus',
             'soshanguve_south': 'Soshanguve South Campus',
             'soshanguve_north': 'Soshanguve North Campus',
+            'emalahleni': 'Emalahleni Campus',
           };
-          setUserCampus(campusDisplayNames[data.campus] || 'Polokwane Campus');
+          setUserCampus(campusDisplayNames[data.campus] || 'Campus');
         }
       }
     };

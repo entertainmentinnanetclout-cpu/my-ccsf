@@ -437,6 +437,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_user_campus: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["campus_location"]
+      }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["user_role"]
@@ -455,7 +459,9 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_campus_admin: { Args: { _user_id: string }; Returns: boolean }
       is_head_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_super_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       campus_location:
@@ -468,6 +474,7 @@ export type Database = {
         | "garankuwa"
         | "soshanguve_south"
         | "soshanguve_north"
+        | "emalahleni"
       incident_category:
         | "Rape"
         | "Sexual assault"
@@ -644,6 +651,7 @@ export const Constants = {
         "garankuwa",
         "soshanguve_south",
         "soshanguve_north",
+        "emalahleni",
       ],
       incident_category: [
         "Rape",

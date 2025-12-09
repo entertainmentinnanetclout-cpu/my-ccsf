@@ -10,7 +10,7 @@ import { Menu } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 const Navigation = () => {
-  const { userRole } = useAuth();
+  const { userRole, isSuperAdmin, isCampusAdmin, isStudent } = useAuth();
 
   return (
     <div className="absolute top-4 right-4">
@@ -24,24 +24,33 @@ const Navigation = () => {
           <DropdownMenuItem asChild>
             <Link to="/">Home</Link>
           </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <Link to="/dashboard">Dashboard</Link>
-          </DropdownMenuItem>
-          {userRole === 'admin' && (
+          {isStudent && (
             <DropdownMenuItem asChild>
-              <Link to="/admin">Admin</Link>
+              <Link to="/dashboard">Student Dashboard</Link>
             </DropdownMenuItem>
           )}
-          {userRole === 'security' && (
+          {isSuperAdmin && (
             <DropdownMenuItem asChild>
-              <Link to="/security">Security</Link>
+              <Link to="/admin">Super Admin Console</Link>
             </DropdownMenuItem>
+          )}
+          {isCampusAdmin && (
+            <DropdownMenuItem asChild>
+              <Link to="/security">Campus Admin Portal</Link>
+            </DropdownMenuItem>
+          )}
+          {(isCampusAdmin || isSuperAdmin) && (
+            <>
+              <DropdownMenuItem asChild>
+                <Link to="/office">Office</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link to="/judiciary">Judiciary</Link>
+              </DropdownMenuItem>
+            </>
           )}
           <DropdownMenuItem asChild>
             <Link to="/profile">Profile</Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <Link to="/judiciary">Judiciary</Link>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
