@@ -5,11 +5,41 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { motion } from 'framer-motion';
-import { Shield, AlertCircle, Loader2 } from 'lucide-react';
+import { Shield, AlertCircle, Loader2, MapPin } from 'lucide-react';
 import tutLogo from '@/assets/tut-logo.png';
+import { z } from 'zod';
+
+// Campus options with display names and DB values
+const campusOptions = [
+  { value: 'pretoria_west_main', label: 'Pretoria West (Main Campus)' },
+  { value: 'arcadia', label: 'Arcadia Campus' },
+  { value: 'arts', label: 'Arts Campus' },
+  { value: 'giyani', label: 'Giyani Campus' },
+  { value: 'mbombela', label: 'Mbombela Campus' },
+  { value: 'emalahleni', label: 'Emalahleni Campus' },
+  { value: 'polokwane', label: 'Polokwane Campus' },
+  { value: 'garankuwa', label: 'Ga-Rankuwa Campus' },
+  { value: 'soshanguve_south', label: 'Soshanguve South Campus' },
+  { value: 'soshanguve_north', label: 'Soshanguve North Campus' },
+] as const;
+
+// Validation schema
+const signupSchema = z.object({
+  email: z.string().trim().email('Invalid email address').max(255),
+  password: z.string().min(6, 'Password must be at least 6 characters').max(100),
+  fullName: z.string().trim().min(2, 'Name must be at least 2 characters').max(100),
+  studentNumber: z.string().trim().max(20).optional(),
+  campus: z.string().min(1, 'Please select your campus'),
+});
+
+const loginSchema = z.object({
+  email: z.string().trim().email('Invalid email address'),
+  password: z.string().min(1, 'Password is required'),
+});
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -17,35 +47,94 @@ const Auth = () => {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [studentNumber, setStudentNumber] = useState('');
+  const [campus, setCampus] = useState('');
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const { toast } = useToast();
   const navigate = useNavigate();
   const { user, userRole, loading: authLoading } = useAuth();
 
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user && userRole) {
+      if (userRole === 'student') {
+        navigate('/dashboard', { replace: true });
+      } else if (userRole === 'campus_admin') {
+        navigate('/security', { replace: true });
+      } else if (userRole === 'super_admin') {
+        navigate('/admin', { replace: true });
+      }
+    }
+  }, [user, userRole, navigate]);
+
+  const validateForm = () => {
+    try {
+      if (isLogin) {
+        loginSchema.parse({ email, password });
+      } else {
+        signupSchema.parse({ email, password, fullName, studentNumber, campus });
+      }
+      setErrors({});
+      return true;
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const newErrors: Record<string, string> = {};
+        error.errors.forEach((err) => {
+          if (err.path[0]) {
+            newErrors[err.path[0] as string] = err.message;
+          }
+        });
+        setErrors(newErrors);
+      }
+      return false;
+    }
+  };
+
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+    
     setLoading(true);
 
     try {
       if (isLogin) {
         const { error } = await supabase.auth.signInWithPassword({
-          email,
+          email: email.trim(),
           password,
         });
-        if (error) throw error;
+        if (error) {
+          if (error.message.includes('Invalid login credentials')) {
+            throw new Error('Invalid email or password. Please try again.');
+          }
+          throw error;
+        }
+        toast({
+          title: 'Welcome back!',
+          description: 'You have successfully signed in.',
+        });
       } else {
         const { error } = await supabase.auth.signUp({
-          email,
+          email: email.trim(),
           password,
           options: {
             emailRedirectTo: `${window.location.origin}/dashboard`,
             data: {
-              full_name: fullName,
-              student_number: studentNumber,
+              full_name: fullName.trim(),
+              student_number: studentNumber.trim(),
+              campus: campus,
+              role: 'student', // Default role for new signups
             },
           },
         });
-        if (error) throw error;
+        if (error) {
+          if (error.message.includes('User already registered')) {
+            throw new Error('An account with this email already exists. Please sign in instead.');
+          }
+          throw error;
+        }
         toast({
           title: 'Account created!',
           description: 'Welcome to Campus Protection Services. Please check your email to verify your account.',
@@ -110,7 +199,7 @@ const Auth = () => {
               <CardDescription>
                 {isLogin
                   ? 'Enter your credentials to access your account'
-                  : 'Fill in your details to create a new account'}
+                  : 'Fill in your details to create a new student account'}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -118,16 +207,20 @@ const Auth = () => {
                 {!isLogin && (
                   <>
                     <div className="space-y-2">
-                      <Label htmlFor="fullName">Full Name</Label>
+                      <Label htmlFor="fullName">Full Name *</Label>
                       <Input
                         id="fullName"
                         type="text"
                         placeholder="John Doe"
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
-                        required={!isLogin}
+                        className={errors.fullName ? 'border-destructive' : ''}
                       />
+                      {errors.fullName && (
+                        <p className="text-sm text-destructive">{errors.fullName}</p>
+                      )}
                     </div>
+                    
                     <div className="space-y-2">
                       <Label htmlFor="studentNumber">Student Number</Label>
                       <Input
@@ -136,34 +229,76 @@ const Auth = () => {
                         placeholder="2024XXXXX"
                         value={studentNumber}
                         onChange={(e) => setStudentNumber(e.target.value)}
+                        className={errors.studentNumber ? 'border-destructive' : ''}
                       />
+                      {errors.studentNumber && (
+                        <p className="text-sm text-destructive">{errors.studentNumber}</p>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="campus">Campus *</Label>
+                      <Select value={campus} onValueChange={setCampus}>
+                        <SelectTrigger className={errors.campus ? 'border-destructive' : ''}>
+                          <SelectValue placeholder="Select your campus">
+                            {campus && (
+                              <span className="flex items-center gap-2">
+                                <MapPin className="h-4 w-4" />
+                                {campusOptions.find(c => c.value === campus)?.label}
+                              </span>
+                            )}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {campusOptions.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              <span className="flex items-center gap-2">
+                                <MapPin className="h-4 w-4" />
+                                {option.label}
+                              </span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {errors.campus && (
+                        <p className="text-sm text-destructive">{errors.campus}</p>
+                      )}
                     </div>
                   </>
                 )}
 
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email">Email *</Label>
                   <Input
                     id="email"
                     type="email"
                     placeholder="student@tut.ac.za"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    required
+                    className={errors.email ? 'border-destructive' : ''}
                   />
+                  {errors.email && (
+                    <p className="text-sm text-destructive">{errors.email}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
+                  <Label htmlFor="password">Password *</Label>
                   <Input
                     id="password"
                     type="password"
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    required
+                    className={errors.password ? 'border-destructive' : ''}
                     minLength={6}
                   />
+                  {errors.password && (
+                    <p className="text-sm text-destructive">{errors.password}</p>
+                  )}
+                  {!isLogin && (
+                    <p className="text-xs text-muted-foreground">Must be at least 6 characters</p>
+                  )}
                 </div>
 
                 <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
@@ -172,14 +307,24 @@ const Auth = () => {
                     className="w-full"
                     disabled={loading || authLoading}
                   >
-                    {loading ? 'Processing...' : (isLogin ? 'Sign In' : 'Create Account')}
+                    {loading ? (
+                      <span className="flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Processing...
+                      </span>
+                    ) : (
+                      isLogin ? 'Sign In' : 'Create Account'
+                    )}
                   </Button>
                 </motion.div>
 
                 <div className="text-center text-sm">
                   <button
                     type="button"
-                    onClick={() => setIsLogin(!isLogin)}
+                    onClick={() => {
+                      setIsLogin(!isLogin);
+                      setErrors({});
+                    }}
                     className="text-primary hover:underline"
                   >
                     {isLogin
