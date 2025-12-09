@@ -1,19 +1,58 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { motion } from 'framer-motion';
 import { Shield, Plus, List, LogOut, Menu, Map, MessageCircle, Home, MapPin } from 'lucide-react';
 import tutLogo from '@/assets/tut-logo.png';
+import { ReportIncident } from '@/components/student/ReportIncident';
+import { IncidentList } from '@/components/student/IncidentList';
+import { EmergencyReport } from '@/components/student/EmergencyReport';
+import { CampusMap } from '@/components/student/CampusMap';
+import { CampusCarousel } from '@/components/student/CampusCarousel';
+import { NewsFeed } from '@/components/student/NewsFeed';
+import { StudentChat } from '@/components/student/StudentChat';
+import { supabase } from '@/integrations/supabase/client';
 
 const Dashboard = () => {
   const { user, signOut } = useAuth();
   const [activeView, setActiveView] = useState<'home' | 'report' | 'incidents' | 'map' | 'messages'>('home');
   const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const [userCampus] = useState<string>('Polokwane Campus');
+  const [userCampus, setUserCampus] = useState<string>('Polokwane Campus');
+
+  useEffect(() => {
+    const checkProfile = async () => {
+      if (user) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('campus')
+          .eq('id', user.id)
+          .single();
+
+        if (data?.campus) {
+          const campusDisplayNames: Record<string, string> = {
+            'pretoria_west_main': 'Pretoria West Campus',
+            'arcadia': 'Arcadia Campus',
+            'arts': 'Arts Campus',
+            'giyani': 'Giyani Campus',
+            'mbombela': 'Mbombela Campus',
+            'polokwane': 'Polokwane Campus',
+            'garankuwa': 'Ga-Rankuwa Campus',
+            'soshanguve_south': 'Soshanguve South Campus',
+            'soshanguve_north': 'Soshanguve North Campus',
+          };
+          setUserCampus(campusDisplayNames[data.campus] || 'Polokwane Campus');
+        }
+      }
+    };
+
+    checkProfile();
+  }, [user]);
 
   return (
     <div className="min-h-screen bg-gradient-primary user-theme" data-testid="ready-dashboard">
+      <EmergencyReport />
+
       {/* Header */}
       <div className="relative">
         <motion.header
@@ -42,7 +81,6 @@ const Dashboard = () => {
               </div>
 
               <div className="flex items-center gap-2 sm:gap-3">
-                {/* Campus Indicator */}
                 <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 bg-white/10 rounded-full">
                   <MapPin className="h-3.5 w-3.5 text-white" />
                   <span className="text-xs sm:text-sm font-medium text-white">{userCampus}</span>
@@ -68,7 +106,6 @@ const Dashboard = () => {
           </div>
         </motion.header>
 
-        {/* Mobile Menu */}
         {showMobileMenu && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
@@ -167,35 +204,15 @@ const Dashboard = () => {
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
         >
           {activeView === 'home' && (
-            <Card className="p-6 shadow-large">
-              <h2 className="text-xl font-bold mb-4">Welcome to CCSF</h2>
-              <p className="text-muted-foreground">Stay informed about campus safety updates and announcements.</p>
-            </Card>
+            <div className="space-y-4 sm:space-y-6">
+              <CampusCarousel />
+              <NewsFeed />
+            </div>
           )}
-          {activeView === 'incidents' && (
-            <Card className="p-6 shadow-large">
-              <h2 className="text-xl font-bold mb-4">My Incidents</h2>
-              <p className="text-muted-foreground">View your reported incidents here.</p>
-            </Card>
-          )}
-          {activeView === 'report' && (
-            <Card className="p-6 shadow-large">
-              <h2 className="text-xl font-bold mb-4">Report an Incident</h2>
-              <p className="text-muted-foreground">Submit a new incident report.</p>
-            </Card>
-          )}
-          {activeView === 'map' && (
-            <Card className="p-6 shadow-large">
-              <h2 className="text-xl font-bold mb-4">Campus Map</h2>
-              <p className="text-muted-foreground">View campus safety zones and locations.</p>
-            </Card>
-          )}
-          {activeView === 'messages' && (
-            <Card className="p-6 shadow-large">
-              <h2 className="text-xl font-bold mb-4">Messages</h2>
-              <p className="text-muted-foreground">Chat with campus security.</p>
-            </Card>
-          )}
+          {activeView === 'incidents' && <IncidentList />}
+          {activeView === 'report' && <ReportIncident />}
+          {activeView === 'map' && <CampusMap />}
+          {activeView === 'messages' && <StudentChat />}
         </motion.div>
 
         {/* Footer */}

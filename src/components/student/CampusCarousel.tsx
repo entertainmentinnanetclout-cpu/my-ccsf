@@ -1,0 +1,111 @@
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronLeft, ChevronRight, Shield } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+
+const carouselItems = [
+  { image: 'https://images.unsplash.com/photo-1562774053-701939374585?w=800', title: 'Welcome to Campus', type: 'Campus' },
+  { image: 'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=800', title: 'Campus Library', type: 'Facilities' },
+  { image: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=800', title: 'Student Center', type: 'Campus' },
+  { image: 'https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=800', title: 'Security Team', type: 'Security' },
+  { image: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=800', title: 'Main Hall', type: 'Campus' },
+];
+
+export const CampusCarousel = () => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isHovered, setIsHovered] = useState(false);
+
+  useEffect(() => {
+    if (isHovered) return;
+    const timer = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % carouselItems.length);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [isHovered]);
+
+  const goToPrevious = () => setCurrentIndex((prev) => (prev - 1 + carouselItems.length) % carouselItems.length);
+  const goToNext = () => setCurrentIndex((prev) => (prev + 1) % carouselItems.length);
+
+  return (
+    <div
+      className="relative w-full h-[180px] xs:h-[200px] sm:h-[280px] md:h-[350px] lg:h-[400px] rounded-xl sm:rounded-2xl overflow-hidden shadow-lg sm:shadow-large"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={currentIndex}
+          initial={{ opacity: 0, scale: 1.02 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.98 }}
+          transition={{ duration: 0.3 }}
+          className="absolute inset-0"
+        >
+          <img
+            src={carouselItems[currentIndex].image}
+            alt={carouselItems[currentIndex].title}
+            className="w-full h-full object-cover object-center"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20" />
+          <div className="absolute bottom-0 left-0 right-0 p-2 xs:p-3 sm:p-4 md:p-6">
+            <span className="inline-block px-1.5 xs:px-2 py-0.5 xs:py-1 bg-primary/80 text-primary-foreground text-[10px] xs:text-xs rounded-full mb-1 xs:mb-2">
+              {carouselItems[currentIndex].type}
+            </span>
+            <h3 className="text-white text-sm xs:text-base sm:text-lg md:text-2xl font-bold leading-tight">
+              {carouselItems[currentIndex].title}
+            </h3>
+          </div>
+
+          <AnimatePresence>
+            {isHovered && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[2px]"
+              >
+                <motion.div
+                  initial={{ scale: 0.8 }}
+                  animate={{ scale: 1 }}
+                  className="flex items-center gap-2 sm:gap-3 bg-background/95 px-4 sm:px-6 py-3 sm:py-4 rounded-2xl shadow-large"
+                >
+                  <Shield className="h-6 w-6 sm:h-8 sm:w-8 text-primary animate-pulse" />
+                  <span className="text-lg sm:text-xl md:text-2xl font-bold text-foreground">Protected By CCSF</span>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
+      </AnimatePresence>
+
+      <Button
+        variant="ghost"
+        size="icon"
+        className="absolute left-1 xs:left-2 top-1/2 -translate-y-1/2 bg-background/60 hover:bg-background/80 text-foreground rounded-full z-10 h-7 w-7 xs:h-8 xs:w-8 sm:h-10 sm:w-10"
+        onClick={goToPrevious}
+      >
+        <ChevronLeft className="h-3.5 w-3.5 xs:h-4 xs:w-4 sm:h-6 sm:w-6" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="absolute right-1 xs:right-2 top-1/2 -translate-y-1/2 bg-background/60 hover:bg-background/80 text-foreground rounded-full z-10 h-7 w-7 xs:h-8 xs:w-8 sm:h-10 sm:w-10"
+        onClick={goToNext}
+      >
+        <ChevronRight className="h-3.5 w-3.5 xs:h-4 xs:w-4 sm:h-6 sm:w-6" />
+      </Button>
+
+      <div className="absolute bottom-2 xs:bottom-3 sm:bottom-4 right-2 xs:right-3 sm:right-4 flex gap-0.5 xs:gap-1 sm:gap-1.5 z-10">
+        {carouselItems.map((_, index) => (
+          <button
+            key={index}
+            onClick={() => setCurrentIndex(index)}
+            className={`h-1 xs:h-1.5 sm:h-2 rounded-full transition-all ${
+              index === currentIndex ? 'bg-white w-3 xs:w-4 sm:w-6' : 'bg-white/50 hover:bg-white/70 w-1 xs:w-1.5 sm:w-2'
+            }`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
