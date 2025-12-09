@@ -19,8 +19,12 @@ const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Admin = lazy(() => import('./pages/Admin'));
 const Office = lazy(() => import('./pages/Office'));
 const Profile = lazy(() => import('./pages/Profile'));
+const ProfileCompletion = lazy(() => import('./pages/ProfileCompletion'));
 const Judiciary = lazy(() => import('./pages/Judiciary'));
 const Security = lazy(() => import('./pages/Security'));
+
+// DEV MODE: Set to true to bypass authentication during development
+const DEV_MODE = true;
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -36,43 +40,57 @@ const App = () => (
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
                 
-                {/* Student routes */}
-                <Route path="/dashboard" element={
-                  <ProtectedRoute allowedRoles={['student']}>
-                    <Dashboard />
-                  </ProtectedRoute>
-                } />
-                
-                {/* Campus Admin (Security) routes */}
-                <Route path="/security/*" element={
-                  <ProtectedRoute allowedRoles={['campus_admin']}>
-                    <Security />
-                  </ProtectedRoute>
-                } />
-                
-                {/* Super Admin routes */}
-                <Route path="/admin/*" element={
-                  <ProtectedRoute allowedRoles={['super_admin']}>
-                    <Admin />
-                  </ProtectedRoute>
-                } />
-                
-                {/* Shared protected routes */}
-                <Route path="/office" element={
-                  <ProtectedRoute allowedRoles={['campus_admin', 'super_admin']}>
-                    <Office />
-                  </ProtectedRoute>
-                } />
-                <Route path="/profile" element={
-                  <ProtectedRoute allowedRoles={['student', 'campus_admin', 'super_admin']}>
-                    <Profile />
-                  </ProtectedRoute>
-                } />
-                <Route path="/judiciary" element={
-                  <ProtectedRoute allowedRoles={['campus_admin', 'super_admin']}>
-                    <Judiciary />
-                  </ProtectedRoute>
-                } />
+                {/* DEV MODE: Allow direct access to all dashboards */}
+                {DEV_MODE ? (
+                  <>
+                    <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="/security/*" element={<Security />} />
+                    <Route path="/admin/*" element={<Admin />} />
+                    <Route path="/office" element={<Office />} />
+                    <Route path="/profile" element={<Profile />} />
+                    <Route path="/profile/complete" element={<ProfileCompletion />} />
+                    <Route path="/judiciary" element={<Judiciary />} />
+                  </>
+                ) : (
+                  <>
+                    {/* PRODUCTION: Protected routes with role-based access */}
+                    <Route path="/dashboard" element={
+                      <ProtectedRoute allowedRoles={['student']}>
+                        <Dashboard />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/security/*" element={
+                      <ProtectedRoute allowedRoles={['campus_admin']}>
+                        <Security />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/*" element={
+                      <ProtectedRoute allowedRoles={['super_admin']}>
+                        <Admin />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/office" element={
+                      <ProtectedRoute allowedRoles={['campus_admin', 'super_admin']}>
+                        <Office />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/profile" element={
+                      <ProtectedRoute allowedRoles={['student', 'campus_admin', 'super_admin']}>
+                        <Profile />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/profile/complete" element={
+                      <ProtectedRoute allowedRoles={['student', 'campus_admin', 'super_admin']}>
+                        <ProfileCompletion />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/judiciary" element={
+                      <ProtectedRoute allowedRoles={['campus_admin', 'super_admin']}>
+                        <Judiciary />
+                      </ProtectedRoute>
+                    } />
+                  </>
+                )}
                 
                 <Route path="*" element={<NotFound />} />
               </Route>
