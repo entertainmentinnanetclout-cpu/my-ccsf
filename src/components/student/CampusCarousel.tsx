@@ -3,12 +3,18 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
+import campusBuilding from '@/assets/campus-building.jpg';
+import campusPolokwaneEntrance from '@/assets/campus-polokwane-entrance.jpg';
+import campusSecurityStaff from '@/assets/campus-security-staff.jpg';
+import campusTutHall from '@/assets/campus-tut-hall.jpg';
+import campusCourtyard from '@/assets/campus-courtyard.jpg';
+
 const carouselItems = [
-  { image: 'https://images.unsplash.com/photo-1562774053-701939374585?w=800', title: 'Welcome to Campus', type: 'Campus' },
-  { image: 'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=800', title: 'Campus Library', type: 'Facilities' },
-  { image: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=800', title: 'Student Center', type: 'Campus' },
-  { image: 'https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=800', title: 'Security Team', type: 'Security' },
-  { image: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=800', title: 'Main Hall', type: 'Campus' },
+  { image: campusBuilding, title: 'TUT Campus Building', type: 'Campus' },
+  { image: campusPolokwaneEntrance, title: 'Polokwane Campus Entrance', type: 'Campus' },
+  { image: campusSecurityStaff, title: 'Campus Security Team', type: 'Security' },
+  { image: campusTutHall, title: 'TUT Main Hall', type: 'Campus' },
+  { image: campusCourtyard, title: 'Campus Courtyard', type: 'Facilities' },
 ];
 
 export const CampusCarousel = () => {
