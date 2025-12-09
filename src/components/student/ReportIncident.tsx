@@ -12,6 +12,9 @@ import { useToast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
 import { MapPin, Loader2, Camera } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import type { Database } from '@/integrations/supabase/types';
+
+type IncidentCategory = Database['public']['Enums']['incident_category'];
 
 export const ReportIncident = () => {
   const { user } = useAuth();
@@ -22,7 +25,7 @@ export const ReportIncident = () => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    category: '',
+    category: '' as IncidentCategory | '',
     locationDescription: '',
     isAnonymous: false,
   });
@@ -44,15 +47,23 @@ export const ReportIncident = () => {
     }
   }, []);
 
-  const categories = [
+  const categories: { value: IncidentCategory; label: string }[] = [
     { value: 'Rape', label: 'Rape' },
     { value: 'Sexual assault', label: 'Sexual Assault' },
     { value: 'Gbv', label: 'Gender-Based Violence (GBV)' },
     { value: 'Murder', label: 'Murder' },
+    { value: 'Attempted murder', label: 'Attempted Murder' },
+    { value: 'Assault common', label: 'Common Assault' },
+    { value: 'Assault GBH', label: 'Assault GBH' },
     { value: 'Theft', label: 'Theft' },
     { value: 'Robbery', label: 'Robbery' },
+    { value: 'Armed robbery', label: 'Armed Robbery' },
     { value: 'Vandalism', label: 'Vandalism' },
-    { value: 'Other', label: 'Other' },
+    { value: 'Fraud', label: 'Fraud' },
+    { value: 'Arson', label: 'Arson' },
+    { value: 'Trespassing', label: 'Trespassing' },
+    { value: 'Public violence', label: 'Public Violence' },
+    { value: 'Cyber related crime (bullying etc.)', label: 'Cyber Crime / Bullying' },
   ];
 
   const getCurrentLocation = () => {
@@ -81,18 +92,24 @@ export const ReportIncident = () => {
     setLoading(true);
 
     try {
+      if (!formData.category) {
+        toast({ title: 'Please select a category', variant: 'destructive' });
+        setLoading(false);
+        return;
+      }
+
       const { data: incident, error } = await supabase
         .from('incidents')
-        .insert([{
+        .insert({
           title: formData.title,
           description: formData.description,
-          category: formData.category,
+          category: formData.category as IncidentCategory,
           location_lat: location?.lat,
           location_lng: location?.lng,
           location_description: formData.locationDescription,
           is_anonymous: formData.isAnonymous,
           reporter_id: formData.isAnonymous ? null : user?.id,
-        }])
+        })
         .select()
         .single();
 
@@ -136,7 +153,7 @@ export const ReportIncident = () => {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
               <Label>Incident Category *</Label>
-              <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
+              <Select value={formData.category} onValueChange={(value: IncidentCategory) => setFormData({ ...formData, category: value })}>
                 <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
                 <SelectContent>
                   {categories.map((cat) => (
