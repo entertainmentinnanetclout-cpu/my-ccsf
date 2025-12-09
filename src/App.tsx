@@ -32,14 +32,48 @@ const App = () => (
           <Suspense fallback={<div className="flex min-h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
             <Routes>
               <Route element={<Layout />}>
+                {/* Public routes */}
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/office" element={<Office />} />
-                <Route path="/admin/*" element={<Admin />} />
-                <Route path="/security/*" element={<Security />} />
-                <Route path="/profile" element={<Profile />} />
-                <Route path="/judiciary" element={<Judiciary />} />
+                
+                {/* Student routes */}
+                <Route path="/dashboard" element={
+                  <ProtectedRoute allowedRoles={['student']}>
+                    <Dashboard />
+                  </ProtectedRoute>
+                } />
+                
+                {/* Campus Admin (Security) routes */}
+                <Route path="/security/*" element={
+                  <ProtectedRoute allowedRoles={['campus_admin']}>
+                    <Security />
+                  </ProtectedRoute>
+                } />
+                
+                {/* Super Admin routes */}
+                <Route path="/admin/*" element={
+                  <ProtectedRoute allowedRoles={['super_admin']}>
+                    <Admin />
+                  </ProtectedRoute>
+                } />
+                
+                {/* Shared protected routes */}
+                <Route path="/office" element={
+                  <ProtectedRoute allowedRoles={['campus_admin', 'super_admin']}>
+                    <Office />
+                  </ProtectedRoute>
+                } />
+                <Route path="/profile" element={
+                  <ProtectedRoute allowedRoles={['student', 'campus_admin', 'super_admin']}>
+                    <Profile />
+                  </ProtectedRoute>
+                } />
+                <Route path="/judiciary" element={
+                  <ProtectedRoute allowedRoles={['campus_admin', 'super_admin']}>
+                    <Judiciary />
+                  </ProtectedRoute>
+                } />
+                
                 <Route path="*" element={<NotFound />} />
               </Route>
             </Routes>
