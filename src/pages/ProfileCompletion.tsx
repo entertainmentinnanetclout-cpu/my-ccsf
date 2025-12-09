@@ -9,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { motion } from 'framer-motion';
-import { Shield, Loader2, MapPin, User, Phone, BookOpen, Home as HomeIcon } from 'lucide-react';
+import { Shield, Loader2, MapPin, User, Phone, BookOpen, Home as HomeIcon, Heart, AlertCircle, Users } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
 import tutLogo from '@/assets/tut-logo.png';
 
 const campusOptions = [
@@ -58,6 +59,17 @@ const ProfileCompletion = () => {
     residence: '',
     course: '',
     year_of_study: '',
+    // Medical fields
+    blood_type: '',
+    allergies: '',
+    chronic_conditions: '',
+    emergency_contact_name: '',
+    emergency_contact_phone: '',
+    emergency_contact_relationship: '',
+    medical_aid_name: '',
+    medical_aid_number: '',
+    disability_status: '',
+    special_needs: '',
   });
 
   useEffect(() => {
@@ -81,6 +93,16 @@ const ProfileCompletion = () => {
           residence: data.residence || '',
           course: data.course || '',
           year_of_study: data.year_of_study?.toString() || '',
+          blood_type: (data as Record<string, unknown>).blood_type as string || '',
+          allergies: (data as Record<string, unknown>).allergies as string || '',
+          chronic_conditions: (data as Record<string, unknown>).chronic_conditions as string || '',
+          emergency_contact_name: (data as Record<string, unknown>).emergency_contact_name as string || '',
+          emergency_contact_phone: (data as Record<string, unknown>).emergency_contact_phone as string || '',
+          emergency_contact_relationship: (data as Record<string, unknown>).emergency_contact_relationship as string || '',
+          medical_aid_name: (data as Record<string, unknown>).medical_aid_name as string || '',
+          medical_aid_number: (data as Record<string, unknown>).medical_aid_number as string || '',
+          disability_status: (data as Record<string, unknown>).disability_status as string || '',
+          special_needs: (data as Record<string, unknown>).special_needs as string || '',
         });
       }
     };
@@ -111,6 +133,17 @@ const ProfileCompletion = () => {
         course: formData.course,
         year_of_study: formData.year_of_study ? parseInt(formData.year_of_study) : null,
         profile_completed: true,
+        // Medical fields
+        blood_type: formData.blood_type || null,
+        allergies: formData.allergies || null,
+        chronic_conditions: formData.chronic_conditions || null,
+        emergency_contact_name: formData.emergency_contact_name || null,
+        emergency_contact_phone: formData.emergency_contact_phone || null,
+        emergency_contact_relationship: formData.emergency_contact_relationship || null,
+        medical_aid_name: formData.medical_aid_name || null,
+        medical_aid_number: formData.medical_aid_number || null,
+        disability_status: formData.disability_status || null,
+        special_needs: formData.special_needs || null,
       };
       
       if (formData.campus) {
@@ -321,7 +354,173 @@ const ProfileCompletion = () => {
                         </SelectItem>
                       ))}
                     </SelectContent>
-                  </Select>
+                </Select>
+              </div>
+              </div>
+
+              {/* Medical & Health Information */}
+              <div className="space-y-4">
+                <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                  <Heart className="h-4 w-4 text-red-500" />
+                  Medical & Health Information
+                </h3>
+                <p className="text-xs text-muted-foreground">This information helps emergency responders provide appropriate care.</p>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="blood_type">Blood Type</Label>
+                    <Select 
+                      value={formData.blood_type} 
+                      onValueChange={(value) => setFormData({ ...formData, blood_type: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select blood type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="A+">A+</SelectItem>
+                        <SelectItem value="A-">A-</SelectItem>
+                        <SelectItem value="B+">B+</SelectItem>
+                        <SelectItem value="B-">B-</SelectItem>
+                        <SelectItem value="AB+">AB+</SelectItem>
+                        <SelectItem value="AB-">AB-</SelectItem>
+                        <SelectItem value="O+">O+</SelectItem>
+                        <SelectItem value="O-">O-</SelectItem>
+                        <SelectItem value="unknown">Unknown</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="disability_status">Disability Status</Label>
+                    <Select 
+                      value={formData.disability_status} 
+                      onValueChange={(value) => setFormData({ ...formData, disability_status: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">No Disability</SelectItem>
+                        <SelectItem value="physical">Physical Disability</SelectItem>
+                        <SelectItem value="visual">Visual Impairment</SelectItem>
+                        <SelectItem value="hearing">Hearing Impairment</SelectItem>
+                        <SelectItem value="cognitive">Cognitive/Learning</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                        <SelectItem value="prefer_not_to_say">Prefer not to say</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="allergies">Allergies</Label>
+                  <Textarea
+                    id="allergies"
+                    value={formData.allergies}
+                    onChange={(e) => setFormData({ ...formData, allergies: e.target.value })}
+                    placeholder="e.g. Penicillin, Peanuts, Bee stings (leave blank if none)"
+                    rows={2}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="chronic_conditions">Chronic Conditions</Label>
+                  <Textarea
+                    id="chronic_conditions"
+                    value={formData.chronic_conditions}
+                    onChange={(e) => setFormData({ ...formData, chronic_conditions: e.target.value })}
+                    placeholder="e.g. Asthma, Diabetes, Epilepsy (leave blank if none)"
+                    rows={2}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="special_needs">Special Needs / Accommodations</Label>
+                  <Textarea
+                    id="special_needs"
+                    value={formData.special_needs}
+                    onChange={(e) => setFormData({ ...formData, special_needs: e.target.value })}
+                    placeholder="Any special needs or accommodations required during emergencies"
+                    rows={2}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="medical_aid_name">Medical Aid Provider</Label>
+                    <Input
+                      id="medical_aid_name"
+                      value={formData.medical_aid_name}
+                      onChange={(e) => setFormData({ ...formData, medical_aid_name: e.target.value })}
+                      placeholder="e.g. Discovery, Bonitas"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="medical_aid_number">Medical Aid Number</Label>
+                    <Input
+                      id="medical_aid_number"
+                      value={formData.medical_aid_number}
+                      onChange={(e) => setFormData({ ...formData, medical_aid_number: e.target.value })}
+                      placeholder="Member number"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Emergency Contact */}
+              <div className="space-y-4">
+                <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 text-orange-500" />
+                  Emergency Contact
+                </h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="emergency_contact_name">Contact Name *</Label>
+                    <div className="relative">
+                      <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="emergency_contact_name"
+                        value={formData.emergency_contact_name}
+                        onChange={(e) => setFormData({ ...formData, emergency_contact_name: e.target.value })}
+                        placeholder="Parent / Guardian name"
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="emergency_contact_relationship">Relationship</Label>
+                    <Select 
+                      value={formData.emergency_contact_relationship} 
+                      onValueChange={(value) => setFormData({ ...formData, emergency_contact_relationship: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select relationship" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="parent">Parent</SelectItem>
+                        <SelectItem value="guardian">Guardian</SelectItem>
+                        <SelectItem value="spouse">Spouse</SelectItem>
+                        <SelectItem value="sibling">Sibling</SelectItem>
+                        <SelectItem value="relative">Other Relative</SelectItem>
+                        <SelectItem value="friend">Friend</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="emergency_contact_phone">Emergency Contact Phone *</Label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="emergency_contact_phone"
+                      value={formData.emergency_contact_phone}
+                      onChange={(e) => setFormData({ ...formData, emergency_contact_phone: e.target.value })}
+                      placeholder="0XX XXX XXXX"
+                      className="pl-10"
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-2">

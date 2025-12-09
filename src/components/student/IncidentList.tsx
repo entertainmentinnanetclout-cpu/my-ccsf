@@ -4,10 +4,33 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { motion } from 'framer-motion';
-import { Clock, MapPin, User, Eye, Navigation, Loader2, RefreshCw } from 'lucide-react';
+import { Clock, MapPin, User, Eye, Navigation, Loader2, RefreshCw, Phone, Heart, AlertCircle, BookOpen, Home, Droplet } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+
+interface ReporterProfile {
+  full_name: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  email: string;
+  phone_number: string | null;
+  student_number: string | null;
+  campus: string | null;
+  residence: string | null;
+  course: string | null;
+  year_of_study: number | null;
+  blood_type?: string | null;
+  allergies?: string | null;
+  chronic_conditions?: string | null;
+  emergency_contact_name?: string | null;
+  emergency_contact_phone?: string | null;
+  emergency_contact_relationship?: string | null;
+  medical_aid_name?: string | null;
+  medical_aid_number?: string | null;
+  disability_status?: string | null;
+  special_needs?: string | null;
+}
 
 interface Incident {
   id: string;
@@ -22,6 +45,7 @@ interface Incident {
   created_at: string;
   reporter_id: string | null;
   campus: string | null;
+  reporter?: ReporterProfile;
 }
 
 export const IncidentList = () => {
@@ -30,6 +54,7 @@ export const IncidentList = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
+  const [loadingDetails, setLoadingDetails] = useState(false);
 
   useEffect(() => {
     fetchIncidents();
@@ -73,6 +98,53 @@ export const IncidentList = () => {
   const handleRefresh = () => {
     setRefreshing(true);
     fetchIncidents();
+  };
+
+  const handleViewIncident = async (incident: Incident) => {
+    setSelectedIncident(incident);
+    
+    // If not anonymous and has reporter_id, fetch reporter details
+    if (!incident.is_anonymous && incident.reporter_id) {
+      setLoadingDetails(true);
+      try {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', incident.reporter_id)
+          .single();
+        
+        if (profileData) {
+          setSelectedIncident({
+            ...incident,
+            reporter: profileData as ReporterProfile,
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching reporter details:', error);
+      } finally {
+        setLoadingDetails(false);
+      }
+    }
+  };
+
+  const getResidenceName = (residence: string | null) => {
+    const residenceNames: Record<string, string> = {
+      'zeddishoef': 'Zeddishoef',
+      'headhoff': 'Headhoff',
+      'monitor': 'Monitor',
+      'legae': 'Legae',
+      'tempo': 'Tempo',
+      'topishoek': 'Topishoek',
+      'orion': 'Orion',
+      'magalies': 'Magalies',
+      'lezard': 'Lezard',
+      'minjonet': 'Minjonet',
+      'polonaise': 'Polonaise',
+      'denise': 'Denise',
+      'marabastaad': 'Marabastaad',
+      'astra': 'Astra',
+    };
+    return residence ? residenceNames[residence] || residence : null;
   };
 
   const getStatusColor = (status: string) => {
@@ -155,7 +227,7 @@ export const IncidentList = () => {
                                    incident.status === 'assigned' ? '#3b82f6' : 
                                    incident.status === 'resolved' ? '#22c55e' : '#ef4444'
                 }}
-                onClick={() => setSelectedIncident(incident)}
+                onClick={() => handleViewIncident(incident)}
               >
                 <CardHeader className="pb-2">
                   <div className="flex items-start justify-between gap-2">
@@ -218,7 +290,7 @@ export const IncidentList = () => {
 
       {/* Incident Details Modal */}
       <Dialog open={!!selectedIncident} onOpenChange={() => setSelectedIncident(null)}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           {selectedIncident && (
             <>
               <DialogHeader>
@@ -248,7 +320,10 @@ export const IncidentList = () => {
                 {/* Location Details */}
                 {(selectedIncident.location_description || selectedIncident.location_lat) && (
                   <div>
-                    <h4 className="font-semibold mb-2">📍 Location Details</h4>
+                    <h4 className="font-semibold mb-2 flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-green-600" />
+                      Location Details
+                    </h4>
                     <div className="p-4 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg space-y-2">
                       {selectedIncident.location_description && (
                         <div>
@@ -277,6 +352,157 @@ export const IncidentList = () => {
                   </div>
                 )}
 
+                {/* Reporter Details Section */}
+                {!selectedIncident.is_anonymous && (
+                  <div>
+                    <h4 className="font-semibold mb-3 flex items-center gap-2">
+                      <User className="h-4 w-4 text-blue-600" />
+                      Reporter Details
+                    </h4>
+                    
+                    {loadingDetails ? (
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Loading reporter details...
+                      </div>
+                    ) : selectedIncident.reporter ? (
+                      <div className="space-y-4">
+                        {/* Personal Information */}
+                        <div className="p-4 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
+                          <h5 className="font-medium text-blue-700 dark:text-blue-400 mb-3 flex items-center gap-2">
+                            <User className="h-4 w-4" />
+                            Personal Information
+                          </h5>
+                          <div className="grid grid-cols-2 gap-3 text-sm">
+                            <div>
+                              <p className="text-muted-foreground">Full Name</p>
+                              <p className="font-medium">{selectedIncident.reporter.full_name || `${selectedIncident.reporter.first_name || ''} ${selectedIncident.reporter.last_name || ''}`.trim() || 'Not provided'}</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Student Number</p>
+                              <p className="font-medium">{selectedIncident.reporter.student_number || 'Not provided'}</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground flex items-center gap-1"><Phone className="h-3 w-3" /> Phone</p>
+                              <p className="font-medium">{selectedIncident.reporter.phone_number || 'Not provided'}</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Email</p>
+                              <p className="font-medium text-xs">{selectedIncident.reporter.email}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Academic Information */}
+                        <div className="p-4 bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 rounded-lg">
+                          <h5 className="font-medium text-purple-700 dark:text-purple-400 mb-3 flex items-center gap-2">
+                            <BookOpen className="h-4 w-4" />
+                            Academic Information
+                          </h5>
+                          <div className="grid grid-cols-2 gap-3 text-sm">
+                            <div>
+                              <p className="text-muted-foreground">Campus</p>
+                              <p className="font-medium">{getCampusName(selectedIncident.reporter.campus)}</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground flex items-center gap-1"><Home className="h-3 w-3" /> Residence</p>
+                              <p className="font-medium">{getResidenceName(selectedIncident.reporter.residence) || 'Not in residence'}</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Course</p>
+                              <p className="font-medium">{selectedIncident.reporter.course || 'Not provided'}</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Year of Study</p>
+                              <p className="font-medium">{selectedIncident.reporter.year_of_study ? `Year ${selectedIncident.reporter.year_of_study}` : 'Not provided'}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Medical Information */}
+                        <div className="p-4 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg">
+                          <h5 className="font-medium text-red-700 dark:text-red-400 mb-3 flex items-center gap-2">
+                            <Heart className="h-4 w-4" />
+                            Medical Information
+                          </h5>
+                          <div className="grid grid-cols-2 gap-3 text-sm">
+                            <div>
+                              <p className="text-muted-foreground flex items-center gap-1"><Droplet className="h-3 w-3" /> Blood Type</p>
+                              <p className="font-medium">{selectedIncident.reporter.blood_type || 'Not provided'}</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Disability Status</p>
+                              <p className="font-medium capitalize">{selectedIncident.reporter.disability_status?.replace('_', ' ') || 'Not provided'}</p>
+                            </div>
+                            <div className="col-span-2">
+                              <p className="text-muted-foreground">Allergies</p>
+                              <p className="font-medium">{selectedIncident.reporter.allergies || 'None reported'}</p>
+                            </div>
+                            <div className="col-span-2">
+                              <p className="text-muted-foreground">Chronic Conditions</p>
+                              <p className="font-medium">{selectedIncident.reporter.chronic_conditions || 'None reported'}</p>
+                            </div>
+                            {selectedIncident.reporter.special_needs && (
+                              <div className="col-span-2">
+                                <p className="text-muted-foreground">Special Needs</p>
+                                <p className="font-medium">{selectedIncident.reporter.special_needs}</p>
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Medical Aid */}
+                          {(selectedIncident.reporter.medical_aid_name || selectedIncident.reporter.medical_aid_number) && (
+                            <div className="mt-3 pt-3 border-t border-red-200 dark:border-red-700 grid grid-cols-2 gap-3 text-sm">
+                              <div>
+                                <p className="text-muted-foreground">Medical Aid</p>
+                                <p className="font-medium">{selectedIncident.reporter.medical_aid_name || 'Not provided'}</p>
+                              </div>
+                              <div>
+                                <p className="text-muted-foreground">Member Number</p>
+                                <p className="font-medium">{selectedIncident.reporter.medical_aid_number || 'Not provided'}</p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Emergency Contact */}
+                        <div className="p-4 bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800 rounded-lg">
+                          <h5 className="font-medium text-orange-700 dark:text-orange-400 mb-3 flex items-center gap-2">
+                            <AlertCircle className="h-4 w-4" />
+                            Emergency Contact
+                          </h5>
+                          <div className="grid grid-cols-2 gap-3 text-sm">
+                            <div>
+                              <p className="text-muted-foreground">Contact Name</p>
+                              <p className="font-medium">{selectedIncident.reporter.emergency_contact_name || 'Not provided'}</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Relationship</p>
+                              <p className="font-medium capitalize">{selectedIncident.reporter.emergency_contact_relationship || 'Not provided'}</p>
+                            </div>
+                            <div className="col-span-2">
+                              <p className="text-muted-foreground flex items-center gap-1"><Phone className="h-3 w-3" /> Phone Number</p>
+                              <p className="font-medium text-lg">{selectedIncident.reporter.emergency_contact_phone || 'Not provided'}</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-muted-foreground text-sm">Reporter details not available</p>
+                    )}
+                  </div>
+                )}
+
+                {selectedIncident.is_anonymous && (
+                  <div className="p-4 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-lg">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <User className="h-5 w-5" />
+                      <span className="font-medium">Anonymous Report</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1">The reporter chose to remain anonymous. Personal details are not available.</p>
+                  </div>
+                )}
+
                 {/* Metadata */}
                 <div className="grid grid-cols-2 gap-4 pt-4 border-t">
                   <div>
@@ -289,9 +515,9 @@ export const IncidentList = () => {
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Reporter</p>
+                    <p className="text-sm text-muted-foreground">Reporter Type</p>
                     <p className="font-medium">
-                      {selectedIncident.is_anonymous ? 'Anonymous Report' : 'Identified Reporter'}
+                      {selectedIncident.is_anonymous ? 'Anonymous' : 'Identified'}
                     </p>
                   </div>
                 </div>
