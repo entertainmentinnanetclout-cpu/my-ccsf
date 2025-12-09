@@ -2,14 +2,16 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { supabase } from '@/integrations/supabase/client';
 
+// Fallback images if no database images exist
 import campusBuilding from '@/assets/campus-building.jpg';
 import campusPolokwaneEntrance from '@/assets/campus-polokwane-entrance.jpg';
 import campusSecurityStaff from '@/assets/campus-security-staff.jpg';
 import campusTutHall from '@/assets/campus-tut-hall.jpg';
 import campusCourtyard from '@/assets/campus-courtyard.jpg';
 
-const carouselItems = [
+const fallbackItems = [
   { image: campusBuilding, title: 'TUT Campus Building', type: 'Campus' },
   { image: campusPolokwaneEntrance, title: 'Polokwane Campus Entrance', type: 'Campus' },
   { image: campusSecurityStaff, title: 'Campus Security Team', type: 'Security' },
@@ -17,20 +19,75 @@ const carouselItems = [
   { image: campusCourtyard, title: 'Campus Courtyard', type: 'Facilities' },
 ];
 
-export const CampusCarousel = () => {
+interface CarouselImage {
+  id: string;
+  image_url: string;
+  title: string;
+  category: string;
+}
+
+interface CampusCarouselProps {
+  campus?: string;
+}
+
+export const CampusCarousel = ({ campus }: CampusCarouselProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
+  const [dbImages, setDbImages] = useState<CarouselImage[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (isHovered) return;
+    fetchCarouselImages();
+  }, [campus]);
+
+  const fetchCarouselImages = async () => {
+    setIsLoading(true);
+    
+    let query = supabase
+      .from('carousel_images')
+      .select('id, image_url, title, category')
+      .eq('is_active', true)
+      .order('display_order', { ascending: true });
+
+    // If campus is specified, get images for that campus or 'all' campus
+    if (campus) {
+      query = query.or(`campus.eq.${campus},campus.eq.all`);
+    }
+
+    const { data, error } = await query;
+
+    if (!error && data && data.length > 0) {
+      setDbImages(data);
+    }
+    setIsLoading(false);
+  };
+
+  // Use database images if available, otherwise use fallback
+  const carouselItems = dbImages.length > 0 
+    ? dbImages.map(img => ({ image: img.image_url, title: img.title, type: img.category }))
+    : fallbackItems;
+
+  useEffect(() => {
+    if (isHovered || carouselItems.length === 0) return;
     const timer = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % carouselItems.length);
     }, 4000);
     return () => clearInterval(timer);
-  }, [isHovered]);
+  }, [isHovered, carouselItems.length]);
+
+  // Reset index when images change
+  useEffect(() => {
+    setCurrentIndex(0);
+  }, [dbImages]);
 
   const goToPrevious = () => setCurrentIndex((prev) => (prev - 1 + carouselItems.length) % carouselItems.length);
   const goToNext = () => setCurrentIndex((prev) => (prev + 1) % carouselItems.length);
+
+  if (isLoading) {
+    return (
+      <div className="w-full h-[180px] xs:h-[200px] sm:h-[280px] md:h-[350px] lg:h-[400px] rounded-xl sm:rounded-2xl bg-muted animate-pulse" />
+    );
+  }
 
   return (
     <div
@@ -51,6 +108,9 @@ export const CampusCarousel = () => {
             src={carouselItems[currentIndex].image}
             alt={carouselItems[currentIndex].title}
             className="w-full h-full object-cover object-center"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = 'https://placehold.co/800x400?text=Image+Not+Found';
+            }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20" />
           <div className="absolute bottom-0 left-0 right-0 p-2 xs:p-3 sm:p-4 md:p-6">
