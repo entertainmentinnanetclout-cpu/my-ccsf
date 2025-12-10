@@ -1,27 +1,15 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import type { Tables } from '@/integrations/supabase/types';
 
-interface Case {
-  id: string;
-  campus: string;
-  residence: string;
-  type: string;
-  status: string;
-  date: string;
-  officer: string;
-}
+type Incident = Tables<'incidents'>;
 
 interface CasesContextType {
-  cases: Case[];
-  updateCaseStatus: (caseId: string, status: string) => void;
+  cases: Incident[];
+  loading: boolean;
+  updateCaseStatus: (caseId: string, status: string) => Promise<void>;
+  refreshCases: () => Promise<void>;
 }
-
-const mockCases: Case[] = [
-  { id: "C-1221", campus: "Main", residence: "Zeddishoef", type: "GBV", status: "Pending", date: "2025-11-01", officer: "J. Doe" },
-  { id: "C-1222", campus: "Arcadia", residence: "Denise", type: "Violence", status: "Resolved", date: "2025-10-30", officer: "A. Smith" },
-  { id: "C-1223", campus: "Arts", residence: "Tempo", type: "Theft", status: "Assigned", date: "2025-10-29", officer: "P. Jones" },
-  { id: "C-1224", campus: "Mbombela", residence: "Marabastad", type: "Misconduct", status: "Pending", date: "2025-10-27", officer: "S. Lee" },
-  { id: "C-1225", campus: "Main", residence: "Koljanner", type: "Other", status: "Under Investigation", date: "2025-10-26", officer: "J. Doe" },
-];
 
 const CasesContext = createContext<CasesContextType | null>(null);
 
@@ -30,16 +18,74 @@ interface CasesProviderProps {
 }
 
 export const CasesProvider: React.FC<CasesProviderProps> = ({ children }) => {
-  const [cases, setCases] = useState<Case[]>(mockCases);
+  const [cases, setCases] = useState<Incident[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const updateCaseStatus = (caseId: string, status: string) => {
-    setCases((prevCases) =>
-      prevCases.map((c) => (c.id === caseId ? { ...c, status } : c))
-    );
+  const fetchCases = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('incidents')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching cases:', error);
+    } else {
+      setCases(data || []);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchCases();
+
+    // Real-time subscription for case updates
+    const channel = supabase
+      .channel('cases-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'incidents',
+        },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setCases(prev => [payload.new as Incident, ...prev]);
+          } else if (payload.eventType === 'UPDATE') {
+            setCases(prev => 
+              prev.map(c => c.id === (payload.new as Incident).id ? payload.new as Incident : c)
+            );
+          } else if (payload.eventType === 'DELETE') {
+            setCases(prev => prev.filter(c => c.id !== (payload.old as Incident).id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const updateCaseStatus = async (caseId: string, status: string) => {
+    const { error } = await supabase
+      .from('incidents')
+      .update({ status: status as Incident['status'] })
+      .eq('id', caseId);
+
+    if (error) {
+      console.error('Error updating case status:', error);
+      throw error;
+    }
+  };
+
+  const refreshCases = async () => {
+    await fetchCases();
   };
 
   return (
-    <CasesContext.Provider value={{ cases, updateCaseStatus }}>
+    <CasesContext.Provider value={{ cases, loading, updateCaseStatus, refreshCases }}>
       {children}
     </CasesContext.Provider>
   );

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useCases } from '@/contexts/CasesContext';
 import { Input } from '@/components/ui/input';
@@ -6,40 +6,70 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Search, RotateCcw } from 'lucide-react';
+import { Search, RotateCcw, Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 export const ResolveCases = () => {
-  const { cases, updateCaseStatus } = useCases();
-  const [filters, setFilters] = useState({ campus: '', type: '', status: '', search: '' });
+  const { cases, loading, updateCaseStatus } = useCases();
+  const { toast } = useToast();
+  const [filters, setFilters] = useState({ campus: '', category: '', status: '', search: '' });
   const [filteredCases, setFilteredCases] = useState(cases);
+
+  useEffect(() => {
+    setFilteredCases(cases);
+  }, [cases]);
 
   const handleFilter = () => {
     let tempCases = cases;
     if (filters.campus) tempCases = tempCases.filter((c) => c.campus === filters.campus);
-    if (filters.type) tempCases = tempCases.filter((c) => c.type === filters.type);
+    if (filters.category) tempCases = tempCases.filter((c) => c.category === filters.category);
     if (filters.status) tempCases = tempCases.filter((c) => c.status === filters.status);
     if (filters.search) {
       tempCases = tempCases.filter((c) =>
-        Object.values(c).some((val) => val.toString().toLowerCase().includes(filters.search.toLowerCase()))
+        Object.values(c).some((val) => val?.toString().toLowerCase().includes(filters.search.toLowerCase()))
       );
     }
     setFilteredCases(tempCases);
   };
 
   const handleReset = () => {
-    setFilters({ campus: '', type: '', status: '', search: '' });
+    setFilters({ campus: '', category: '', status: '', search: '' });
     setFilteredCases(cases);
+  };
+
+  const handleStatusChange = async (caseId: string, status: string) => {
+    try {
+      await updateCaseStatus(caseId, status);
+      toast({ title: 'Success', description: `Case status updated to ${status}` });
+    } catch {
+      toast({ title: 'Error', description: 'Failed to update case status', variant: 'destructive' });
+    }
   };
 
   const getStatusVariant = (status: string): "default" | "destructive" | "outline" | "secondary" => {
     switch (status) {
-      case 'Resolved': return 'secondary';
-      case 'Pending': return 'outline';
-      case 'Assigned': return 'default';
-      case 'Under Investigation': return 'outline';
+      case 'resolved': return 'secondary';
+      case 'pending': return 'outline';
+      case 'assigned': return 'default';
+      case 'in_progress': return 'outline';
       default: return 'destructive';
     }
   };
+
+  const formatDate = (date: string) => {
+    return new Date(date).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' });
+  };
+
+  if (loading) {
+    return (
+      <Card className="p-6">
+        <div className="flex items-center justify-center gap-2">
+          <Loader2 className="h-5 w-5 animate-spin" />
+          <span>Loading cases...</span>
+        </div>
+      </Card>
+    );
+  }
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col gap-4">
@@ -49,21 +79,21 @@ export const ResolveCases = () => {
           <Select onValueChange={(v) => setFilters({ ...filters, campus: v })}>
             <SelectTrigger><SelectValue placeholder="Campus" /></SelectTrigger>
             <SelectContent>
-              {[...new Set(cases.map(c => c.campus))].map((c, idx) => (
+              {[...new Set(cases.map(c => c.campus).filter(Boolean))].map((c, idx) => (
                 <SelectItem key={`campus-${idx}`} value={c as string}>{c as string}</SelectItem>
               ))}
             </SelectContent>
           </Select>
-          <Select onValueChange={(v) => setFilters({ ...filters, type: v })}>
-            <SelectTrigger><SelectValue placeholder="Case Type" /></SelectTrigger>
+          <Select onValueChange={(v) => setFilters({ ...filters, category: v })}>
+            <SelectTrigger><SelectValue placeholder="Category" /></SelectTrigger>
             <SelectContent>
-              {[...new Set(cases.map(c => c.type))].map((t, idx) => (
-                <SelectItem key={`type-${idx}`} value={t as string}>{t as string}</SelectItem>
+              {[...new Set(cases.map(c => c.category))].map((t, idx) => (
+                <SelectItem key={`category-${idx}`} value={t as string}>{t as string}</SelectItem>
               ))}
             </SelectContent>
           </Select>
           <Select onValueChange={(v) => setFilters({ ...filters, status: v })}>
-            <SelectTrigger><SelectValue placeholder="Case Status" /></SelectTrigger>
+            <SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>
             <SelectContent>
               {[...new Set(cases.map(c => c.status))].map((s, idx) => (
                 <SelectItem key={`status-${idx}`} value={s as string}>{s as string}</SelectItem>
@@ -85,33 +115,38 @@ export const ResolveCases = () => {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b">
-                  <th className="p-2 text-left">Case ID</th>
+                  <th className="p-2 text-left">Title</th>
                   <th className="text-left">Campus</th>
-                  <th className="text-left">Residence</th>
-                  <th className="text-left">Type</th>
+                  <th className="text-left">Category</th>
                   <th className="text-left">Date</th>
                   <th className="text-left">Status</th>
-                  <th className="text-left">Officer</th>
+                  <th className="text-left">Location</th>
                   <th className="text-left">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredCases.map((c) => (
-                  <motion.tr key={c.id} whileHover={{ scale: 1.02 }} className="border-b">
-                    <td className="p-2">{c.id}</td>
-                    <td>{c.campus}</td>
-                    <td>{c.residence}</td>
-                    <td>{c.type}</td>
-                    <td>{c.date}</td>
+                  <motion.tr key={c.id} whileHover={{ scale: 1.01 }} className="border-b">
+                    <td className="p-2 max-w-[200px] truncate">{c.title}</td>
+                    <td>{c.campus || 'N/A'}</td>
+                    <td>{c.category}</td>
+                    <td>{formatDate(c.created_at)}</td>
                     <td><Badge variant={getStatusVariant(c.status)}>{c.status}</Badge></td>
-                    <td>{c.officer}</td>
+                    <td className="max-w-[150px] truncate">{c.location_description || 'N/A'}</td>
                     <td className="flex gap-1 p-1">
-                      <Button size="sm" onClick={() => updateCaseStatus(c.id, 'Resolved')}>✅</Button>
-                      <Button size="sm" onClick={() => updateCaseStatus(c.id, 'Disqualified')}>🚫</Button>
-                      <Button size="sm" onClick={() => updateCaseStatus(c.id, 'Under Investigation')}>🔍</Button>
+                      <Button size="sm" onClick={() => handleStatusChange(c.id, 'resolved')} title="Resolve">✅</Button>
+                      <Button size="sm" onClick={() => handleStatusChange(c.id, 'closed')} title="Close">🚫</Button>
+                      <Button size="sm" onClick={() => handleStatusChange(c.id, 'in_progress')} title="Investigate">🔍</Button>
                     </td>
                   </motion.tr>
                 ))}
+                {filteredCases.length === 0 && (
+                  <tr>
+                    <td colSpan={7} className="p-4 text-center text-muted-foreground">
+                      No cases found
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>

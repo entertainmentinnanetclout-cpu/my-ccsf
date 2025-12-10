@@ -12,7 +12,6 @@ import { AdminAnnouncements } from '@/components/admin/AdminAnnouncements';
 import { ResolveCases } from '@/components/admin/ResolveCases';
 import { StaffCommunication } from '@/components/admin/StaffCommunication';
 import { RealTimeIncidents } from '@/components/admin/RealTimeIncidents';
-import { ResidenceSection } from '@/components/student/ResidenceSection';
 import { IncidentAnalytics } from '@/components/admin/IncidentAnalytics';
 import { CasesProvider } from '@/contexts/CasesContext';
 import { supabase } from '@/integrations/supabase/client';
