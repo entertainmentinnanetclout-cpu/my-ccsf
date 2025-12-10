@@ -14,6 +14,7 @@ import { StaffCommunication } from '@/components/admin/StaffCommunication';
 import { RealTimeIncidents } from '@/components/admin/RealTimeIncidents';
 import { IncidentAnalytics } from '@/components/admin/IncidentAnalytics';
 import { CasesProvider } from '@/contexts/CasesContext';
+import { NotificationBell } from '@/components/shared/NotificationBell';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -113,6 +114,7 @@ const Security = () => {
                     <p className="text-xs text-white/70">Incidents</p>
                   </div>
                 </div>
+                <NotificationBell />
                 <motion.div whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.95 }}>
                   <Button variant="default" size="icon" onClick={() => navigate('/')}>
                     <Home className="h-5 w-5" />

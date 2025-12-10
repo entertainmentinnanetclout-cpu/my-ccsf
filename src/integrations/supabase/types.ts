@@ -561,6 +561,41 @@ export type Database = {
           },
         ]
       }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string | null
+          endpoint: string
+          id: string
+          p256dh: string
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string | null
+          endpoint: string
+          id?: string
+          p256dh: string
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string | null
+          endpoint?: string
+          id?: string
+          p256dh?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_subscriptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -587,6 +622,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_security_officers: {
+        Args: { p_campus?: Database["public"]["Enums"]["campus_location"] }
+        Returns: {
+          campus: Database["public"]["Enums"]["campus_location"]
+          email: string
+          full_name: string
+          id: string
+        }[]
+      }
       get_user_campus: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["campus_location"]
