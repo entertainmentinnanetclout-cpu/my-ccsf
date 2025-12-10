@@ -220,7 +220,7 @@ export const EmergencyReport = () => {
               <AlertTriangle className="h-6 w-6" />
               Emergency Alert
             </DialogTitle>
-            <DialogDescription className="text-base text-muted-foreground">
+            <DialogDescription className="text-base text-white">
               This will immediately send an emergency alert to campus security with your location and profile information.
             </DialogDescription>
           </DialogHeader>
