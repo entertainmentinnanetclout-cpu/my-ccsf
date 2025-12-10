@@ -23,7 +23,7 @@ type Notification = {
   related_incident_id: string | null;
 };
 
-export const NotificationBell = () => {
+export const NotificationBell: React.FC = () => {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
