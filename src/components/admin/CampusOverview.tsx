@@ -3,6 +3,8 @@ import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { 
   AlertTriangle, 
   CheckCircle, 
@@ -10,8 +12,11 @@ import {
   FileText, 
   TrendingUp,
   XCircle,
-  Building2
+  Building2,
+  Upload,
+  RefreshCw
 } from 'lucide-react';
+import { toast } from 'sonner';
 import type { Database } from '@/integrations/supabase/types';
 
 type CampusLocation = Database['public']['Enums']['campus_location'];
@@ -26,17 +31,25 @@ interface CampusMetrics {
   emergencies: number;
 }
 
-const campusData: { id: CampusLocation; name: string; image?: string }[] = [
-  { id: 'pretoria_west_main', name: 'Pretoria West' },
-  { id: 'arcadia', name: 'Arcadia' },
-  { id: 'arts', name: 'Arts Campus' },
-  { id: 'giyani', name: 'Giyani' },
-  { id: 'mbombela', name: 'Mbombela' },
-  { id: 'polokwane', name: 'Polokwane' },
-  { id: 'garankuwa', name: 'Ga-Rankuwa' },
-  { id: 'soshanguve_south', name: 'Soshanguve South' },
-  { id: 'soshanguve_north', name: 'Soshanguve North' },
-  { id: 'emalahleni', name: 'Emalahleni' },
+interface CampusInfo {
+  id: CampusLocation;
+  name: string;
+  fullName: string;
+  image?: string;
+}
+
+// Full campus names as per TUT
+const campusData: CampusInfo[] = [
+  { id: 'pretoria_west_main', name: 'Pretoria West', fullName: 'Pretoria West Campus (Main)' },
+  { id: 'arcadia', name: 'Arcadia', fullName: 'Arcadia Campus' },
+  { id: 'arts', name: 'Arts', fullName: 'Arts Campus' },
+  { id: 'giyani', name: 'Giyani', fullName: 'Giyani Campus' },
+  { id: 'mbombela', name: 'Mbombela', fullName: 'Mbombela Campus' },
+  { id: 'polokwane', name: 'Polokwane', fullName: 'Polokwane Campus' },
+  { id: 'garankuwa', name: 'Ga-Rankuwa', fullName: 'Ga-Rankuwa Campus' },
+  { id: 'soshanguve_south', name: 'Soshanguve South', fullName: 'Soshanguve South Campus' },
+  { id: 'soshanguve_north', name: 'Soshanguve North', fullName: 'Soshanguve North Campus' },
+  { id: 'emalahleni', name: 'eMalahleni', fullName: 'eMalahleni Campus' },
 ];
 
 const MetricCard = ({ 
@@ -63,22 +76,73 @@ export const CampusOverview = () => {
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCampus, setSelectedCampus] = useState<CampusLocation | null>(null);
+  const [campusImages, setCampusImages] = useState<Record<string, string>>({});
+  const [uploadingFor, setUploadingFor] = useState<CampusLocation | null>(null);
+
+  const fetchIncidents = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('incidents')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (!error && data) {
+      setIncidents(data);
+    }
+    setLoading(false);
+  };
+
+  const fetchCampusImages = async () => {
+    // Fetch campus images from carousel_images with category 'campus_entrance'
+    const { data } = await supabase
+      .from('carousel_images')
+      .select('*')
+      .eq('category', 'campus_entrance')
+      .eq('is_active', true);
+
+    if (data) {
+      const imageMap: Record<string, string> = {};
+      data.forEach(img => {
+        imageMap[img.campus] = img.image_url;
+      });
+      setCampusImages(imageMap);
+    }
+  };
 
   useEffect(() => {
-    const fetchIncidents = async () => {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('incidents')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (!error && data) {
-        setIncidents(data);
-      }
-      setLoading(false);
-    };
-
     fetchIncidents();
+    fetchCampusImages();
+
+    // Real-time subscription for incidents
+    const channel = supabase
+      .channel('campus-incidents-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'incidents'
+        },
+        (payload) => {
+          console.log('Real-time incident update:', payload);
+          
+          if (payload.eventType === 'INSERT') {
+            setIncidents(prev => [payload.new as Incident, ...prev]);
+            toast.info('New incident reported');
+          } else if (payload.eventType === 'UPDATE') {
+            setIncidents(prev => 
+              prev.map(inc => inc.id === payload.new.id ? payload.new as Incident : inc)
+            );
+          } else if (payload.eventType === 'DELETE') {
+            setIncidents(prev => prev.filter(inc => inc.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const getCampusMetrics = (campusId: CampusLocation): CampusMetrics => {
@@ -93,22 +157,83 @@ export const CampusOverview = () => {
     };
   };
 
+  const handleImageUpload = async (file: File, campusId: CampusLocation) => {
+    try {
+      setUploadingFor(campusId);
+      
+      const fileExt = file.name.split('.').pop();
+      const fileName = `campus-entrance-${campusId}-${Date.now()}.${fileExt}`;
+      
+      // Upload to storage
+      const { error: uploadError } = await supabase.storage
+        .from('carousel-images')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('carousel-images')
+        .getPublicUrl(fileName);
+
+      // Check if entry exists
+      const { data: existing } = await supabase
+        .from('carousel_images')
+        .select('id')
+        .eq('campus', campusId)
+        .eq('category', 'campus_entrance')
+        .maybeSingle();
+
+      if (existing) {
+        // Update existing
+        await supabase
+          .from('carousel_images')
+          .update({ image_url: urlData.publicUrl, updated_at: new Date().toISOString() })
+          .eq('id', existing.id);
+      } else {
+        // Insert new
+        await supabase
+          .from('carousel_images')
+          .insert({
+            campus: campusId,
+            category: 'campus_entrance',
+            title: `${campusId} Entrance`,
+            image_url: urlData.publicUrl,
+            is_active: true
+          });
+      }
+
+      setCampusImages(prev => ({ ...prev, [campusId]: urlData.publicUrl }));
+      toast.success('Campus image uploaded successfully');
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast.error('Failed to upload image');
+    } finally {
+      setUploadingFor(null);
+    }
+  };
+
   const selectedMetrics = selectedCampus ? getCampusMetrics(selectedCampus) : null;
-  const selectedCampusData = campusData.find(c => c.id === selectedCampus);
+  const selectedCampusInfo = campusData.find(c => c.id === selectedCampus);
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold text-foreground">Campus Overview</h2>
-        <Badge variant="outline" className="text-xs">
-          {incidents.length} total incidents
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="text-xs">
+            {incidents.length} total incidents
+          </Badge>
+          <Button variant="ghost" size="icon" onClick={fetchIncidents} disabled={loading}>
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          </Button>
+        </div>
       </div>
 
       {loading ? (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           {[...Array(10)].map((_, i) => (
-            <div key={i} className="h-48 bg-muted/50 rounded-xl animate-pulse" />
+            <div key={i} className="h-52 bg-muted/50 rounded-xl animate-pulse" />
           ))}
         </div>
       ) : (
@@ -117,6 +242,7 @@ export const CampusOverview = () => {
             const metrics = getCampusMetrics(campus.id);
             const hasEmergencies = metrics.emergencies > 0;
             const hasPending = metrics.pending > 0;
+            const campusImage = campusImages[campus.id];
 
             return (
               <motion.button
@@ -133,14 +259,22 @@ export const CampusOverview = () => {
                       : 'border-border bg-card'
                 }`}
               >
-                {/* Campus Image Placeholder */}
-                <div className="h-20 bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-                  <Building2 className="h-8 w-8 text-primary/40" />
+                {/* Campus Image */}
+                <div className="h-24 bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center overflow-hidden">
+                  {campusImage ? (
+                    <img 
+                      src={campusImage} 
+                      alt={campus.fullName}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <Building2 className="h-8 w-8 text-primary/40" />
+                  )}
                 </div>
 
                 {/* Campus Info */}
                 <div className="p-3 space-y-2">
-                  <h3 className="font-semibold text-sm text-foreground truncate">
+                  <h3 className="font-semibold text-sm text-foreground truncate" title={campus.fullName}>
                     {campus.name}
                   </h3>
 
@@ -191,18 +325,44 @@ export const CampusOverview = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Building2 className="h-5 w-5 text-primary" />
-              {selectedCampusData?.name} Campus
+              {selectedCampusInfo?.fullName}
             </DialogTitle>
           </DialogHeader>
 
-          {selectedMetrics && (
+          {selectedMetrics && selectedCampus && (
             <div className="space-y-4">
-              {/* Campus Image Placeholder */}
-              <div className="h-32 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center border border-border">
-                <div className="text-center text-muted-foreground">
-                  <Building2 className="h-12 w-12 mx-auto mb-2 opacity-40" />
-                  <p className="text-xs">Campus entrance image</p>
-                </div>
+              {/* Campus Image with Upload */}
+              <div className="relative h-36 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center border border-border overflow-hidden group">
+                {campusImages[selectedCampus] ? (
+                  <img 
+                    src={campusImages[selectedCampus]} 
+                    alt={selectedCampusInfo?.fullName}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="text-center text-muted-foreground">
+                    <Building2 className="h-12 w-12 mx-auto mb-2 opacity-40" />
+                    <p className="text-xs">No campus image</p>
+                  </div>
+                )}
+                
+                {/* Upload Overlay */}
+                <label className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer flex items-center justify-center">
+                  <div className="text-center text-white">
+                    <Upload className="h-6 w-6 mx-auto mb-1" />
+                    <p className="text-xs">{uploadingFor === selectedCampus ? 'Uploading...' : 'Upload Image'}</p>
+                  </div>
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleImageUpload(file, selectedCampus);
+                    }}
+                    disabled={uploadingFor === selectedCampus}
+                  />
+                </label>
               </div>
 
               {/* Metrics Grid */}
@@ -245,10 +405,9 @@ export const CampusOverview = () => {
                 />
               </div>
 
-              {/* Quick Actions could go here */}
               <div className="pt-2 border-t border-border">
                 <p className="text-xs text-muted-foreground text-center">
-                  Click to view detailed campus incidents
+                  Real-time data • Click to view detailed incidents
                 </p>
               </div>
             </div>
