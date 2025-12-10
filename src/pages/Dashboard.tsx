@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { motion } from 'framer-motion';
-import { Shield, Plus, List, LogOut, Menu, Map, MessageCircle, Home, MapPin } from 'lucide-react';
+import { Shield, Plus, List, LogOut, Menu, Map, MessageCircle, Home, MapPin, FileText } from 'lucide-react';
 import tutLogo from '@/assets/tut-logo.png';
 import { ReportIncident } from '@/components/student/ReportIncident';
 import { IncidentList } from '@/components/student/IncidentList';
@@ -12,11 +12,12 @@ import { CampusMap } from '@/components/student/CampusMap';
 import { CampusCarousel } from '@/components/student/CampusCarousel';
 import { NewsFeed } from '@/components/student/NewsFeed';
 import { StudentChat } from '@/components/student/StudentChat';
+import { MyReports } from '@/components/student/MyReports';
 import { supabase } from '@/integrations/supabase/client';
 
 const Dashboard = () => {
   const { user, signOut } = useAuth();
-  const [activeView, setActiveView] = useState<'home' | 'report' | 'incidents' | 'map' | 'messages'>('home');
+  const [activeView, setActiveView] = useState<'home' | 'report' | 'incidents' | 'map' | 'messages' | 'myreports'>('home');
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [userCampus, setUserCampus] = useState<string>('Polokwane Campus');
 
@@ -136,7 +137,7 @@ const Dashboard = () => {
           transition={{ delay: 0.4, duration: 0.4 }}
         >
           <Card className="p-1.5 sm:p-2 mb-4 sm:mb-6 shadow-large">
-            <div className="grid grid-cols-5 gap-1 sm:gap-2">
+            <div className="grid grid-cols-6 gap-1 sm:gap-2">
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                 <Button
                   variant={activeView === 'home' ? 'default' : 'ghost'}
@@ -157,6 +158,17 @@ const Dashboard = () => {
                 >
                   <List className="h-4 w-4 sm:mr-2" />
                   <span className="hidden sm:inline">Incidents</span>
+                </Button>
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button
+                  variant={activeView === 'myreports' ? 'default' : 'ghost'}
+                  onClick={() => setActiveView('myreports')}
+                  className="w-full transition-all text-xs sm:text-sm px-1 sm:px-3"
+                  size="sm"
+                >
+                  <FileText className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">My Reports</span>
                 </Button>
               </motion.div>
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
@@ -211,6 +223,7 @@ const Dashboard = () => {
             </div>
           )}
           {activeView === 'incidents' && <IncidentList />}
+          {activeView === 'myreports' && <MyReports />}
           {activeView === 'report' && <ReportIncident />}
           {activeView === 'map' && <CampusMap />}
           {activeView === 'messages' && <StudentChat />}
