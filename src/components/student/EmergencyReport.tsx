@@ -5,30 +5,81 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
-import { AlertTriangle, Phone } from 'lucide-react';
+import { AlertTriangle, Phone, MapPin, Loader2 } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+
+// Reverse geocode using free Nominatim API (OpenStreetMap)
+const reverseGeocode = async (lat: number, lng: number): Promise<string> => {
+  try {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
+      {
+        headers: {
+          'Accept-Language': 'en',
+          'User-Agent': 'CCSF-Campus-Safety-App'
+        }
+      }
+    );
+    const data = await response.json();
+    
+    if (data.display_name) {
+      return data.display_name;
+    }
+    return `Coordinates: ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+  } catch (error) {
+    console.error('Geocoding error:', error);
+    return `Coordinates: ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+  }
+};
 
 export const EmergencyReport = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [sending, setSending] = useState(false);
+  const [consentAgreed, setConsentAgreed] = useState(false);
+  const [gettingLocation, setGettingLocation] = useState(false);
+  const [currentAddress, setCurrentAddress] = useState<string>('');
 
   const sendEmergencyReport = async () => {
+    if (!consentAgreed) {
+      toast({
+        title: 'Consent Required',
+        description: 'Please confirm the emergency declaration before sending.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setSending(true);
+    setGettingLocation(true);
 
     try {
       let location = { lat: null as number | null, lng: null as number | null };
+      let locationAddress = 'Location unavailable';
+      
       if (navigator.geolocation) {
         try {
           const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 });
+            navigator.geolocation.getCurrentPosition(resolve, reject, { 
+              timeout: 10000,
+              enableHighAccuracy: true,
+              maximumAge: 0
+            });
           });
           location = {
             lat: position.coords.latitude,
             lng: position.coords.longitude,
           };
+          
+          // Get readable address from coordinates
+          setGettingLocation(false);
+          locationAddress = await reverseGeocode(location.lat!, location.lng!);
+          setCurrentAddress(locationAddress);
+          
         } catch (error) {
-          console.log('Location access denied or unavailable');
+          console.log('Location access denied or unavailable:', error);
+          setGettingLocation(false);
         }
       }
 
@@ -38,19 +89,37 @@ export const EmergencyReport = () => {
         .eq('id', user?.id)
         .single();
 
-      let description = 'Emergency situation reported. User unable to provide details. Immediate assistance required.\n\n';
-      description += `Student: ${profile?.first_name || 'Unknown'} ${profile?.last_name || ''}\n`;
-      description += `Phone: ${profile?.phone_number || 'Not provided'}\n`;
+      // Build comprehensive emergency description
+      let description = '🚨 EMERGENCY SITUATION REPORTED\n\n';
+      description += '═══════════════════════════════\n';
+      description += 'STUDENT INFORMATION:\n';
+      description += `• Name: ${profile?.first_name || 'Unknown'} ${profile?.last_name || ''}\n`;
+      description += `• Student Number: ${profile?.student_number || 'Not provided'}\n`;
+      description += `• Phone: ${profile?.phone_number || 'Not provided'}\n`;
+      description += `• Email: ${profile?.email || 'Not provided'}\n`;
+      description += '═══════════════════════════════\n\n';
+      description += 'EMERGENCY CONTACT:\n';
+      description += `• Name: ${profile?.emergency_contact_name || 'Not provided'}\n`;
+      description += `• Phone: ${profile?.emergency_contact_phone || 'Not provided'}\n`;
+      description += `• Relationship: ${profile?.emergency_contact_relationship || 'Not provided'}\n`;
+      description += '═══════════════════════════════\n\n';
+      description += 'MEDICAL INFORMATION:\n';
+      description += `• Blood Type: ${profile?.blood_type || 'Unknown'}\n`;
+      description += `• Allergies: ${profile?.allergies || 'None specified'}\n`;
+      description += `• Chronic Conditions: ${profile?.chronic_conditions || 'None specified'}\n`;
+      description += '═══════════════════════════════\n\n';
+      description += '⚠️ User unable to provide details. Immediate assistance required.\n';
+      description += 'Student has confirmed this is a genuine emergency.';
 
       const { error } = await supabase.from('incidents').insert({
-        title: '🚨 EMERGENCY ALERT',
+        title: '🚨 EMERGENCY ALERT - IMMEDIATE RESPONSE REQUIRED',
         description,
         category: 'Assault common',
         reporter_id: user?.id,
         is_anonymous: false,
         location_lat: location.lat,
         location_lng: location.lng,
-        location_description: 'Emergency location',
+        location_description: locationAddress,
       });
 
       if (error) throw error;
@@ -62,6 +131,8 @@ export const EmergencyReport = () => {
       });
 
       setOpen(false);
+      setConsentAgreed(false);
+      setCurrentAddress('');
     } catch (error: any) {
       toast({
         title: 'Error',
@@ -70,6 +141,7 @@ export const EmergencyReport = () => {
       });
     } finally {
       setSending(false);
+      setGettingLocation(false);
     }
   };
 
@@ -91,7 +163,13 @@ export const EmergencyReport = () => {
         </Button>
       </motion.div>
 
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={(isOpen) => {
+        setOpen(isOpen);
+        if (!isOpen) {
+          setConsentAgreed(false);
+          setCurrentAddress('');
+        }
+      }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-2xl text-destructive">
@@ -109,11 +187,56 @@ export const EmergencyReport = () => {
                 Emergency alert will include:
               </p>
               <ul className="text-sm text-muted-foreground space-y-1">
-                <li>• Your name and student number</li>
-                <li>• Your phone number</li>
-                <li>• Your current location (if available)</li>
-                <li>• Timestamp of alert</li>
+                <li className="flex items-center gap-2">
+                  <span>•</span> Your name and student number
+                </li>
+                <li className="flex items-center gap-2">
+                  <span>•</span> Your phone number
+                </li>
+                <li className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-primary" />
+                  <span className="font-medium text-foreground">Your live location (full address)</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <span>•</span> Emergency contact details
+                </li>
+                <li className="flex items-center gap-2">
+                  <span>•</span> Medical information (blood type, allergies)
+                </li>
               </ul>
+            </div>
+
+            {/* Current location preview */}
+            {currentAddress && (
+              <div className="p-3 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg">
+                <p className="text-xs font-medium text-green-700 dark:text-green-400 mb-1">
+                  📍 Your Location:
+                </p>
+                <p className="text-sm text-green-800 dark:text-green-300">
+                  {currentAddress}
+                </p>
+              </div>
+            )}
+
+            {/* Consent Declaration */}
+            <div className="p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg space-y-3">
+              <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                ⚠️ Emergency Declaration
+              </p>
+              <p className="text-xs text-amber-700 dark:text-amber-300">
+                By sending this alert, I confirm that this is a genuine emergency requiring immediate assistance. 
+                I understand that misuse of the emergency system may result in disciplinary action.
+              </p>
+              <div className="flex items-start space-x-3 pt-2">
+                <Checkbox 
+                  id="emergency-consent" 
+                  checked={consentAgreed}
+                  onCheckedChange={(checked) => setConsentAgreed(checked === true)}
+                />
+                <label htmlFor="emergency-consent" className="text-sm cursor-pointer text-amber-900 dark:text-amber-100 font-medium">
+                  I confirm this is a genuine emergency
+                </label>
+              </div>
             </div>
 
             <div className="bg-muted/50 rounded-lg p-4 flex items-start gap-3">
@@ -138,9 +261,16 @@ export const EmergencyReport = () => {
               variant="destructive"
               className="flex-1"
               onClick={sendEmergencyReport}
-              disabled={sending}
+              disabled={sending || !consentAgreed}
             >
-              {sending ? 'Sending...' : 'Send Emergency Alert'}
+              {sending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  {gettingLocation ? 'Getting Location...' : 'Sending...'}
+                </>
+              ) : (
+                'Send Emergency Alert'
+              )}
             </Button>
           </div>
         </DialogContent>
