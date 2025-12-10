@@ -300,6 +300,7 @@ export type Database = {
       }
       incident_location_updates: {
         Row: {
+          accuracy_meters: number | null
           created_at: string
           id: string
           incident_id: string
@@ -308,6 +309,7 @@ export type Database = {
           location_lng: number
         }
         Insert: {
+          accuracy_meters?: number | null
           created_at?: string
           id?: string
           incident_id: string
@@ -316,6 +318,7 @@ export type Database = {
           location_lng: number
         }
         Update: {
+          accuracy_meters?: number | null
           created_at?: string
           id?: string
           incident_id?: string
