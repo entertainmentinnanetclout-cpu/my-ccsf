@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { LatestCases } from './LatestCases';
+import { CampusOverview } from './CampusOverview';
 import { EmergencyCases } from './EmergencyCases';
 import { AnimatedCounter } from './AnimatedCounter';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts';
@@ -570,13 +570,11 @@ export const AdminOverview = () => {
         </Dialog>
       </div>
 
-      {/* Cases Section */}
+      {/* Campus Overview Section for Super Admin */}
       {!selectedView && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <div className="lg:col-span-2">
-            <LatestCases />
-          </div>
-          <div>
+        <div className="space-y-6">
+          <CampusOverview />
+          <div className="mt-4">
             <EmergencyCases />
           </div>
         </div>
