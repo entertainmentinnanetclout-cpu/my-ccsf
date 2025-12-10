@@ -13,6 +13,7 @@ import { CampusCarousel } from '@/components/student/CampusCarousel';
 import { NewsFeed } from '@/components/student/NewsFeed';
 import { StudentChat } from '@/components/student/StudentChat';
 import { MyReports } from '@/components/student/MyReports';
+import { NotificationBell } from '@/components/shared/NotificationBell';
 import { supabase } from '@/integrations/supabase/client';
 
 const Dashboard = () => {
@@ -87,6 +88,8 @@ const Dashboard = () => {
                   <MapPin className="h-3.5 w-3.5 text-white" />
                   <span className="text-xs sm:text-sm font-medium text-white">{userCampus}</span>
                 </div>
+
+                <NotificationBell />
 
                 <motion.div whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.95 }}>
                   <Button variant="default" size="icon" onClick={signOut} className="hidden sm:flex">

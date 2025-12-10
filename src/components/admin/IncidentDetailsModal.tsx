@@ -109,14 +109,26 @@ export const IncidentDetailsModal = ({ incidentId, isOpen, onClose }: IncidentDe
   };
 
   const fetchStaffMembers = async () => {
-    // Fetch security staff for assignment
+    // Fetch security officers using the database function
     const { data, error } = await supabase
-      .from('profiles')
-      .select('id, full_name, email')
-      .limit(50);
+      .rpc('get_security_officers');
 
     if (!error && data) {
-      setStaffMembers(data);
+      setStaffMembers(data.map((s: { id: string; full_name: string | null; email: string }) => ({
+        id: s.id,
+        full_name: s.full_name,
+        email: s.email
+      })));
+    } else {
+      console.error('Error fetching security officers:', error);
+      // Fallback to fetching all profiles if function fails
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .limit(50);
+      if (profiles) {
+        setStaffMembers(profiles);
+      }
     }
   };
 
