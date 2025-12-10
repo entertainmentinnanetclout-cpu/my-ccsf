@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -10,8 +10,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
-import { MapPin, Loader2, Camera, Navigation, CheckCircle2 } from 'lucide-react';
+import { MapPin, Loader2, Camera, Navigation, CheckCircle2, PenTool, Trash2 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import { Checkbox } from '@/components/ui/checkbox';
+import SignatureCanvas from 'react-signature-canvas';
 import type { Database } from '@/integrations/supabase/types';
 
 type IncidentCategory = Database['public']['Enums']['incident_category'];
@@ -58,6 +60,11 @@ export const ReportIncident = () => {
 
   const [files, setFiles] = useState<File[]>([]);
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
+  
+  // Consent and signature states
+  const [consentAgreed, setConsentAgreed] = useState(false);
+  const [signatureData, setSignatureData] = useState<string>('');
+  const signatureRef = useRef<SignatureCanvas>(null);
 
   // Auto-fetch location on component mount
   useEffect(() => {
@@ -144,6 +151,17 @@ export const ReportIncident = () => {
     }
   };
 
+  const clearSignature = () => {
+    signatureRef.current?.clear();
+    setSignatureData('');
+  };
+
+  const saveSignature = () => {
+    if (signatureRef.current && !signatureRef.current.isEmpty()) {
+      setSignatureData(signatureRef.current.toDataURL());
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -167,10 +185,24 @@ export const ReportIncident = () => {
         return;
       }
 
+      // Validate consent and signature for non-anonymous reports
+      if (!formData.isAnonymous) {
+        if (!consentAgreed) {
+          toast({ title: 'Please agree to the consent declaration', variant: 'destructive' });
+          setLoading(false);
+          return;
+        }
+        if (!signatureData) {
+          toast({ title: 'Please sign the consent form', variant: 'destructive' });
+          setLoading(false);
+          return;
+        }
+      }
+
       // Build full location description including address
       let fullLocationDescription = formData.locationDescription;
       if (locationAddress && !fullLocationDescription.includes(locationAddress)) {
-        fullLocationDescription = fullLocationDescription 
+        fullLocationDescription = fullLocationDescription
           ? `${fullLocationDescription} | GPS: ${locationAddress}`
           : locationAddress;
       }
@@ -187,6 +219,7 @@ export const ReportIncident = () => {
           is_anonymous: formData.isAnonymous,
           reporter_id: formData.isAnonymous ? null : user?.id,
           campus: userProfile?.campus as any || null,
+          signature_data: formData.isAnonymous ? null : signatureData,
         })
         .select()
         .single();
@@ -227,6 +260,9 @@ export const ReportIncident = () => {
       setFiles([]);
       setLocationAddress('');
       setLocation(null);
+      setConsentAgreed(false);
+      setSignatureData('');
+      signatureRef.current?.clear();
       
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to submit report';
@@ -387,9 +423,88 @@ export const ReportIncident = () => {
               </div>
               <Switch
                 checked={formData.isAnonymous}
-                onCheckedChange={(checked) => setFormData({ ...formData, isAnonymous: checked })}
+                onCheckedChange={(checked) => {
+                  setFormData({ ...formData, isAnonymous: checked });
+                  if (checked) {
+                    setConsentAgreed(false);
+                    setSignatureData('');
+                    signatureRef.current?.clear();
+                  }
+                }}
               />
             </div>
+
+            {/* Consent Declaration - Only show for non-anonymous reports */}
+            {!formData.isAnonymous && (
+              <div className="space-y-4 p-4 border-2 border-primary/20 rounded-lg bg-primary/5">
+                <div className="flex items-start gap-2">
+                  <PenTool className="h-5 w-5 text-primary mt-0.5" />
+                  <div>
+                    <h3 className="font-semibold text-lg">Consent Declaration</h3>
+                    <p className="text-sm text-muted-foreground">Please read and sign to validate your report</p>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-background rounded-lg border text-sm space-y-2">
+                  <p className="font-medium">By signing below, I hereby declare that:</p>
+                  <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+                    <li>All information provided in this incident report is true and accurate to the best of my knowledge.</li>
+                    <li>I understand that filing a false report is a serious offense and may result in disciplinary action.</li>
+                    <li>I consent to TUT Security and relevant authorities investigating this matter.</li>
+                    <li>I understand that my identity may be disclosed to relevant parties during the investigation process.</li>
+                    <li>I agree to cooperate fully with any investigation that may follow.</li>
+                  </ul>
+                </div>
+
+                <div className="flex items-start space-x-3 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
+                  <Checkbox 
+                    id="consent" 
+                    checked={consentAgreed}
+                    onCheckedChange={(checked) => setConsentAgreed(checked === true)}
+                  />
+                  <label htmlFor="consent" className="text-sm cursor-pointer">
+                    I have read, understood, and agree to the above declaration. I accept full responsibility for the accuracy of this report.
+                  </label>
+                </div>
+
+                {/* Signature Pad */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label>Your Signature *</Label>
+                    <Button 
+                      type="button" 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={clearSignature}
+                      className="text-muted-foreground"
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      Clear
+                    </Button>
+                  </div>
+                  <div className="border-2 border-dashed rounded-lg bg-white dark:bg-gray-900 overflow-hidden">
+                    <SignatureCanvas
+                      ref={signatureRef}
+                      canvasProps={{
+                        className: 'w-full h-32 cursor-crosshair',
+                        style: { width: '100%', height: '128px' }
+                      }}
+                      backgroundColor="transparent"
+                      penColor="black"
+                      onEnd={saveSignature}
+                    />
+                  </div>
+                  {signatureData ? (
+                    <p className="text-xs text-green-600 flex items-center gap-1">
+                      <CheckCircle2 className="h-3 w-3" />
+                      Signature captured
+                    </p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">Sign above using your mouse or finger</p>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Submit Button */}
             <Button type="submit" disabled={loading} className="w-full" size="lg">
