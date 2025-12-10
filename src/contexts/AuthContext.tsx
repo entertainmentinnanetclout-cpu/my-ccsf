@@ -38,17 +38,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchUserRoleAndProfile = useCallback(async (userId: string) => {
     try {
-      // Fetch role from user_roles table
+      // Fetch all roles from user_roles table
       const { data: roleData } = await supabase
         .from('user_roles')
         .select('role')
-        .eq('user_id', userId)
-        .order('role', { ascending: true })
-        .limit(1)
-        .maybeSingle();
+        .eq('user_id', userId);
 
-      // Use database role names directly
-      const dbRole = roleData?.role as UserRole || null;
+      // Prioritize roles: admin > security > student
+      let dbRole: UserRole = null;
+      if (roleData && roleData.length > 0) {
+        const roles = roleData.map(r => r.role);
+        if (roles.includes('admin')) {
+          dbRole = 'admin';
+        } else if (roles.includes('security')) {
+          dbRole = 'security';
+        } else if (roles.includes('student')) {
+          dbRole = 'student';
+        }
+      }
       setUserRole(dbRole);
 
       // Fetch profile data
