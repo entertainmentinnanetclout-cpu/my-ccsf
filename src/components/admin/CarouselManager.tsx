@@ -106,8 +106,8 @@ export const CarouselManager = () => {
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      toast({ title: 'File too large', description: 'Maximum size is 5MB', variant: 'destructive' });
+    if (file.size > 15 * 1024 * 1024) {
+      toast({ title: 'File too large', description: 'Maximum size is 15MB', variant: 'destructive' });
       return;
     }
 
@@ -158,7 +158,19 @@ export const CarouselManager = () => {
         toast({ title: 'Image updated successfully' });
       }
     } else {
+      // Check campus limit: 15 images per campus (5 Campus + 10 Residence images)
       const campusImages = images.filter(i => i.campus === formData.campus);
+      const MAX_IMAGES_PER_CAMPUS = 15;
+      
+      if (campusImages.length >= MAX_IMAGES_PER_CAMPUS) {
+        toast({ 
+          title: 'Campus limit reached', 
+          description: `Maximum ${MAX_IMAGES_PER_CAMPUS} images per campus (5 Campus + 2 per 5 residences)`, 
+          variant: 'destructive' 
+        });
+        return;
+      }
+      
       const maxOrder = campusImages.length > 0 ? Math.max(...campusImages.map(i => i.display_order)) + 1 : 0;
       
       const { error } = await supabase
@@ -220,6 +232,17 @@ export const CarouselManager = () => {
 
   const handleDuplicate = async (image: CarouselImage) => {
     const campusImages = images.filter(i => i.campus === image.campus);
+    const MAX_IMAGES_PER_CAMPUS = 15;
+    
+    if (campusImages.length >= MAX_IMAGES_PER_CAMPUS) {
+      toast({ 
+        title: 'Campus limit reached', 
+        description: `Maximum ${MAX_IMAGES_PER_CAMPUS} images per campus`, 
+        variant: 'destructive' 
+      });
+      return;
+    }
+    
     const maxOrder = campusImages.length > 0 ? Math.max(...campusImages.map(i => i.display_order)) + 1 : 0;
 
     const { error } = await supabase
@@ -371,7 +394,11 @@ export const CarouselManager = () => {
               <div className="p-4 border-b bg-muted/30">
                 <div className="flex items-center justify-between">
                   <h3 className="font-semibold">{getCampusLabel(campus)}</h3>
-                  <Badge variant="secondary">{campusImages.length} images</Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={campusImages.length >= 15 ? 'destructive' : 'secondary'}>
+                      {campusImages.length}/15 images
+                    </Badge>
+                  </div>
                 </div>
               </div>
               <CardContent className="p-4">
