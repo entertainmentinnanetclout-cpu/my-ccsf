@@ -274,7 +274,10 @@ export const CampusOverview = () => {
 
                 {/* Campus Info */}
                 <div className="p-3 space-y-2">
-                  <h3 className="font-semibold text-sm text-foreground truncate" title={campus.fullName}>
+                  <h3 
+                    className="font-bold text-sm text-destructive truncate animate-pulse" 
+                    title={campus.fullName}
+                  >
                     {campus.name}
                   </h3>
 
