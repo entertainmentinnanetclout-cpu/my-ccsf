@@ -7,7 +7,7 @@ import {
   Users, Clock, CheckCircle, AlertCircle, TrendingUp, 
   Video, VideoOff, Wifi, AlertTriangle, Eye, BarChart3 
 } from 'lucide-react';
-import { Slider } from './Slider';
+
 import { LatestCases } from './LatestCases';
 import { EmergencyCases } from './EmergencyCases';
 import { AnimatedCounter } from './AnimatedCounter';
@@ -235,7 +235,7 @@ export const AdminOverview = () => {
         </Dialog>
       </div>
 
-      <Slider />
+      
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2">
