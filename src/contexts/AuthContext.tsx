@@ -70,19 +70,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const redirectBasedOnRole = useCallback((role: UserRole) => {
-    const publicPaths = ['/', '/auth'];
     const currentPath = location.pathname;
 
-    // Don't redirect if on public paths
-    if (publicPaths.includes(currentPath)) return;
-
-    // Redirect based on role
-    if (role === 'student' && !currentPath.startsWith('/dashboard')) {
-      navigate('/dashboard', { replace: true });
-    } else if (role === 'security' && !currentPath.startsWith('/security')) {
-      navigate('/security', { replace: true });
-    } else if (role === 'admin' && !currentPath.startsWith('/admin')) {
-      navigate('/admin', { replace: true });
+    // Redirect to correct portal based on role
+    if (role === 'admin') {
+      if (!currentPath.startsWith('/admin')) {
+        navigate('/admin', { replace: true });
+      }
+    } else if (role === 'security') {
+      if (!currentPath.startsWith('/security') && !currentPath.startsWith('/admin')) {
+        navigate('/security', { replace: true });
+      }
+    } else if (role === 'student') {
+      if (!currentPath.startsWith('/dashboard')) {
+        navigate('/dashboard', { replace: true });
+      }
     }
   }, [location.pathname, navigate]);
 
