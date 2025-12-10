@@ -59,9 +59,9 @@ const Auth = () => {
     if (user && userRole) {
       if (userRole === 'student') {
         navigate('/dashboard', { replace: true });
-      } else if (userRole === 'campus_admin') {
+      } else if (userRole === 'security') {
         navigate('/security', { replace: true });
-      } else if (userRole === 'super_admin') {
+      } else if (userRole === 'admin') {
         navigate('/admin', { replace: true });
       }
     }

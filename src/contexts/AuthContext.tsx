@@ -3,7 +3,8 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate, useLocation } from 'react-router-dom';
 
-type UserRole = 'student' | 'campus_admin' | 'super_admin' | null;
+// Use actual database role names
+type UserRole = 'student' | 'admin' | 'security' | null;
 
 interface UserProfile {
   id: string;
@@ -46,19 +47,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .limit(1)
         .maybeSingle();
 
-      // Map database roles to application roles
-      // 'admin' in DB = super_admin (global access)
-      // 'security' in DB = campus_admin (campus-specific access)
-      // 'student' in DB = student
-      let mappedRole: UserRole = null;
-      if (roleData?.role === 'admin') {
-        mappedRole = 'super_admin';
-      } else if (roleData?.role === 'security') {
-        mappedRole = 'campus_admin';
-      } else if (roleData?.role === 'student') {
-        mappedRole = 'student';
-      }
-      setUserRole(mappedRole);
+      // Use database role names directly
+      const dbRole = roleData?.role as UserRole || null;
+      setUserRole(dbRole);
 
       // Fetch profile data
       const { data: profileData } = await supabase
@@ -71,7 +62,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUserProfile(profileData);
       }
 
-      return mappedRole;
+      return dbRole;
     } catch (error) {
       console.error('Error fetching user role/profile:', error);
       return null;
@@ -88,9 +79,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Redirect based on role
     if (role === 'student' && !currentPath.startsWith('/dashboard')) {
       navigate('/dashboard', { replace: true });
-    } else if (role === 'campus_admin' && !currentPath.startsWith('/security')) {
+    } else if (role === 'security' && !currentPath.startsWith('/security')) {
       navigate('/security', { replace: true });
-    } else if (role === 'super_admin' && !currentPath.startsWith('/admin')) {
+    } else if (role === 'admin' && !currentPath.startsWith('/admin')) {
       navigate('/admin', { replace: true });
     }
   }, [location.pathname, navigate]);
@@ -146,8 +137,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     navigate('/auth');
   }, [navigate]);
 
-  const isSuperAdmin = userRole === 'super_admin';
-  const isCampusAdmin = userRole === 'campus_admin';
+  // Helper booleans for convenience
+  const isSuperAdmin = userRole === 'admin';
+  const isCampusAdmin = userRole === 'security';
   const isStudent = userRole === 'student';
 
   return (

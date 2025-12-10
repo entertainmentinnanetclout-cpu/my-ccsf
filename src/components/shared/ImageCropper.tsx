@@ -1,9 +1,11 @@
 import { useState, useRef, useCallback } from 'react';
 import ReactCrop, { Crop, PixelCrop, centerCrop, makeAspectCrop } from 'react-image-crop';
+import imageCompression from 'browser-image-compression';
 import 'react-image-crop/dist/ReactCrop.css';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Crop as CropIcon, RotateCcw, Check, X } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Crop as CropIcon, RotateCcw, Check, X, Loader2 } from 'lucide-react';
 
 interface ImageCropperProps {
   open: boolean;
@@ -11,6 +13,7 @@ interface ImageCropperProps {
   imageSrc: string;
   aspectRatio?: number;
   onCropComplete: (croppedBlob: Blob) => void;
+  maxSizeKB?: number;
 }
 
 function centerAspectCrop(
@@ -39,11 +42,13 @@ export const ImageCropper = ({
   imageSrc,
   aspectRatio = 16 / 9,
   onCropComplete,
+  maxSizeKB = 500,
 }: ImageCropperProps) => {
   const [crop, setCrop] = useState<Crop>();
   const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
   const imgRef = useRef<HTMLImageElement>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [processingStatus, setProcessingStatus] = useState('');
 
   const onImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
     const { width, height } = e.currentTarget;
@@ -54,6 +59,7 @@ export const ImageCropper = ({
     if (!completedCrop || !imgRef.current) return;
 
     setIsProcessing(true);
+    setProcessingStatus('Cropping...');
 
     try {
       const image = imgRef.current;
@@ -67,8 +73,19 @@ export const ImageCropper = ({
       const scaleX = image.naturalWidth / image.width;
       const scaleY = image.naturalHeight / image.height;
 
-      canvas.width = completedCrop.width * scaleX;
-      canvas.height = completedCrop.height * scaleY;
+      // Limit max dimensions for performance
+      const maxDimension = 1920;
+      let targetWidth = completedCrop.width * scaleX;
+      let targetHeight = completedCrop.height * scaleY;
+
+      if (targetWidth > maxDimension || targetHeight > maxDimension) {
+        const ratio = Math.min(maxDimension / targetWidth, maxDimension / targetHeight);
+        targetWidth *= ratio;
+        targetHeight *= ratio;
+      }
+
+      canvas.width = targetWidth;
+      canvas.height = targetHeight;
 
       ctx.drawImage(
         image,
@@ -78,24 +95,46 @@ export const ImageCropper = ({
         completedCrop.height * scaleY,
         0,
         0,
-        canvas.width,
-        canvas.height
+        targetWidth,
+        targetHeight
       );
 
-      canvas.toBlob(
-        (blob) => {
-          if (blob) {
-            onCropComplete(blob);
-            onClose();
-          }
-          setIsProcessing(false);
-        },
-        'image/jpeg',
-        0.9
+      // Convert canvas to blob
+      const croppedBlob = await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob(
+          (blob) => {
+            if (blob) resolve(blob);
+            else reject(new Error('Failed to create blob'));
+          },
+          'image/jpeg',
+          0.92
+        );
+      });
+
+      setProcessingStatus('Compressing...');
+
+      // Compress the image
+      const compressedFile = await imageCompression(
+        new File([croppedBlob], 'image.jpg', { type: 'image/jpeg' }),
+        {
+          maxSizeMB: maxSizeKB / 1024,
+          maxWidthOrHeight: 1920,
+          useWebWorker: true,
+          fileType: 'image/jpeg',
+        }
       );
+
+      const originalSize = (croppedBlob.size / 1024).toFixed(0);
+      const compressedSize = (compressedFile.size / 1024).toFixed(0);
+      console.log(`Image compressed: ${originalSize}KB → ${compressedSize}KB`);
+
+      onCropComplete(compressedFile);
+      onClose();
     } catch (error) {
-      console.error('Error cropping image:', error);
+      console.error('Error processing image:', error);
+    } finally {
       setIsProcessing(false);
+      setProcessingStatus('');
     }
   };
 
@@ -112,7 +151,10 @@ export const ImageCropper = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <CropIcon className="h-5 w-5 text-primary" />
-            Crop Image
+            Crop & Compress Image
+            <Badge variant="outline" className="text-xs ml-2">
+              Max {maxSizeKB}KB
+            </Badge>
           </DialogTitle>
         </DialogHeader>
 
@@ -131,13 +173,12 @@ export const ImageCropper = ({
                 alt="Crop preview"
                 onLoad={onImageLoad}
                 className="max-w-full"
-                crossOrigin="anonymous"
               />
             </ReactCrop>
           </div>
 
           <p className="text-xs text-muted-foreground">
-            Drag to adjust the crop area. Aspect ratio: {aspectRatio.toFixed(2)}
+            Drag to adjust. Auto-compressed for optimal performance.
           </p>
         </div>
 
@@ -151,8 +192,17 @@ export const ImageCropper = ({
             Cancel
           </Button>
           <Button onClick={handleCropComplete} disabled={isProcessing || !completedCrop}>
-            <Check className="h-4 w-4 mr-2" />
-            {isProcessing ? 'Processing...' : 'Apply Crop'}
+            {isProcessing ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                {processingStatus}
+              </>
+            ) : (
+              <>
+                <Check className="h-4 w-4 mr-2" />
+                Apply
+              </>
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>
