@@ -17,6 +17,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { ImageCropper } from '@/components/shared/ImageCropper';
 import type { Database } from '@/integrations/supabase/types';
 
 type CampusLocation = Database['public']['Enums']['campus_location'];
@@ -78,6 +79,11 @@ export const CampusOverview = () => {
   const [selectedCampus, setSelectedCampus] = useState<CampusLocation | null>(null);
   const [campusImages, setCampusImages] = useState<Record<string, string>>({});
   const [uploadingFor, setUploadingFor] = useState<CampusLocation | null>(null);
+  
+  // Cropper state
+  const [cropperOpen, setCropperOpen] = useState(false);
+  const [imageToCrop, setImageToCrop] = useState<string | null>(null);
+  const [pendingCampusId, setPendingCampusId] = useState<CampusLocation | null>(null);
 
   const fetchIncidents = async () => {
     setLoading(true);
@@ -93,7 +99,6 @@ export const CampusOverview = () => {
   };
 
   const fetchCampusImages = async () => {
-    // Fetch campus images from carousel_images with category 'campus_entrance'
     const { data } = await supabase
       .from('carousel_images')
       .select('*')
@@ -113,7 +118,6 @@ export const CampusOverview = () => {
     fetchIncidents();
     fetchCampusImages();
 
-    // Real-time subscription for incidents
     const channel = supabase
       .channel('campus-incidents-realtime')
       .on(
@@ -124,8 +128,6 @@ export const CampusOverview = () => {
           table: 'incidents'
         },
         (payload) => {
-          console.log('Real-time incident update:', payload);
-          
           if (payload.eventType === 'INSERT') {
             setIncidents(prev => [payload.new as Incident, ...prev]);
             toast.info('New incident reported');
@@ -157,59 +159,70 @@ export const CampusOverview = () => {
     };
   };
 
-  const handleImageUpload = async (file: File, campusId: CampusLocation) => {
+  const handleFileSelect = (file: File, campusId: CampusLocation) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      setImageToCrop(reader.result as string);
+      setPendingCampusId(campusId);
+      setCropperOpen(true);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleCroppedImage = async (croppedBlob: Blob) => {
+    if (!pendingCampusId) return;
+    
     try {
-      setUploadingFor(campusId);
+      setUploadingFor(pendingCampusId);
       
-      const fileExt = file.name.split('.').pop();
-      const fileName = `campus-entrance-${campusId}-${Date.now()}.${fileExt}`;
+      const fileName = `campus-entrance-${pendingCampusId}-${Date.now()}.jpg`;
       
-      // Upload to storage
       const { error: uploadError } = await supabase.storage
         .from('carousel-images')
-        .upload(fileName, file);
+        .upload(fileName, croppedBlob, {
+          contentType: 'image/jpeg',
+          upsert: true
+        });
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
       const { data: urlData } = supabase.storage
         .from('carousel-images')
         .getPublicUrl(fileName);
 
-      // Check if entry exists
       const { data: existing } = await supabase
         .from('carousel_images')
         .select('id')
-        .eq('campus', campusId)
+        .eq('campus', pendingCampusId)
         .eq('category', 'campus_entrance')
         .maybeSingle();
 
       if (existing) {
-        // Update existing
         await supabase
           .from('carousel_images')
           .update({ image_url: urlData.publicUrl, updated_at: new Date().toISOString() })
           .eq('id', existing.id);
       } else {
-        // Insert new
         await supabase
           .from('carousel_images')
           .insert({
-            campus: campusId,
+            campus: pendingCampusId,
             category: 'campus_entrance',
-            title: `${campusId} Entrance`,
+            title: `${pendingCampusId} Entrance`,
             image_url: urlData.publicUrl,
             is_active: true
           });
       }
 
-      setCampusImages(prev => ({ ...prev, [campusId]: urlData.publicUrl }));
+      setCampusImages(prev => ({ ...prev, [pendingCampusId]: urlData.publicUrl }));
       toast.success('Campus image uploaded successfully');
     } catch (error) {
       console.error('Upload error:', error);
       toast.error('Failed to upload image');
     } finally {
       setUploadingFor(null);
+      setPendingCampusId(null);
+      setImageToCrop(null);
     }
   };
 
@@ -259,7 +272,6 @@ export const CampusOverview = () => {
                       : 'border-border bg-card'
                 }`}
               >
-                {/* Campus Image */}
                 <div className="h-24 bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center overflow-hidden">
                   {campusImage ? (
                     <img 
@@ -272,7 +284,6 @@ export const CampusOverview = () => {
                   )}
                 </div>
 
-                {/* Campus Info */}
                 <div className="p-3 space-y-2">
                   <h3 
                     className="font-bold text-sm text-destructive truncate animate-pulse" 
@@ -281,7 +292,6 @@ export const CampusOverview = () => {
                     {campus.name}
                   </h3>
 
-                  {/* Quick Stats */}
                   <div className="grid grid-cols-3 gap-1 text-xs">
                     <div className="text-center p-1 rounded bg-muted/50">
                       <p className="font-bold text-foreground">{metrics.total}</p>
@@ -297,7 +307,6 @@ export const CampusOverview = () => {
                     </div>
                   </div>
 
-                  {/* Emergency Badge */}
                   {hasEmergencies && (
                     <div className="flex items-center gap-1 text-destructive text-xs">
                       <AlertTriangle className="h-3 w-3" />
@@ -306,7 +315,6 @@ export const CampusOverview = () => {
                   )}
                 </div>
 
-                {/* Status Indicator */}
                 <div className={`absolute top-2 right-2 h-2 w-2 rounded-full ${
                   hasEmergencies 
                     ? 'bg-destructive animate-pulse' 
@@ -334,7 +342,6 @@ export const CampusOverview = () => {
 
           {selectedMetrics && selectedCampus && (
             <div className="space-y-4">
-              {/* Campus Image with Upload */}
               <div className="relative h-36 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center border border-border overflow-hidden group">
                 {campusImages[selectedCampus] ? (
                   <img 
@@ -349,7 +356,6 @@ export const CampusOverview = () => {
                   </div>
                 )}
                 
-                {/* Upload Overlay */}
                 <label className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer flex items-center justify-center">
                   <div className="text-center text-white">
                     <Upload className="h-6 w-6 mx-auto mb-1" />
@@ -361,14 +367,13 @@ export const CampusOverview = () => {
                     className="hidden"
                     onChange={(e) => {
                       const file = e.target.files?.[0];
-                      if (file) handleImageUpload(file, selectedCampus);
+                      if (file) handleFileSelect(file, selectedCampus);
                     }}
                     disabled={uploadingFor === selectedCampus}
                   />
                 </label>
               </div>
 
-              {/* Metrics Grid */}
               <div className="grid grid-cols-2 gap-3">
                 <MetricCard 
                   icon={FileText} 
@@ -417,6 +422,21 @@ export const CampusOverview = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Image Cropper */}
+      {imageToCrop && (
+        <ImageCropper
+          open={cropperOpen}
+          onClose={() => {
+            setCropperOpen(false);
+            setImageToCrop(null);
+            setPendingCampusId(null);
+          }}
+          imageSrc={imageToCrop}
+          aspectRatio={16 / 9}
+          onCropComplete={handleCroppedImage}
+        />
+      )}
     </div>
   );
 };
