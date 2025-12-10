@@ -23,8 +23,8 @@ const ProfileCompletion = lazy(() => import('./pages/ProfileCompletion'));
 const Judiciary = lazy(() => import('./pages/Judiciary'));
 const Security = lazy(() => import('./pages/Security'));
 
-// DEV MODE: Set to true to bypass authentication during development
-const DEV_MODE = true;
+// PRODUCTION MODE: Authentication required for all protected routes
+const DEV_MODE = false;
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -60,32 +60,32 @@ const App = () => (
                       </ProtectedRoute>
                     } />
                     <Route path="/security/*" element={
-                      <ProtectedRoute allowedRoles={['campus_admin']}>
+                      <ProtectedRoute allowedRoles={['security', 'admin']}>
                         <Security />
                       </ProtectedRoute>
                     } />
                     <Route path="/admin/*" element={
-                      <ProtectedRoute allowedRoles={['super_admin']}>
+                      <ProtectedRoute allowedRoles={['admin']}>
                         <Admin />
                       </ProtectedRoute>
                     } />
                     <Route path="/office" element={
-                      <ProtectedRoute allowedRoles={['campus_admin', 'super_admin']}>
+                      <ProtectedRoute allowedRoles={['security', 'admin']}>
                         <Office />
                       </ProtectedRoute>
                     } />
                     <Route path="/profile" element={
-                      <ProtectedRoute allowedRoles={['student', 'campus_admin', 'super_admin']}>
+                      <ProtectedRoute allowedRoles={['student', 'security', 'admin']}>
                         <Profile />
                       </ProtectedRoute>
                     } />
                     <Route path="/profile/complete" element={
-                      <ProtectedRoute allowedRoles={['student', 'campus_admin', 'super_admin']}>
+                      <ProtectedRoute allowedRoles={['student', 'security', 'admin']}>
                         <ProfileCompletion />
                       </ProtectedRoute>
                     } />
                     <Route path="/judiciary" element={
-                      <ProtectedRoute allowedRoles={['campus_admin', 'super_admin']}>
+                      <ProtectedRoute allowedRoles={['security', 'admin']}>
                         <Judiciary />
                       </ProtectedRoute>
                     } />
