@@ -5,8 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
-import { AlertTriangle, Phone, MapPin, Loader2 } from 'lucide-react';
+import { AlertTriangle, Phone, MapPin, Loader2, Radio, StopCircle } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useLocationTracking } from '@/hooks/useLocationTracking';
+import { Badge } from '@/components/ui/badge';
 
 // Reverse geocode using free Nominatim API (OpenStreetMap)
 const reverseGeocode = async (lat: number, lng: number): Promise<string> => {
@@ -40,6 +42,8 @@ export const EmergencyReport = () => {
   const [consentAgreed, setConsentAgreed] = useState(false);
   const [gettingLocation, setGettingLocation] = useState(false);
   const [currentAddress, setCurrentAddress] = useState<string>('');
+  
+  const { startTracking, stopTracking, isTracking, currentIncidentId } = useLocationTracking();
 
   const sendEmergencyReport = async () => {
     if (!consentAgreed) {
@@ -108,11 +112,13 @@ export const EmergencyReport = () => {
       description += `• Allergies: ${profile?.allergies || 'None specified'}\n`;
       description += `• Chronic Conditions: ${profile?.chronic_conditions || 'None specified'}\n`;
       description += '═══════════════════════════════\n\n';
+      description += '📍 LIVE LOCATION TRACKING ENABLED\n';
+      description += 'Location updates every 30 seconds until resolved.\n\n';
       description += '⚠️ User unable to provide details. Immediate assistance required.\n';
       description += 'Student has confirmed this is a genuine emergency.';
 
-      const { error } = await supabase.from('incidents').insert({
-        title: '🚨 EMERGENCY ALERT - IMMEDIATE RESPONSE REQUIRED',
+      const { data: incident, error } = await supabase.from('incidents').insert({
+        title: '🚨 EMERGENCY ALERT - LIVE TRACKING',
         description,
         category: 'Assault common',
         reporter_id: user?.id,
@@ -120,13 +126,18 @@ export const EmergencyReport = () => {
         location_lat: location.lat,
         location_lng: location.lng,
         location_description: locationAddress,
-      });
+      }).select().single();
 
       if (error) throw error;
 
+      // Start live location tracking
+      if (incident) {
+        startTracking(incident.id);
+      }
+
       toast({
         title: 'Emergency Alert Sent',
-        description: 'Campus security has been notified. Help is on the way!',
+        description: 'Campus security has been notified. Your location is being tracked.',
         variant: 'default',
       });
 
@@ -145,8 +156,41 @@ export const EmergencyReport = () => {
     }
   };
 
+  const handleStopTracking = () => {
+    stopTracking();
+    toast({
+      title: 'Location Tracking Stopped',
+      description: 'Your location is no longer being shared.',
+    });
+  };
+
   return (
     <>
+      {/* Live tracking indicator */}
+      {isTracking && (
+        <motion.div
+          className="fixed bottom-24 right-6 z-40"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <div className="bg-destructive text-destructive-foreground rounded-lg p-3 shadow-lg flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <Radio className="h-4 w-4 animate-pulse" />
+              <span className="text-sm font-medium">Live Tracking Active</span>
+            </div>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 px-2 hover:bg-destructive-foreground/10"
+              onClick={handleStopTracking}
+            >
+              <StopCircle className="h-4 w-4 mr-1" />
+              Stop
+            </Button>
+          </div>
+        </motion.div>
+      )}
+
       <motion.div
         className="fixed bottom-6 right-6 z-40"
         initial={{ scale: 0 }}
@@ -204,6 +248,19 @@ export const EmergencyReport = () => {
                   <span>•</span> Medical information (blood type, allergies)
                 </li>
               </ul>
+            </div>
+
+            {/* Live tracking info */}
+            <div className="p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg flex items-start gap-3">
+              <Radio className="h-5 w-5 text-blue-600 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                  Live Location Tracking
+                </p>
+                <p className="text-xs text-blue-700 dark:text-blue-300">
+                  Your location will be updated every 30 seconds until the case is resolved. You can stop tracking at any time.
+                </p>
+              </div>
             </div>
 
             {/* Current location preview */}

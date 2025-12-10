@@ -7,9 +7,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { AlertTriangle, MapPin, User, Clock, Shield, ExternalLink, FileText } from 'lucide-react';
+import { AlertTriangle, MapPin, User, Clock, Shield, ExternalLink, FileText, Radio } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
+import { LiveLocationTracker } from './LiveLocationTracker';
 
 type Incident = {
   id: string;
@@ -266,32 +267,50 @@ export const IncidentDetailsModal = ({ incidentId, isOpen, onClose }: IncidentDe
               </div>
             </div>
 
-            {/* Location */}
+            {/* Location with Live Tracking */}
             <div className="p-4 rounded-lg bg-muted/50">
-              <h3 className="font-semibold mb-2 flex items-center gap-2">
+              <h3 className="font-semibold mb-3 flex items-center gap-2">
                 <MapPin className="h-4 w-4" />
                 Location
+                {incident.title.includes('LIVE TRACKING') && (
+                  <Badge variant="destructive" className="flex items-center gap-1 text-xs">
+                    <Radio className="h-3 w-3 animate-pulse" />
+                    Live
+                  </Badge>
+                )}
               </h3>
-              {incident.location_description ? (
-                <p className="text-sm mb-2">{incident.location_description}</p>
+              
+              {incident.title.includes('EMERGENCY') ? (
+                <LiveLocationTracker
+                  incidentId={incident.id}
+                  currentLat={incident.location_lat}
+                  currentLng={incident.location_lng}
+                  currentAddress={incident.location_description}
+                />
               ) : (
-                <p className="text-sm text-muted-foreground mb-2">No address provided</p>
-              )}
-              {incident.location_lat && incident.location_lng && (
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground font-mono">
-                    {incident.location_lat.toFixed(6)}, {incident.location_lng.toFixed(6)}
-                  </span>
-                  <a
-                    href={`https://www.google.com/maps?q=${incident.location_lat},${incident.location_lng}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary hover:underline text-xs flex items-center gap-1"
-                  >
-                    <ExternalLink className="h-3 w-3" />
-                    Open in Maps
-                  </a>
-                </div>
+                <>
+                  {incident.location_description ? (
+                    <p className="text-sm mb-2">{incident.location_description}</p>
+                  ) : (
+                    <p className="text-sm text-muted-foreground mb-2">No address provided</p>
+                  )}
+                  {incident.location_lat && incident.location_lng && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground font-mono">
+                        {incident.location_lat.toFixed(6)}, {incident.location_lng.toFixed(6)}
+                      </span>
+                      <a
+                        href={`https://www.google.com/maps?q=${incident.location_lat},${incident.location_lng}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline text-xs flex items-center gap-1"
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                        Open in Maps
+                      </a>
+                    </div>
+                  )}
+                </>
               )}
             </div>
 

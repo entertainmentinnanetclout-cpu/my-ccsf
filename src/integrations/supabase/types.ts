@@ -298,6 +298,41 @@ export type Database = {
           },
         ]
       }
+      incident_location_updates: {
+        Row: {
+          created_at: string
+          id: string
+          incident_id: string
+          location_address: string | null
+          location_lat: number
+          location_lng: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          incident_id: string
+          location_address?: string | null
+          location_lat: number
+          location_lng: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          incident_id?: string
+          location_address?: string | null
+          location_lat?: number
+          location_lng?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incident_location_updates_incident_id_fkey"
+            columns: ["incident_id"]
+            isOneToOne: false
+            referencedRelation: "incidents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       incident_media: {
         Row: {
           created_at: string
