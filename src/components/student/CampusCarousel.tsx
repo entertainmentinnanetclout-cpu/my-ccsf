@@ -38,6 +38,26 @@ export const CampusCarousel = ({ campus }: CampusCarouselProps) => {
 
   useEffect(() => {
     fetchCarouselImages();
+
+    // Real-time subscription for carousel updates
+    const channel = supabase
+      .channel('carousel-images')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'carousel_images',
+        },
+        () => {
+          fetchCarouselImages();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [campus]);
 
   const fetchCarouselImages = async () => {

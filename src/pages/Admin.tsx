@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { motion } from 'framer-motion';
-import { Shield, LayoutDashboard, AlertCircle, Megaphone, Home, MessageSquare, BarChart3, Images } from 'lucide-react';
+import { Shield, LayoutDashboard, AlertCircle, Megaphone, Home, MessageSquare, BarChart3, Images, Users } from 'lucide-react';
 import tutLogo from '@/assets/tut-logo.png';
 import { AdminOverview } from '@/components/admin/AdminOverview';
 import { AdminIncidents } from '@/components/admin/AdminIncidents';
@@ -12,11 +12,13 @@ import { StaffCommunication } from '@/components/admin/StaffCommunication';
 import { RealTimeIncidents } from '@/components/admin/RealTimeIncidents';
 import { IncidentAnalytics } from '@/components/admin/IncidentAnalytics';
 import { CarouselManager } from '@/components/admin/CarouselManager';
+import { CampusAdminManager } from '@/components/admin/CampusAdminManager';
+import { NotificationBell } from '@/components/shared/NotificationBell';
 import { CasesProvider } from '@/contexts/CasesContext';
 
 const Admin = () => {
   const navigate = useNavigate();
-  const [activeView, setActiveView] = useState<'overview' | 'incidents' | 'analytics' | 'announcements' | 'communication' | 'carousel'>('overview');
+  const [activeView, setActiveView] = useState<'overview' | 'incidents' | 'analytics' | 'announcements' | 'communication' | 'carousel' | 'admins'>('overview');
 
   return (
     <CasesProvider>
@@ -47,11 +49,14 @@ const Admin = () => {
                 </div>
               </div>
 
-              <motion.div whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.95 }}>
-                <Button variant="default" size="icon" onClick={() => navigate('/')}>
-                  <Home className="h-5 w-5" />
-                </Button>
-              </motion.div>
+              <div className="flex items-center gap-2">
+                <NotificationBell />
+                <motion.div whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.95 }}>
+                  <Button variant="default" size="icon" onClick={() => navigate('/')}>
+                    <Home className="h-5 w-5" />
+                  </Button>
+                </motion.div>
+              </div>
             </div>
           </div>
         </motion.header>
@@ -101,6 +106,11 @@ const Admin = () => {
                     <Images className="h-4 w-4 mr-2" />Carousel
                   </Button>
                 </motion.div>
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <Button variant={activeView === 'admins' ? 'default' : 'ghost'} onClick={() => setActiveView('admins')} className="transition-all">
+                    <Users className="h-4 w-4 mr-2" />Admins
+                  </Button>
+                </motion.div>
               </div>
             </Card>
           </motion.div>
@@ -119,6 +129,7 @@ const Admin = () => {
             {activeView === 'announcements' && <AdminAnnouncements />}
             {activeView === 'communication' && <StaffCommunication />}
             {activeView === 'carousel' && <CarouselManager />}
+            {activeView === 'admins' && <CampusAdminManager />}
           </motion.div>
 
           {/* Footer */}

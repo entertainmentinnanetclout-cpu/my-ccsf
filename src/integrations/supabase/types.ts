@@ -622,6 +622,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      assign_campus_admin: {
+        Args: {
+          p_campus: Database["public"]["Enums"]["campus_location"]
+          p_is_head?: boolean
+          p_user_id: string
+        }
+        Returns: undefined
+      }
       get_security_officers: {
         Args: { p_campus?: Database["public"]["Enums"]["campus_location"] }
         Returns: {
@@ -656,6 +664,13 @@ export type Database = {
       is_campus_admin: { Args: { _user_id: string }; Returns: boolean }
       is_head_admin: { Args: { _user_id: string }; Returns: boolean }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
+      remove_campus_admin: {
+        Args: {
+          p_campus: Database["public"]["Enums"]["campus_location"]
+          p_user_id: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       campus_location:
