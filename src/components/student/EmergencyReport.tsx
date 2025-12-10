@@ -214,23 +214,23 @@ export const EmergencyReport = () => {
           setCurrentAddress('');
         }
       }}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-2xl text-destructive">
               <AlertTriangle className="h-6 w-6" />
               Emergency Alert
             </DialogTitle>
-            <DialogDescription className="text-base">
+            <DialogDescription className="text-base text-muted-foreground">
               This will immediately send an emergency alert to campus security with your location and profile information.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
             <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
-              <p className="text-sm text-foreground font-medium mb-2">
+              <p className="text-sm font-medium mb-2" style={{ color: 'hsl(var(--foreground))' }}>
                 Emergency alert will include:
               </p>
-              <ul className="text-sm text-muted-foreground space-y-1">
+              <ul className="text-sm space-y-1" style={{ color: 'hsl(var(--muted-foreground))' }}>
                 <li className="flex items-center gap-2">
                   <span>•</span> Your name and student number
                 </li>
@@ -239,7 +239,7 @@ export const EmergencyReport = () => {
                 </li>
                 <li className="flex items-center gap-2">
                   <MapPin className="h-4 w-4 text-primary" />
-                  <span className="font-medium text-foreground">Your live location (full address)</span>
+                  <span className="font-medium" style={{ color: 'hsl(var(--foreground))' }}>Your live location (full address)</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <span>•</span> Emergency contact details
