@@ -13,6 +13,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { ImageCropper } from '@/components/shared/ImageCropper';
 
 const CAMPUSES = [
   { value: 'pretoria_west_main', label: 'Pretoria West (Main)' },
@@ -53,6 +54,10 @@ export const CarouselManager = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  
+  // Cropper state
+  const [cropperOpen, setCropperOpen] = useState(false);
+  const [imageToCrop, setImageToCrop] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     image_url: '',
@@ -96,7 +101,7 @@ export const CarouselManager = () => {
     return allImages.filter(img => img.campus === campusValue).length;
   };
 
-  const handleFileUpload = async (file: File) => {
+  const handleFileSelect = (file: File) => {
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
@@ -109,10 +114,19 @@ export const CarouselManager = () => {
       return;
     }
 
+    // Read file and open cropper
+    const reader = new FileReader();
+    reader.onload = () => {
+      setImageToCrop(reader.result as string);
+      setCropperOpen(true);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleCroppedImage = async (croppedBlob: Blob) => {
     setIsUploading(true);
     setUploadProgress(0);
 
-    // Simulate progress while uploading
     const progressInterval = setInterval(() => {
       setUploadProgress(prev => {
         if (prev >= 90) {
@@ -123,12 +137,14 @@ export const CarouselManager = () => {
       });
     }, 200);
 
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`;
 
     const { error } = await supabase.storage
       .from('carousel-images')
-      .upload(fileName, file);
+      .upload(fileName, croppedBlob, {
+        contentType: 'image/jpeg',
+        upsert: true
+      });
 
     clearInterval(progressInterval);
 
@@ -145,11 +161,11 @@ export const CarouselManager = () => {
       .from('carousel-images')
       .getPublicUrl(fileName);
 
-    // Small delay to show 100% completion
     setTimeout(() => {
       setFormData({ ...formData, image_url: publicUrl.publicUrl });
       setIsUploading(false);
       setUploadProgress(0);
+      setImageToCrop(null);
       toast({ title: 'Image uploaded' });
     }, 300);
   };
@@ -458,7 +474,7 @@ export const CarouselManager = () => {
                 className="hidden"
                 onChange={(e) => {
                   const file = e.target.files?.[0];
-                  if (file) handleFileUpload(file);
+                  if (file) handleFileSelect(file);
                 }}
               />
               
@@ -570,6 +586,20 @@ export const CarouselManager = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Image Cropper */}
+      {imageToCrop && (
+        <ImageCropper
+          open={cropperOpen}
+          onClose={() => {
+            setCropperOpen(false);
+            setImageToCrop(null);
+          }}
+          imageSrc={imageToCrop}
+          aspectRatio={16 / 9}
+          onCropComplete={handleCroppedImage}
+        />
+      )}
     </div>
   );
 };
