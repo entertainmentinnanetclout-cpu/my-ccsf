@@ -27,7 +27,7 @@ const CAMPUSES = [
   { value: 'emalahleni', label: 'eMalahleni' }
 ];
 
-const CATEGORIES = ['Campus', 'Residence'];
+const CATEGORIES = ['Campus', 'Residence', 'Campus Entrance'];
 const MAX_IMAGES_PER_CAMPUS = 15;
 
 interface CarouselImage {
