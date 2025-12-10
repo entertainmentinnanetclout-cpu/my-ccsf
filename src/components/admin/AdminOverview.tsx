@@ -368,14 +368,14 @@ export const AdminOverview = () => {
                 </div>
 
                 {/* Incidents List - Clickable to see student data */}
-                <div className="space-y-4">
+                <div>
                   <Card className="p-4">
                     <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
                       <User className="h-4 w-4" />
                       Cases List
                     </h4>
-                    <p className="text-xs text-muted-foreground mb-3">Click a case to see reporter details</p>
-                    <ScrollArea className="h-[400px]">
+                    <p className="text-xs text-muted-foreground mb-3">Click a case to see details</p>
+                    <ScrollArea className="h-[500px]">
                       <div className="space-y-2">
                         {filteredIncidents.map((incident) => (
                           <motion.div
@@ -384,11 +384,7 @@ export const AdminOverview = () => {
                             whileTap={{ scale: 0.98 }}
                           >
                             <div
-                              className={`p-3 rounded-lg border cursor-pointer transition-all ${
-                                selectedIncident?.id === incident.id 
-                                  ? 'ring-2 ring-primary bg-primary/5' 
-                                  : 'hover:bg-muted/50'
-                              }`}
+                              className="p-3 rounded-lg border cursor-pointer transition-all hover:bg-muted/50 hover:border-primary/50"
                               onClick={() => setSelectedIncident(incident)}
                             >
                               <div className="flex items-start justify-between gap-2">
@@ -412,46 +408,69 @@ export const AdminOverview = () => {
                       </div>
                     </ScrollArea>
                   </Card>
-
-                  {/* Selected Incident - Student Details */}
-                  {selectedIncident && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                    >
-                      <Card className="p-4 border-primary/30 bg-primary/5">
-                        <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
-                          <User className="h-4 w-4 text-primary" />
-                          Reporter Details
-                        </h4>
-                        {selectedIncident.is_anonymous ? (
-                          <p className="text-sm text-muted-foreground italic">Anonymous Report</p>
-                        ) : selectedIncident.reporter ? (
-                          <div className="space-y-2 text-sm">
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Name:</span>
-                              <span className="font-medium">{selectedIncident.reporter.full_name || 'N/A'}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Email:</span>
-                              <span className="font-medium truncate ml-2">{selectedIncident.reporter.email}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Student #:</span>
-                              <span className="font-medium">{selectedIncident.reporter.student_number || 'N/A'}</span>
-                            </div>
-                          </div>
-                        ) : (
-                          <p className="text-sm text-muted-foreground">No reporter data</p>
-                        )}
-                        <div className="mt-4 pt-3 border-t space-y-2 text-sm">
-                          <p className="font-medium">Incident Details:</p>
-                          <p className="text-muted-foreground">{selectedIncident.description}</p>
-                        </div>
-                      </Card>
-                    </motion.div>
-                  )}
                 </div>
+
+                {/* Case Details Popup Dialog */}
+                <Dialog open={!!selectedIncident} onOpenChange={(open) => !open && setSelectedIncident(null)}>
+                  <DialogContent className="max-w-lg bg-background">
+                    <DialogHeader>
+                      <DialogTitle className="flex items-center gap-2">
+                        <AlertCircle className="h-5 w-5 text-primary" />
+                        Case Details
+                      </DialogTitle>
+                    </DialogHeader>
+                    {selectedIncident && (
+                      <div className="space-y-4">
+                        {/* Case Info */}
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <h3 className="font-semibold">{selectedIncident.title}</h3>
+                            <Badge className={`${STATUS_COLORS[selectedIncident.status]} text-white`}>
+                              {selectedIncident.status}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground">{selectedIncident.category}</p>
+                          <p className="text-xs text-muted-foreground">
+                            Reported: {format(new Date(selectedIncident.created_at), 'PPpp')}
+                          </p>
+                        </div>
+
+                        <div className="border-t pt-4">
+                          <h4 className="text-sm font-medium mb-2">Description</h4>
+                          <p className="text-sm text-muted-foreground">{selectedIncident.description}</p>
+                        </div>
+
+                        {/* Reporter Details */}
+                        <div className="border-t pt-4">
+                          <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
+                            <User className="h-4 w-4 text-primary" />
+                            Reporter Details
+                          </h4>
+                          {selectedIncident.is_anonymous ? (
+                            <p className="text-sm text-muted-foreground italic">Anonymous Report</p>
+                          ) : selectedIncident.reporter ? (
+                            <div className="grid grid-cols-2 gap-3 text-sm">
+                              <div>
+                                <span className="text-muted-foreground block text-xs">Name</span>
+                                <span className="font-medium">{selectedIncident.reporter.full_name || 'N/A'}</span>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground block text-xs">Student #</span>
+                                <span className="font-medium">{selectedIncident.reporter.student_number || 'N/A'}</span>
+                              </div>
+                              <div className="col-span-2">
+                                <span className="text-muted-foreground block text-xs">Email</span>
+                                <span className="font-medium">{selectedIncident.reporter.email}</span>
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="text-sm text-muted-foreground">No reporter data available</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </DialogContent>
+                </Dialog>
               </div>
             </CardContent>
           </Card>
