@@ -50,6 +50,7 @@ export const CarouselManager = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [imageToDelete, setImageToDelete] = useState<CarouselImage | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -109,6 +110,18 @@ export const CarouselManager = () => {
     }
 
     setIsUploading(true);
+    setUploadProgress(0);
+
+    // Simulate progress while uploading
+    const progressInterval = setInterval(() => {
+      setUploadProgress(prev => {
+        if (prev >= 90) {
+          clearInterval(progressInterval);
+          return 90;
+        }
+        return prev + Math.random() * 15;
+      });
+    }, 200);
 
     const fileExt = file.name.split('.').pop();
     const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
@@ -117,19 +130,28 @@ export const CarouselManager = () => {
       .from('carousel-images')
       .upload(fileName, file);
 
+    clearInterval(progressInterval);
+
     if (error) {
       toast({ title: 'Upload failed', description: error.message, variant: 'destructive' });
       setIsUploading(false);
+      setUploadProgress(0);
       return;
     }
+
+    setUploadProgress(100);
 
     const { data: publicUrl } = supabase.storage
       .from('carousel-images')
       .getPublicUrl(fileName);
 
-    setFormData({ ...formData, image_url: publicUrl.publicUrl });
-    setIsUploading(false);
-    toast({ title: 'Image uploaded' });
+    // Small delay to show 100% completion
+    setTimeout(() => {
+      setFormData({ ...formData, image_url: publicUrl.publicUrl });
+      setIsUploading(false);
+      setUploadProgress(0);
+      toast({ title: 'Image uploaded' });
+    }, 300);
   };
 
   const handleSubmit = async () => {
@@ -466,10 +488,27 @@ export const CarouselManager = () => {
                 <button
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isUploading}
-                  className="w-full aspect-video rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-primary/50 transition-colors flex flex-col items-center justify-center gap-2 text-muted-foreground hover:text-foreground"
+                  className="w-full aspect-video rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-primary/50 transition-colors flex flex-col items-center justify-center gap-3 text-muted-foreground hover:text-foreground"
                 >
                   {isUploading ? (
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+                    <div className="flex flex-col items-center gap-3 w-full px-8">
+                      <div className="relative">
+                        <Upload className="h-8 w-8 animate-bounce text-primary" />
+                      </div>
+                      <div className="w-full space-y-2">
+                        <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
+                          <motion.div 
+                            className="h-full bg-primary rounded-full"
+                            initial={{ width: 0 }}
+                            animate={{ width: `${uploadProgress}%` }}
+                            transition={{ duration: 0.2 }}
+                          />
+                        </div>
+                        <p className="text-xs text-center text-primary font-medium">
+                          Uploading... {Math.round(uploadProgress)}%
+                        </p>
+                      </div>
+                    </div>
                   ) : (
                     <>
                       <Upload className="h-8 w-8" />
