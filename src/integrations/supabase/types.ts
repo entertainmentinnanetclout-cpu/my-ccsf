@@ -217,6 +217,54 @@ export type Database = {
         }
         Relationships: []
       }
+      case_updates: {
+        Row: {
+          admin_id: string
+          created_at: string
+          description: string | null
+          id: string
+          incident_id: string
+          scheduled_date: string | null
+          title: string
+          update_type: string
+        }
+        Insert: {
+          admin_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          incident_id: string
+          scheduled_date?: string | null
+          title: string
+          update_type?: string
+        }
+        Update: {
+          admin_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          incident_id?: string
+          scheduled_date?: string | null
+          title?: string
+          update_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "case_updates_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_updates_incident_id_fkey"
+            columns: ["incident_id"]
+            isOneToOne: false
+            referencedRelation: "incidents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_messages: {
         Row: {
           content: string
