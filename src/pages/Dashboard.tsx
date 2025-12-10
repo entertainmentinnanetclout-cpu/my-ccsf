@@ -3,22 +3,21 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { motion } from 'framer-motion';
-import { Shield, Plus, List, LogOut, Menu, Map, MessageCircle, Home, MapPin, FileText } from 'lucide-react';
+import { Shield, Plus, LogOut, Menu, Map, MessageCircle, Home, MapPin, FileText } from 'lucide-react';
 import tutLogo from '@/assets/tut-logo.png';
 import { ReportIncident } from '@/components/student/ReportIncident';
-import { IncidentList } from '@/components/student/IncidentList';
 import { EmergencyReport } from '@/components/student/EmergencyReport';
 import { CampusMap } from '@/components/student/CampusMap';
 import { CampusCarousel } from '@/components/student/CampusCarousel';
 import { NewsFeed } from '@/components/student/NewsFeed';
 import { StudentChat } from '@/components/student/StudentChat';
-import { MyReports } from '@/components/student/MyReports';
+import { MyCaseReports } from '@/components/student/MyCaseReports';
 import { NotificationBell } from '@/components/shared/NotificationBell';
 import { supabase } from '@/integrations/supabase/client';
 
 const Dashboard = () => {
   const { user, signOut } = useAuth();
-  const [activeView, setActiveView] = useState<'home' | 'report' | 'incidents' | 'map' | 'messages' | 'myreports'>('home');
+  const [activeView, setActiveView] = useState<'home' | 'report' | 'mycases' | 'map' | 'messages'>('home');
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [userCampus, setUserCampus] = useState<string>('Polokwane Campus');
 
@@ -140,7 +139,7 @@ const Dashboard = () => {
           transition={{ delay: 0.4, duration: 0.4 }}
         >
           <Card className="p-1.5 sm:p-2 mb-4 sm:mb-6 shadow-large">
-            <div className="grid grid-cols-6 gap-1 sm:gap-2">
+            <div className="grid grid-cols-5 gap-1 sm:gap-2">
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                 <Button
                   variant={activeView === 'home' ? 'default' : 'ghost'}
@@ -154,24 +153,13 @@ const Dashboard = () => {
               </motion.div>
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                 <Button
-                  variant={activeView === 'incidents' ? 'default' : 'ghost'}
-                  onClick={() => setActiveView('incidents')}
-                  className="w-full transition-all text-xs sm:text-sm px-1 sm:px-3"
-                  size="sm"
-                >
-                  <List className="h-4 w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Incidents</span>
-                </Button>
-              </motion.div>
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button
-                  variant={activeView === 'myreports' ? 'default' : 'ghost'}
-                  onClick={() => setActiveView('myreports')}
+                  variant={activeView === 'mycases' ? 'default' : 'ghost'}
+                  onClick={() => setActiveView('mycases')}
                   className="w-full transition-all text-xs sm:text-sm px-1 sm:px-3"
                   size="sm"
                 >
                   <FileText className="h-4 w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">My Reports</span>
+                  <span className="hidden sm:inline">My Cases</span>
                 </Button>
               </motion.div>
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
@@ -225,9 +213,9 @@ const Dashboard = () => {
               <NewsFeed />
             </div>
           )}
-          {activeView === 'incidents' && <IncidentList />}
-          {activeView === 'myreports' && <MyReports />}
+          {activeView === 'mycases' && <MyCaseReports />}
           {activeView === 'report' && <ReportIncident />}
+          {activeView === 'map' && <CampusMap />}
           {activeView === 'map' && <CampusMap />}
           {activeView === 'messages' && <StudentChat />}
         </motion.div>
