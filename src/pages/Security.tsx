@@ -4,14 +4,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { motion } from 'framer-motion';
-import { Shield, LayoutDashboard, AlertCircle, Megaphone, Home, MessageSquare, CheckSquare, MapPin, Users, BarChart3 } from 'lucide-react';
+import { Shield, LayoutDashboard, AlertCircle, Megaphone, Home, MessageSquare, MapPin, Users, BarChart3 } from 'lucide-react';
 import tutLogo from '@/assets/tut-logo.png';
 import { AdminOverview } from '@/components/admin/AdminOverview';
 import { AdminIncidents } from '@/components/admin/AdminIncidents';
 import { AdminAnnouncements } from '@/components/admin/AdminAnnouncements';
-import { AlertsPanel } from '@/components/admin/Dashboard/AlertsPanel';
-import { TrafficSummary } from '@/components/admin/Dashboard/TrafficSummary';
-import { CCTVStatus } from '@/components/admin/Dashboard/CCTVStatus';
 import { ResolveCases } from '@/components/admin/ResolveCases';
 import { StaffCommunication } from '@/components/admin/StaffCommunication';
 import { RealTimeIncidents } from '@/components/admin/RealTimeIncidents';
@@ -39,7 +36,7 @@ const campusDisplayNames: Record<string, string> = {
 const Security = () => {
   const navigate = useNavigate();
   const { userProfile, signOut } = useAuth();
-  const [activeView, setActiveView] = useState<'overview' | 'incidents' | 'announcements' | 'summary' | 'resolve' | 'communication' | 'residences' | 'students' | 'analytics'>('overview');
+  const [activeView, setActiveView] = useState<'overview' | 'incidents' | 'announcements' | 'communication' | 'students' | 'analytics'>('overview');
   const [campusStudentCount, setCampusStudentCount] = useState(0);
   const [campusIncidentCount, setCampusIncidentCount] = useState(0);
 
@@ -140,51 +137,36 @@ const Security = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2, duration: 0.4 }}
           >
-            <Card className="p-2 mb-6 shadow-large">
-              <div className="grid grid-cols-3 md:grid-cols-9 gap-2">
+            <Card className="p-3 mb-6 shadow-large">
+              <div className="flex flex-wrap justify-center gap-2">
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Button variant={activeView === 'overview' ? 'default' : 'ghost'} onClick={() => setActiveView('overview')} className="w-full transition-all">
-                    <LayoutDashboard className="h-4 w-4 mr-2" /><span className="hidden sm:inline">Overview</span>
+                  <Button variant={activeView === 'overview' ? 'default' : 'ghost'} onClick={() => setActiveView('overview')} className="transition-all">
+                    <LayoutDashboard className="h-4 w-4 mr-2" />Overview
                   </Button>
                 </motion.div>
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Button variant={activeView === 'incidents' ? 'default' : 'ghost'} onClick={() => setActiveView('incidents')} className="w-full transition-all">
-                    <AlertCircle className="h-4 w-4 mr-2" /><span className="hidden sm:inline">Incidents</span>
+                  <Button variant={activeView === 'incidents' ? 'default' : 'ghost'} onClick={() => setActiveView('incidents')} className="transition-all">
+                    <AlertCircle className="h-4 w-4 mr-2" />Incidents
                   </Button>
                 </motion.div>
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Button variant={activeView === 'analytics' ? 'default' : 'ghost'} onClick={() => setActiveView('analytics')} className="w-full transition-all">
-                    <BarChart3 className="h-4 w-4 mr-2" /><span className="hidden sm:inline">Analytics</span>
+                  <Button variant={activeView === 'analytics' ? 'default' : 'ghost'} onClick={() => setActiveView('analytics')} className="transition-all">
+                    <BarChart3 className="h-4 w-4 mr-2" />Analytics
                   </Button>
                 </motion.div>
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Button variant={activeView === 'students' ? 'default' : 'ghost'} onClick={() => setActiveView('students')} className="w-full transition-all">
-                    <Users className="h-4 w-4 mr-2" /><span className="hidden sm:inline">Students</span>
+                  <Button variant={activeView === 'students' ? 'default' : 'ghost'} onClick={() => setActiveView('students')} className="transition-all">
+                    <Users className="h-4 w-4 mr-2" />Students
                   </Button>
                 </motion.div>
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Button variant={activeView === 'announcements' ? 'default' : 'ghost'} onClick={() => setActiveView('announcements')} className="w-full transition-all">
-                    <Megaphone className="h-4 w-4 mr-2" /><span className="hidden sm:inline">Announcements</span>
+                  <Button variant={activeView === 'announcements' ? 'default' : 'ghost'} onClick={() => setActiveView('announcements')} className="transition-all">
+                    <Megaphone className="h-4 w-4 mr-2" />Announcements
                   </Button>
                 </motion.div>
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Button variant={activeView === 'summary' ? 'default' : 'ghost'} onClick={() => setActiveView('summary')} className="w-full transition-all">
-                    <LayoutDashboard className="h-4 w-4 mr-2" /><span className="hidden sm:inline">Summary</span>
-                  </Button>
-                </motion.div>
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Button variant={activeView === 'resolve' ? 'default' : 'ghost'} onClick={() => setActiveView('resolve')} className="w-full transition-all">
-                    <CheckSquare className="h-4 w-4 mr-2" /><span className="hidden sm:inline">Resolve</span>
-                  </Button>
-                </motion.div>
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Button variant={activeView === 'communication' ? 'default' : 'ghost'} onClick={() => setActiveView('communication')} className="w-full transition-all">
-                    <MessageSquare className="h-4 w-4 mr-2" /><span className="hidden sm:inline">Comms</span>
-                  </Button>
-                </motion.div>
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Button variant={activeView === 'residences' ? 'default' : 'ghost'} onClick={() => setActiveView('residences')} className="w-full transition-all">
-                    <Shield className="h-4 w-4 mr-2" /><span className="hidden sm:inline">Residences</span>
+                  <Button variant={activeView === 'communication' ? 'default' : 'ghost'} onClick={() => setActiveView('communication')} className="transition-all">
+                    <MessageSquare className="h-4 w-4 mr-2" />Comms
                   </Button>
                 </motion.div>
               </div>
@@ -200,20 +182,16 @@ const Security = () => {
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
           >
             {activeView === 'overview' && <AdminOverview />}
-            {activeView === 'incidents' && <AdminIncidents />}
+            {activeView === 'incidents' && (
+              <div className="space-y-6">
+                <AdminIncidents />
+                <ResolveCases />
+              </div>
+            )}
             {activeView === 'analytics' && <IncidentAnalytics />}
             {activeView === 'students' && <CampusStudentsList campus={userProfile?.campus} />}
             {activeView === 'announcements' && <AdminAnnouncements />}
-            {activeView === 'summary' && (
-              <div className="space-y-4">
-                <AlertsPanel />
-                <TrafficSummary />
-                <CCTVStatus />
-              </div>
-            )}
-            {activeView === 'resolve' && <ResolveCases />}
             {activeView === 'communication' && <StaffCommunication />}
-            {activeView === 'residences' && <ResidenceSection />}
           </motion.div>
 
           {/* Footer */}
