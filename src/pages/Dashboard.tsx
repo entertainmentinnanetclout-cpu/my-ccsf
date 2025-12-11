@@ -218,7 +218,6 @@ const Dashboard = () => {
           {activeView === 'mycases' && <MyCaseReports />}
           {activeView === 'report' && <ReportIncident />}
           {activeView === 'map' && <CampusMap />}
-          {activeView === 'map' && <CampusMap />}
           {activeView === 'messages' && <StudentChat />}
         </motion.div>
 

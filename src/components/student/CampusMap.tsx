@@ -1,6 +1,89 @@
 import { Card } from "@/components/ui/card";
 import { MapPin, Shield, User, Radio } from "lucide-react";
 import { motion } from "framer-motion";
+import { useAuth } from "@/contexts/AuthContext";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+
+// Campus coordinates and details
+const campusData: Record<string, { 
+  name: string; 
+  address: string; 
+  embedUrl: string; 
+  directionsUrl: string;
+  phone: string;
+}> = {
+  pretoria_west_main: {
+    name: 'Pretoria West (Main Campus)',
+    address: 'Staatsartillerie Rd, Pretoria West, Pretoria',
+    embedUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3593.1234567890!2d28.1608!3d-25.7358!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1e9561b9f6d5a1d1%3A0x8c2b0c9d3e4f5a6b!2sTshwane%20University%20of%20Technology%20-%20Pretoria%20Campus!5e0!3m2!1sen!2sza!4v1702300000000',
+    directionsUrl: 'https://www.google.com/maps/dir/?api=1&destination=-25.7358,28.1608',
+    phone: '012 382 5911',
+  },
+  arcadia: {
+    name: 'Arcadia Campus',
+    address: '175 Nelson Mandela Dr, Arcadia, Pretoria',
+    embedUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3593.2345678901!2d28.2128!3d-25.7456!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1e9561d9a7b8c9d1%3A0x1a2b3c4d5e6f7a8b!2sTUT%20Arcadia%20Campus!5e0!3m2!1sen!2sza!4v1702300000001',
+    directionsUrl: 'https://www.google.com/maps/dir/?api=1&destination=-25.7456,28.2128',
+    phone: '012 382 5200',
+  },
+  arts: {
+    name: 'Arts Campus',
+    address: 'Pretoria, Gauteng',
+    embedUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3593.3456789012!2d28.1878!3d-25.7512!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1e9561e8b9c0d1e2%3A0x2b3c4d5e6f7a8b9c!2sTUT%20Arts%20Campus!5e0!3m2!1sen!2sza!4v1702300000002',
+    directionsUrl: 'https://www.google.com/maps/dir/?api=1&destination=-25.7512,28.1878',
+    phone: '012 382 5300',
+  },
+  polokwane: {
+    name: 'Polokwane Campus',
+    address: '110 Grobler St, Polokwane, Limpopo',
+    embedUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3678.1234567890!2d29.4585!3d-23.9045!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1ec6d6f8c7b8a9d0%3A0x3c4d5e6f7a8b9c0d!2sTUT%20Polokwane%20Campus!5e0!3m2!1sen!2sza!4v1702300000003',
+    directionsUrl: 'https://www.google.com/maps/dir/?api=1&destination=-23.9045,29.4585',
+    phone: '015 287 0700',
+  },
+  mbombela: {
+    name: 'Mbombela Campus',
+    address: 'Mbombela, Mpumalanga',
+    embedUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3620.1234567890!2d31.0218!3d-25.4653!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1ee84a1b2c3d4e5f%3A0x4d5e6f7a8b9c0d1e!2sTUT%20Mbombela%20Campus!5e0!3m2!1sen!2sza!4v1702300000004',
+    directionsUrl: 'https://www.google.com/maps/dir/?api=1&destination=-25.4653,31.0218',
+    phone: '013 745 3500',
+  },
+  giyani: {
+    name: 'Giyani Campus',
+    address: 'Giyani, Limpopo',
+    embedUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3650.1234567890!2d30.7195!3d-23.3167!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1ec4d2e3f4a5b6c7%3A0x5e6f7a8b9c0d1e2f!2sTUT%20Giyani%20Campus!5e0!3m2!1sen!2sza!4v1702300000005',
+    directionsUrl: 'https://www.google.com/maps/dir/?api=1&destination=-23.3167,30.7195',
+    phone: '015 811 3500',
+  },
+  garankuwa: {
+    name: 'Ga-Rankuwa Campus',
+    address: 'Ga-Rankuwa, Pretoria',
+    embedUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3589.1234567890!2d28.0123!3d-25.6156!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1e9563a4b5c6d7e8%3A0x6f7a8b9c0d1e2f3a!2sTUT%20Ga-Rankuwa%20Campus!5e0!3m2!1sen!2sza!4v1702300000006',
+    directionsUrl: 'https://www.google.com/maps/dir/?api=1&destination=-25.6156,28.0123',
+    phone: '012 382 9400',
+  },
+  soshanguve_south: {
+    name: 'Soshanguve South Campus',
+    address: 'Soshanguve South, Pretoria',
+    embedUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3585.1234567890!2d28.0978!3d-25.5234!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1e9564b5c6d7e8f9%3A0x7a8b9c0d1e2f3a4b!2sTUT%20Soshanguve%20South%20Campus!5e0!3m2!1sen!2sza!4v1702300000007',
+    directionsUrl: 'https://www.google.com/maps/dir/?api=1&destination=-25.5234,28.0978',
+    phone: '012 382 9600',
+  },
+  soshanguve_north: {
+    name: 'Soshanguve North Campus',
+    address: 'Soshanguve North, Pretoria',
+    embedUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3584.1234567890!2d28.1056!3d-25.4867!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1e9565c6d7e8f9a0%3A0x8b9c0d1e2f3a4b5c!2sTUT%20Soshanguve%20North%20Campus!5e0!3m2!1sen!2sza!4v1702300000008',
+    directionsUrl: 'https://www.google.com/maps/dir/?api=1&destination=-25.4867,28.1056',
+    phone: '012 382 9700',
+  },
+  emalahleni: {
+    name: 'Emalahleni Campus',
+    address: 'Emalahleni, Mpumalanga',
+    embedUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3610.1234567890!2d29.2345!3d-25.8765!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1e957d8e9f0a1b2c%3A0x9c0d1e2f3a4b5c6d!2sTUT%20Emalahleni%20Campus!5e0!3m2!1sen!2sza!4v1702300000009',
+    directionsUrl: 'https://www.google.com/maps/dir/?api=1&destination=-25.8765,29.2345',
+    phone: '013 653 3400',
+  },
+};
 
 const securityPositions = [
   { id: 1, name: 'Guard 1', position: 'Main Gate', x: 15, y: 20, status: 'active' },
@@ -27,21 +110,43 @@ const landmarks = [
 ];
 
 export const CampusMap = () => {
+  const { user } = useAuth();
+  const [userCampus, setUserCampus] = useState<string>('pretoria_west_main');
+
+  useEffect(() => {
+    const fetchUserCampus = async () => {
+      if (user) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('campus')
+          .eq('id', user.id)
+          .single();
+        
+        if (data?.campus) {
+          setUserCampus(data.campus);
+        }
+      }
+    };
+    fetchUserCampus();
+  }, [user]);
+
+  const campus = campusData[userCampus] || campusData.pretoria_west_main;
+
   return (
     <div className="space-y-6">
       <Card className="w-full max-w-5xl mx-auto p-4 sm:p-6">
         <div className="space-y-4">
           <div className="flex items-center gap-3 mb-4 sm:mb-6">
             <MapPin className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
-            <h2 className="text-xl sm:text-2xl font-bold">TUT Campus Locations</h2>
+            <h2 className="text-xl sm:text-2xl font-bold">Your Campus Location</h2>
           </div>
 
           <div className="grid gap-4 lg:grid-cols-2">
             <div className="space-y-2">
-              <h3 className="font-semibold text-base sm:text-lg">Pretoria West (Main Campus)</h3>
+              <h3 className="font-semibold text-base sm:text-lg">{campus.name}</h3>
               <div className="relative w-full h-[250px] sm:h-[300px] rounded-lg overflow-hidden border">
                 <iframe
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3592.1234567890!2d28.1608!3d-25.7358!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1e9560d7b0b7c9d7%3A0x7e1d8f5c8f5c8f5c!2sTshwane%20University%20of%20Technology!5e0!3m2!1sen!2sza!4v1234567890"
+                  src={campus.embedUrl}
                   width="100%"
                   height="100%"
                   style={{ border: 0 }}
@@ -51,7 +156,7 @@ export const CampusMap = () => {
                 />
               </div>
               <p className="text-xs sm:text-sm text-muted-foreground">
-                Staatsartillerie Rd, Pretoria West, Pretoria
+                {campus.address}
               </p>
             </div>
 
@@ -76,7 +181,7 @@ export const CampusMap = () => {
                 <div className="space-y-2 text-xs sm:text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Campus Security:</span>
-                    <span className="font-medium">012 382 5911</span>
+                    <span className="font-medium">{campus.phone}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Emergency:</span>
@@ -86,7 +191,7 @@ export const CampusMap = () => {
               </div>
 
               <a
-                href="https://www.google.com/maps/dir/?api=1&destination=Tshwane+University+of+Technology,Pretoria+West"
+                href={campus.directionsUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors text-xs sm:text-sm font-medium"
