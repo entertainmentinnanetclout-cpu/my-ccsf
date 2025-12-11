@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { motion } from 'framer-motion';
 import { Shield, LayoutDashboard, AlertCircle, Megaphone, MessageSquare, MapPin, Users, BarChart3 } from 'lucide-react';
 import tutLogo from '@/assets/tut-logo.png';
@@ -13,8 +14,9 @@ import { ResolveCases } from '@/components/admin/ResolveCases';
 import { StaffCommunication } from '@/components/admin/StaffCommunication';
 import { RealTimeIncidents } from '@/components/admin/RealTimeIncidents';
 import { IncidentAnalytics } from '@/components/admin/IncidentAnalytics';
-import { MasterSyncProvider } from '@/contexts/MasterSyncContext';
+import { MasterSyncProvider, useMasterSync } from '@/contexts/MasterSyncContext';
 import { MasterSyncButton } from '@/components/admin/MasterSyncButton';
+import { VirtualStudentList } from '@/components/shared/VirtualStudentList';
 import { NotificationBell } from '@/components/shared/NotificationBell';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
@@ -207,97 +209,96 @@ const Security = () => {
   );
 };
 
-// Campus Students List Component
+// Campus Students List Component using MasterSync + Virtual Scrolling
 const CampusStudentsList = ({ campus }: { campus: string | null | undefined }) => {
-  const [students, setStudents] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { profiles, isLoading, profilesPagination, loadMoreProfiles, getProfilesByCampus } = useMasterSync();
+  const [selectedStudent, setSelectedStudent] = useState<any | null>(null);
 
-  const fetchStudents = async () => {
-    if (!campus) return;
+  // Get students for the current campus
+  const campusStudents = useMemo(() => {
+    if (!campus) return [];
+    return getProfilesByCampus(campus);
+  }, [campus, getProfilesByCampus]);
 
-    const campusValue = campus as CampusLocation;
-
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('id, full_name, email, student_number, phone_number, residence')
-      .eq('campus', campusValue)
-      .order('full_name', { ascending: true });
-
-    if (!error && data) {
-      setStudents(data);
-    }
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    fetchStudents();
-
-    // Real-time subscription for students
-    const channel = supabase
-      .channel('campus-students-realtime')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'profiles',
-        },
-        () => {
-          fetchStudents();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [campus]);
-
-  if (loading) {
+  if (isLoading) {
     return (
       <Card className="p-6">
-        <p className="text-muted-foreground">Loading students...</p>
+        <div className="animate-pulse space-y-4">
+          <div className="h-6 bg-muted rounded w-1/3"></div>
+          <div className="h-[400px] bg-muted rounded"></div>
+        </div>
       </Card>
     );
   }
 
   return (
     <Card className="p-6 shadow-large">
-      <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-        <Users className="h-5 w-5" />
-        Campus Students ({students.length})
-      </h2>
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b">
-              <th className="text-left py-2 px-3">Name</th>
-              <th className="text-left py-2 px-3">Student Number</th>
-              <th className="text-left py-2 px-3">Email</th>
-              <th className="text-left py-2 px-3">Phone</th>
-              <th className="text-left py-2 px-3">Residence</th>
-            </tr>
-          </thead>
-          <tbody>
-            {students.map((student) => (
-              <tr key={student.id} className="border-b hover:bg-muted/50">
-                <td className="py-2 px-3">{student.full_name || 'N/A'}</td>
-                <td className="py-2 px-3">{student.student_number || 'N/A'}</td>
-                <td className="py-2 px-3">{student.email}</td>
-                <td className="py-2 px-3">{student.phone_number || 'N/A'}</td>
-                <td className="py-2 px-3">{student.residence || 'N/A'}</td>
-              </tr>
-            ))}
-            {students.length === 0 && (
-              <tr>
-                <td colSpan={5} className="py-4 text-center text-muted-foreground">
-                  No students found for this campus
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-bold flex items-center gap-2">
+          <Users className="h-5 w-5" />
+          Campus Students ({campusStudents.length})
+        </h2>
+        {profilesPagination.hasMore && (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={loadMoreProfiles}
+            className="gap-2"
+          >
+            Load More
+          </Button>
+        )}
       </div>
+      <VirtualStudentList 
+        students={campusStudents} 
+        height={500}
+        onStudentClick={(student) => setSelectedStudent(student)}
+      />
+      
+      {/* Student Details Dialog */}
+      <Dialog open={!!selectedStudent} onOpenChange={() => setSelectedStudent(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Student Details
+            </DialogTitle>
+          </DialogHeader>
+          {selectedStudent && (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <span className="text-muted-foreground">Name:</span>
+                <span className="font-medium">{selectedStudent.full_name || 'N/A'}</span>
+                <span className="text-muted-foreground">Student Number:</span>
+                <span className="font-medium">{selectedStudent.student_number || 'N/A'}</span>
+                <span className="text-muted-foreground">Email:</span>
+                <span className="font-medium truncate">{selectedStudent.email}</span>
+                <span className="text-muted-foreground">Phone:</span>
+                <span className="font-medium">{selectedStudent.phone_number || 'N/A'}</span>
+                <span className="text-muted-foreground">Residence:</span>
+                <span className="font-medium">{selectedStudent.residence || 'N/A'}</span>
+                <span className="text-muted-foreground">Course:</span>
+                <span className="font-medium">{selectedStudent.course || 'N/A'}</span>
+                <span className="text-muted-foreground">Year:</span>
+                <span className="font-medium">{selectedStudent.year_of_study || 'N/A'}</span>
+              </div>
+              {selectedStudent.emergency_contact_name && (
+                <div className="pt-3 border-t">
+                  <p className="text-sm font-medium mb-2">Emergency Contact</p>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <span className="text-muted-foreground">Name:</span>
+                    <span>{selectedStudent.emergency_contact_name}</span>
+                    <span className="text-muted-foreground">Phone:</span>
+                    <span>{selectedStudent.emergency_contact_phone || 'N/A'}</span>
+                    <span className="text-muted-foreground">Relationship:</span>
+                    <span>{selectedStudent.emergency_contact_relationship || 'N/A'}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };

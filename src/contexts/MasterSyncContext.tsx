@@ -12,6 +12,13 @@ type Notification = Tables<'notifications'>;
 
 type ConnectionStatus = 'connected' | 'connecting' | 'disconnected';
 
+interface PaginationState {
+  page: number;
+  pageSize: number;
+  total: number;
+  hasMore: boolean;
+}
+
 interface MasterSyncContextType {
   // Data
   incidents: Incident[];
@@ -19,6 +26,10 @@ interface MasterSyncContextType {
   announcements: Announcement[];
   carouselImages: CarouselImage[];
   notifications: Notification[];
+  
+  // Pagination state
+  incidentsPagination: PaginationState;
+  profilesPagination: PaginationState;
   
   // Status
   isLoading: boolean;
@@ -33,6 +44,8 @@ interface MasterSyncContextType {
   refreshAnnouncements: () => Promise<void>;
   refreshCarouselImages: () => Promise<void>;
   refreshNotifications: () => Promise<void>;
+  loadMoreIncidents: () => Promise<void>;
+  loadMoreProfiles: () => Promise<void>;
   
   // Filtered getters
   getIncidentsByCampus: (campus: string) => Incident[];
@@ -57,12 +70,22 @@ interface MasterSyncProviderProps {
 }
 
 export const MasterSyncProvider: React.FC<MasterSyncProviderProps> = ({ children }) => {
+  const PAGE_SIZE = 500; // Load 500 records per page for efficiency
+  
   // Data states
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [carouselImages, setCarouselImages] = useState<CarouselImage[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  
+  // Pagination states
+  const [incidentsPagination, setIncidentsPagination] = useState<PaginationState>({
+    page: 0, pageSize: PAGE_SIZE, total: 0, hasMore: true
+  });
+  const [profilesPagination, setProfilesPagination] = useState<PaginationState>({
+    page: 0, pageSize: PAGE_SIZE, total: 0, hasMore: true
+  });
   
   // Status states
   const [isLoading, setIsLoading] = useState(true);
@@ -74,34 +97,115 @@ export const MasterSyncProvider: React.FC<MasterSyncProviderProps> = ({ children
   const channelsRef = useRef<ReturnType<typeof supabase.channel>[]>([]);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Fetch functions with error handling
-  const fetchIncidents = useCallback(async () => {
-    const { data, error } = await supabase
+  // Fetch incidents with pagination
+  const fetchIncidents = useCallback(async (reset = true) => {
+    const page = reset ? 0 : incidentsPagination.page;
+    const from = page * PAGE_SIZE;
+    const to = from + PAGE_SIZE - 1;
+    
+    const { data, error, count } = await supabase
       .from('incidents')
-      .select('*')
+      .select('*', { count: 'exact' })
       .order('created_at', { ascending: false })
-      .limit(1000);
+      .range(from, to);
     
     if (error) {
       console.error('Error fetching incidents:', error);
       return;
     }
-    setIncidents(data || []);
-  }, []);
+    
+    if (reset) {
+      setIncidents(data || []);
+    } else {
+      setIncidents(prev => [...prev, ...(data || [])]);
+    }
+    
+    setIncidentsPagination({
+      page,
+      pageSize: PAGE_SIZE,
+      total: count || 0,
+      hasMore: (data?.length || 0) === PAGE_SIZE
+    });
+  }, [incidentsPagination.page]);
 
-  const fetchProfiles = useCallback(async () => {
+  // Load more incidents
+  const loadMoreIncidents = useCallback(async () => {
+    if (!incidentsPagination.hasMore) return;
+    
+    const nextPage = incidentsPagination.page + 1;
+    const from = nextPage * PAGE_SIZE;
+    const to = from + PAGE_SIZE - 1;
+    
     const { data, error } = await supabase
-      .from('profiles')
+      .from('incidents')
       .select('*')
       .order('created_at', { ascending: false })
-      .limit(1000);
+      .range(from, to);
+    
+    if (!error && data) {
+      setIncidents(prev => [...prev, ...data]);
+      setIncidentsPagination(prev => ({
+        ...prev,
+        page: nextPage,
+        hasMore: data.length === PAGE_SIZE
+      }));
+    }
+  }, [incidentsPagination]);
+
+  // Fetch profiles with pagination
+  const fetchProfiles = useCallback(async (reset = true) => {
+    const page = reset ? 0 : profilesPagination.page;
+    const from = page * PAGE_SIZE;
+    const to = from + PAGE_SIZE - 1;
+    
+    const { data, error, count } = await supabase
+      .from('profiles')
+      .select('*', { count: 'exact' })
+      .order('created_at', { ascending: false })
+      .range(from, to);
     
     if (error) {
       console.error('Error fetching profiles:', error);
       return;
     }
-    setProfiles(data || []);
-  }, []);
+    
+    if (reset) {
+      setProfiles(data || []);
+    } else {
+      setProfiles(prev => [...prev, ...(data || [])]);
+    }
+    
+    setProfilesPagination({
+      page,
+      pageSize: PAGE_SIZE,
+      total: count || 0,
+      hasMore: (data?.length || 0) === PAGE_SIZE
+    });
+  }, [profilesPagination.page]);
+
+  // Load more profiles
+  const loadMoreProfiles = useCallback(async () => {
+    if (!profilesPagination.hasMore) return;
+    
+    const nextPage = profilesPagination.page + 1;
+    const from = nextPage * PAGE_SIZE;
+    const to = from + PAGE_SIZE - 1;
+    
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .range(from, to);
+    
+    if (!error && data) {
+      setProfiles(prev => [...prev, ...data]);
+      setProfilesPagination(prev => ({
+        ...prev,
+        page: nextPage,
+        hasMore: data.length === PAGE_SIZE
+      }));
+    }
+  }, [profilesPagination]);
 
   const fetchAnnouncements = useCallback(async () => {
     const { data, error } = await supabase
@@ -323,6 +427,10 @@ export const MasterSyncProvider: React.FC<MasterSyncProviderProps> = ({ children
     carouselImages,
     notifications,
     
+    // Pagination
+    incidentsPagination,
+    profilesPagination,
+    
     // Status
     isLoading,
     isSyncing,
@@ -331,11 +439,13 @@ export const MasterSyncProvider: React.FC<MasterSyncProviderProps> = ({ children
     
     // Actions
     refreshAll,
-    refreshIncidents: fetchIncidents,
-    refreshProfiles: fetchProfiles,
+    refreshIncidents: () => fetchIncidents(true),
+    refreshProfiles: () => fetchProfiles(true),
     refreshAnnouncements: fetchAnnouncements,
     refreshCarouselImages: fetchCarouselImages,
     refreshNotifications: fetchNotifications,
+    loadMoreIncidents,
+    loadMoreProfiles,
     
     // Filtered getters
     getIncidentsByCampus,
