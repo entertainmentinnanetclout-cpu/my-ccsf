@@ -7,13 +7,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { motion } from 'framer-motion';
 import { Shield, LayoutDashboard, AlertCircle, Megaphone, MessageSquare, MapPin, Users, BarChart3, Settings } from 'lucide-react';
 import tutLogo from '@/assets/tut-logo.png';
-import { AdminOverview } from '@/components/admin/AdminOverview';
+import { CampusDashboard } from '@/components/admin/CampusDashboard';
 import { AdminIncidents } from '@/components/admin/AdminIncidents';
 import { AdminAnnouncements } from '@/components/admin/AdminAnnouncements';
 import { ResolveCases } from '@/components/admin/ResolveCases';
 import { StaffCommunication } from '@/components/admin/StaffCommunication';
 import { RealTimeIncidents } from '@/components/admin/RealTimeIncidents';
-import { IncidentAnalytics } from '@/components/admin/IncidentAnalytics';
+import { CampusAnalytics } from '@/components/admin/CampusAnalytics';
 import { OfficerSettings } from '@/components/admin/OfficerSettings';
 import { MasterSyncProvider, useMasterSync } from '@/contexts/MasterSyncContext';
 import { CasesProvider } from '@/contexts/CasesContext';
@@ -84,46 +84,48 @@ const Security = () => {
           transition={{ duration: 0.5, ease: 'easeInOut' }}
           className="sticky top-0 z-50 bg-gradient-to-r from-secondary/95 to-primary/95 border-b border-white/10 shadow-large backdrop-blur-md"
         >
-          <div className="container mx-auto px-4 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
+          <div className="container mx-auto px-4 py-3">
+            <div className="flex items-center justify-between gap-4">
+              {/* Left: Logo and Title */}
+              <div className="flex items-center gap-3 min-w-0 flex-shrink">
                 <motion.img
                   src={tutLogo}
                   alt="TUT Logo"
-                  className="h-10 logo-glow"
+                  className="h-9 w-9 flex-shrink-0 logo-glow"
                   whileHover={{ scale: 1.1, rotate: -5 }}
                   transition={{ type: "spring", stiffness: 300, damping: 20 }}
                 />
-                <div>
+                <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <Shield className="h-5 w-5 text-white animate-pulse" />
-                    <h1 className="text-xl font-bold text-white">Campus Community Safety Forum</h1>
+                    <Shield className="h-4 w-4 text-white animate-pulse flex-shrink-0" />
+                    <h1 className="text-base md:text-lg font-bold text-white truncate">CCSF Portal</h1>
                   </div>
                   <div className="flex items-center gap-2">
-                    <p className="text-sm text-white/90 font-semibold">Campus Admin Portal</p>
                     <span className="px-2 py-0.5 bg-white/20 rounded-full text-xs text-white font-medium flex items-center gap-1">
-                      <MapPin className="h-3 w-3" />
-                      {userCampus}
+                      <MapPin className="h-3 w-3 flex-shrink-0" />
+                      <span className="truncate max-w-[120px]">{userCampus}</span>
                     </span>
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
-                <div className="hidden md:flex items-center gap-4 mr-4">
+              {/* Right: Stats and Actions */}
+              <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
+                <div className="hidden sm:flex items-center gap-3 px-3 py-1.5 bg-white/10 rounded-lg">
                   <div className="text-center">
-                    <p className="text-2xl font-bold text-white">{campusStudentCount}</p>
-                    <p className="text-xs text-white/70">Students</p>
+                    <p className="text-lg font-bold text-white leading-none">{campusStudentCount}</p>
+                    <p className="text-[10px] text-white/70 uppercase tracking-wide">Students</p>
                   </div>
+                  <div className="w-px h-8 bg-white/20" />
                   <div className="text-center">
-                    <p className="text-2xl font-bold text-white">{campusIncidentCount}</p>
-                    <p className="text-xs text-white/70">Incidents</p>
+                    <p className="text-lg font-bold text-white leading-none">{campusIncidentCount}</p>
+                    <p className="text-[10px] text-white/70 uppercase tracking-wide">Cases</p>
                   </div>
                 </div>
                 <MasterSyncButton />
                 <NotificationBell />
-                <motion.div whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.95 }}>
-                  <Button variant="destructive" size="sm" onClick={() => signOut()}>
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <Button variant="destructive" size="sm" className="text-xs px-3" onClick={() => signOut()}>
                     Sign Out
                   </Button>
                 </motion.div>
@@ -194,14 +196,14 @@ const Security = () => {
             exit={{ opacity: 0, x: -20, scale: 0.97 }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
           >
-            {activeView === 'overview' && <AdminOverview />}
+            {activeView === 'overview' && <CampusDashboard />}
             {activeView === 'incidents' && (
               <div className="space-y-6">
                 <AdminIncidents />
                 <ResolveCases />
               </div>
             )}
-            {activeView === 'analytics' && <IncidentAnalytics />}
+            {activeView === 'analytics' && <CampusAnalytics />}
             {activeView === 'students' && <CampusStudentsList campus={userProfile?.campus} />}
             {activeView === 'announcements' && <AdminAnnouncements />}
             {activeView === 'communication' && <StaffCommunication />}
