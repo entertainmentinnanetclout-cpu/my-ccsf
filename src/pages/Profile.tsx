@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { motion } from 'framer-motion';
-import { Shield, User, ArrowLeft, Loader2, Phone, Heart, AlertCircle, GraduationCap, MapPin, Home } from 'lucide-react';
+import { Shield, User, Loader2, Phone, Heart, AlertCircle, MapPin, Home, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import tutLogo from '@/assets/tut-logo.png';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Progress } from '@/components/ui/progress';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -23,6 +24,13 @@ const formatCampusName = (campus: string) => {
     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
 };
+
+// Fields to check for profile completion
+const PROFILE_FIELDS = [
+  'full_name', 'first_name', 'last_name', 'phone_number', 'student_number',
+  'course', 'year_of_study', 'emergency_contact_name', 'emergency_contact_phone',
+  'emergency_contact_relationship', 'blood_type', 'allergies', 'medical_aid_name'
+];
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -152,6 +160,32 @@ const Profile = () => {
     navigate('/dashboard');
   };
 
+  const handleReportIncident = () => {
+    navigate('/dashboard?tab=report');
+  };
+
+  // Calculate profile completion percentage
+  const profileCompletion = useMemo(() => {
+    const filledFields = PROFILE_FIELDS.filter(field => {
+      const value = formData[field as keyof typeof formData];
+      return value && value.toString().trim() !== '';
+    });
+    return Math.round((filledFields.length / PROFILE_FIELDS.length) * 100);
+  }, [formData]);
+
+  const getCompletionColor = () => {
+    if (profileCompletion >= 80) return 'text-green-500';
+    if (profileCompletion >= 50) return 'text-yellow-500';
+    return 'text-destructive';
+  };
+
+  const getCompletionMessage = () => {
+    if (profileCompletion === 100) return 'Profile complete!';
+    if (profileCompletion >= 80) return 'Almost there!';
+    if (profileCompletion >= 50) return 'Good progress!';
+    return 'Please complete your profile';
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-primary flex items-center justify-center">
@@ -185,16 +219,53 @@ const Profile = () => {
               </div>
             </div>
             {userRole === 'student' && (
-              <Button onClick={handleGoToDashboard} variant="secondary" className="gap-2">
-                <Home className="h-4 w-4" />
-                Go to Dashboard
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button onClick={handleReportIncident} variant="destructive" className="gap-2">
+                  <AlertTriangle className="h-4 w-4" />
+                  Report Incident
+                </Button>
+                <Button onClick={handleGoToDashboard} variant="secondary" className="gap-2">
+                  <Home className="h-4 w-4" />
+                  Dashboard
+                </Button>
+              </div>
             )}
           </div>
         </div>
       </motion.header>
 
       <main className="container mx-auto px-4 py-6">
+        {/* Profile Completion Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1, duration: 0.3 }}
+          className="max-w-3xl mx-auto mb-6"
+        >
+          <Card className="p-4 shadow-large">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-3">
+                {profileCompletion === 100 ? (
+                  <CheckCircle2 className="h-6 w-6 text-green-500" />
+                ) : (
+                  <AlertCircle className={`h-6 w-6 ${getCompletionColor()}`} />
+                )}
+                <div>
+                  <h3 className="font-semibold">Profile Completion</h3>
+                  <p className={`text-sm ${getCompletionColor()}`}>{getCompletionMessage()}</p>
+                </div>
+              </div>
+              <span className={`text-2xl font-bold ${getCompletionColor()}`}>{profileCompletion}%</span>
+            </div>
+            <Progress value={profileCompletion} className="h-3" />
+            {profileCompletion < 100 && (
+              <p className="text-xs text-muted-foreground mt-2">
+                Complete your profile to help emergency responders assist you better
+              </p>
+            )}
+          </Card>
+        </motion.div>
+
         <motion.div
           initial={{ opacity: 0, y: 25 }}
           animate={{ opacity: 1, y: 0 }}
