@@ -1,42 +1,28 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { motion } from 'framer-motion';
 import { 
   Users, Clock, CheckCircle, AlertCircle, TrendingUp, 
   BarChart3, ArrowLeft, User
 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useMasterSync } from '@/contexts/MasterSyncContext';
 import { CampusOverview } from './CampusOverview';
 import { EmergencyCases } from './EmergencyCases';
 import { AnimatedCounter } from './AnimatedCounter';
+import { VirtualIncidentList } from '@/components/shared/VirtualIncidentList';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts';
 import { format } from 'date-fns';
 import type { Database } from '@/integrations/supabase/types';
+import type { Tables } from '@/integrations/supabase/types';
 
 type IncidentStatus = Database['public']['Enums']['incident_status'];
 type IncidentCategory = Database['public']['Enums']['incident_category'];
-
-interface Incident {
-  id: string;
-  title: string;
-  description: string;
-  status: IncidentStatus;
-  category: IncidentCategory;
-  created_at: string;
-  reporter_id: string | null;
-  campus: string | null;
-  is_anonymous: boolean;
-  reporter?: {
-    full_name: string | null;
-    email: string;
-    student_number: string | null;
-  } | null;
-}
+type Incident = Tables<'incidents'>;
 
 interface Stats {
   total: number;
@@ -45,8 +31,6 @@ interface Stats {
   resolved: number;
   rejected: number;
 }
-
-// Real-time data is fetched from database - no mock data
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))'];
 const STATUS_COLORS: Record<string, string> = {
@@ -99,132 +83,85 @@ const StatCard = ({
 
 export const AdminOverview = () => {
   const { userProfile } = useAuth();
-  const [stats, setStats] = useState<Stats>({ total: 0, pending: 0, assigned: 0, resolved: 0, rejected: 0 });
-  const [incidents, setIncidents] = useState<Incident[]>([]);
+  const { incidents: allIncidents, isLoading, incidentsPagination, loadMoreIncidents, getIncidentsByCampus } = useMasterSync();
+  
   const [selectedView, setSelectedView] = useState<'total' | 'pending' | 'assigned' | 'resolved' | 'rejected' | null>(null);
-  const [filteredIncidents, setFilteredIncidents] = useState<Incident[]>([]);
   const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
-  const [categoryData, setCategoryData] = useState<{ name: string; value: number }[]>([]);
-  const [trendData, setTrendData] = useState<{ date: string; incidents: number }[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
 
-
-  useEffect(() => {
-    fetchIncidents();
-
-    // Real-time subscription for incidents
-    const channel = supabase
-      .channel('incidents-overview-realtime')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'incidents',
-        },
-        () => {
-          fetchIncidents();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [userProfile?.campus]);
-
-  const fetchIncidents = async () => {
-    setIsLoading(true);
-    const campusValue = userProfile?.campus as Database['public']['Enums']['campus_location'] | undefined;
-
-    let query = supabase
-      .from('incidents')
-      .select(`
-        id, title, description, status, category, created_at, reporter_id, campus, is_anonymous,
-        reporter:profiles!incidents_reporter_id_fkey(full_name, email, student_number)
-      `)
-      .order('created_at', { ascending: false });
-
-    if (campusValue) {
-      query = query.eq('campus', campusValue);
+  // Filter incidents by campus if user has a campus
+  const incidents = useMemo(() => {
+    if (userProfile?.campus) {
+      return getIncidentsByCampus(userProfile.campus);
     }
+    return allIncidents;
+  }, [allIncidents, userProfile?.campus, getIncidentsByCampus]);
 
-    const { data, error } = await query;
+  // Calculate stats from incidents
+  const stats = useMemo<Stats>(() => ({
+    total: incidents.length,
+    pending: incidents.filter(i => i.status === 'pending').length,
+    assigned: incidents.filter(i => i.status === 'assigned').length,
+    resolved: incidents.filter(i => i.status === 'resolved').length,
+    rejected: incidents.filter(i => i.status === 'rejected').length,
+  }), [incidents]);
 
-    if (!error && data) {
-      const typedData = data as unknown as Incident[];
-      setIncidents(typedData);
-      
-      // Calculate stats
-      const newStats = {
-        total: typedData.length,
-        pending: typedData.filter(i => i.status === 'pending').length,
-        assigned: typedData.filter(i => i.status === 'assigned').length,
-        resolved: typedData.filter(i => i.status === 'resolved').length,
-        rejected: typedData.filter(i => i.status === 'rejected').length,
-      };
-      setStats(newStats);
+  // Calculate category data
+  const categoryData = useMemo(() => {
+    const categories = incidents.reduce((acc, inc) => {
+      acc[inc.category] = (acc[inc.category] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    return Object.entries(categories)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 5);
+  }, [incidents]);
 
-      // Calculate category distribution
-      const categories = typedData.reduce((acc, inc) => {
-        acc[inc.category] = (acc[inc.category] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
-      
-      setCategoryData(
-        Object.entries(categories)
-          .map(([name, value]) => ({ name, value }))
-          .sort((a, b) => b.value - a.value)
-          .slice(0, 5)
-      );
+  // Calculate trend data (last 7 days)
+  const trendData = useMemo(() => {
+    const last7Days = Array.from({ length: 7 }, (_, i) => {
+      const date = new Date();
+      date.setDate(date.getDate() - (6 - i));
+      return format(date, 'yyyy-MM-dd');
+    });
 
-      // Calculate trend data (last 7 days)
-      const last7Days = Array.from({ length: 7 }, (_, i) => {
-        const date = new Date();
-        date.setDate(date.getDate() - (6 - i));
-        return format(date, 'yyyy-MM-dd');
-      });
+    const trendMap = incidents.reduce((acc, inc) => {
+      const date = format(new Date(inc.created_at), 'yyyy-MM-dd');
+      if (last7Days.includes(date)) {
+        acc[date] = (acc[date] || 0) + 1;
+      }
+      return acc;
+    }, {} as Record<string, number>);
 
-      const trendMap = typedData.reduce((acc, inc) => {
-        const date = format(new Date(inc.created_at), 'yyyy-MM-dd');
-        if (last7Days.includes(date)) {
-          acc[date] = (acc[date] || 0) + 1;
-        }
-        return acc;
-      }, {} as Record<string, number>);
+    return last7Days.map(date => ({
+      date: format(new Date(date), 'EEE'),
+      incidents: trendMap[date] || 0
+    }));
+  }, [incidents]);
 
-      setTrendData(
-        last7Days.map(date => ({
-          date: format(new Date(date), 'EEE'),
-          incidents: trendMap[date] || 0
-        }))
-      );
-    }
-    setIsLoading(false);
-  };
+  // Filtered incidents based on selected view
+  const filteredIncidents = useMemo(() => {
+    if (!selectedView) return [];
+    if (selectedView === 'total') return incidents;
+    return incidents.filter(i => i.status === selectedView);
+  }, [incidents, selectedView]);
 
-  const handleStatClick = (view: 'total' | 'pending' | 'assigned' | 'resolved' | 'rejected') => {
+  const handleStatClick = useCallback((view: 'total' | 'pending' | 'assigned' | 'resolved' | 'rejected') => {
     setSelectedView(view);
     setSelectedIncident(null);
-    
-    if (view === 'total') {
-      setFilteredIncidents(incidents);
-    } else {
-      setFilteredIncidents(incidents.filter(i => i.status === view));
-    }
-  };
+  }, []);
 
-  const handleCategoryClick = (category: string) => {
+  const handleCategoryClick = useCallback((category: string) => {
     setSelectedView('total');
     setSelectedIncident(null);
-    setFilteredIncidents(incidents.filter(i => i.category === category));
-  };
+  }, []);
 
-  const closeMetricsView = () => {
+  const closeMetricsView = useCallback(() => {
     setSelectedView(null);
     setSelectedIncident(null);
-    setFilteredIncidents([]);
-  };
+  }, []);
+
 
   return (
     <div className="flex flex-col gap-6">
@@ -453,19 +390,11 @@ export const AdminOverview = () => {
                           </h4>
                           {selectedIncident.is_anonymous ? (
                             <p className="text-sm text-muted-foreground italic">Anonymous Report</p>
-                          ) : selectedIncident.reporter ? (
+                          ) : selectedIncident.reporter_id ? (
                             <div className="grid grid-cols-2 gap-3 text-sm">
-                              <div>
-                                <span className="text-muted-foreground block text-xs">Name</span>
-                                <span className="font-medium">{selectedIncident.reporter.full_name || 'N/A'}</span>
-                              </div>
-                              <div>
-                                <span className="text-muted-foreground block text-xs">Student #</span>
-                                <span className="font-medium">{selectedIncident.reporter.student_number || 'N/A'}</span>
-                              </div>
                               <div className="col-span-2">
-                                <span className="text-muted-foreground block text-xs">Email</span>
-                                <span className="font-medium">{selectedIncident.reporter.email}</span>
+                                <span className="text-muted-foreground block text-xs">Reporter ID</span>
+                                <span className="font-medium text-xs truncate">{selectedIncident.reporter_id}</span>
                               </div>
                             </div>
                           ) : (

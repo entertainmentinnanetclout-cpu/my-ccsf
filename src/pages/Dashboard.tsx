@@ -19,7 +19,8 @@ const Dashboard = () => {
   const { user, signOut } = useAuth();
   const [activeView, setActiveView] = useState<'home' | 'report' | 'mycases' | 'map' | 'messages'>('home');
   const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const [userCampus, setUserCampus] = useState<string>('Polokwane Campus');
+  const [userCampus, setUserCampus] = useState<string>('Campus');
+  const [userCampusId, setUserCampusId] = useState<string | null>(null);
 
   useEffect(() => {
     const checkProfile = async () => {
@@ -31,6 +32,7 @@ const Dashboard = () => {
           .single();
 
         if (data?.campus) {
+          setUserCampusId(data.campus);
           const campusDisplayNames: Record<string, string> = {
             'pretoria_west_main': 'Pretoria West Campus',
             'arcadia': 'Arcadia Campus',
@@ -209,7 +211,7 @@ const Dashboard = () => {
         >
           {activeView === 'home' && (
             <div className="space-y-4 sm:space-y-6">
-              <CampusCarousel />
+              <CampusCarousel campus={userCampusId || undefined} />
               <NewsFeed />
             </div>
           )}
