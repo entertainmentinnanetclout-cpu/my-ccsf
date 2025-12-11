@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { UserPlus, Trash2, Shield, Search, Crown, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { UserPlus, Trash2, Shield, Search, Crown, Eye, EyeOff, Loader2, Pencil } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -50,10 +50,17 @@ export const CampusAdminManager = () => {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [dialogTab, setDialogTab] = useState<'assign' | 'create'>('create');
+  const [editingAdmin, setEditingAdmin] = useState<CampusAdmin | null>(null);
+  const [editFormData, setEditFormData] = useState({
+    campus: '',
+    isHead: false
+  });
   const { toast } = useToast();
 
   const [formData, setFormData] = useState({
@@ -218,6 +225,58 @@ export const CampusAdminManager = () => {
     }
   };
 
+  const handleEdit = (admin: CampusAdmin) => {
+    setEditingAdmin(admin);
+    setEditFormData({
+      campus: admin.campus,
+      isHead: admin.is_head
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleUpdateAdmin = async () => {
+    if (!editingAdmin) return;
+
+    setIsUpdating(true);
+    try {
+      // If campus changed, remove from old campus and add to new
+      if (editFormData.campus !== editingAdmin.campus) {
+        // Remove from old campus
+        await supabase.rpc('remove_campus_admin', {
+          p_user_id: editingAdmin.admin_id,
+          p_campus: editingAdmin.campus as CampusLocation
+        });
+        
+        // Add to new campus
+        const { error } = await supabase.rpc('assign_campus_admin', {
+          p_user_id: editingAdmin.admin_id,
+          p_campus: editFormData.campus as CampusLocation,
+          p_is_head: editFormData.isHead
+        });
+
+        if (error) throw error;
+      } else if (editFormData.isHead !== editingAdmin.is_head) {
+        // Just update the is_head status
+        const { error } = await supabase
+          .from('admin_access')
+          .update({ is_head: editFormData.isHead })
+          .eq('id', editingAdmin.id);
+
+        if (error) throw error;
+      }
+
+      toast({ title: 'Officer updated successfully' });
+      fetchAdmins();
+      setIsEditDialogOpen(false);
+      setEditingAdmin(null);
+    } catch (error: any) {
+      console.error('Error updating admin:', error);
+      toast({ title: 'Error', description: error.message || 'Failed to update officer', variant: 'destructive' });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   const getCampusLabel = (value: string) => {
     return CAMPUSES.find(c => c.value === value)?.label || value;
   };
@@ -310,14 +369,24 @@ export const CampusAdminManager = () => {
                             </p>
                           </div>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleRemove(admin.admin_id, admin.campus)}
-                          className="text-destructive hover:text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleEdit(admin)}
+                            className="text-muted-foreground hover:text-primary"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleRemove(admin.admin_id, admin.campus)}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -327,6 +396,63 @@ export const CampusAdminManager = () => {
           ))}
         </div>
       )}
+
+      {/* Edit Officer Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Officer Access</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 pt-4">
+            <div className="p-3 rounded-lg bg-muted/50">
+              <p className="font-medium">{editingAdmin?.profile?.full_name || 'Unknown'}</p>
+              <p className="text-sm text-muted-foreground">{editingAdmin?.profile?.email}</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Assigned Campus</Label>
+              <Select 
+                value={editFormData.campus} 
+                onValueChange={(v) => setEditFormData({ ...editFormData, campus: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {CAMPUSES.map(campus => (
+                    <SelectItem key={campus.value} value={campus.value}>{campus.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Officers can only view incidents and students from their assigned campus
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="editIsHead"
+                checked={editFormData.isHead}
+                onChange={(e) => setEditFormData({ ...editFormData, isHead: e.target.checked })}
+                className="rounded"
+              />
+              <Label htmlFor="editIsHead" className="cursor-pointer">
+                Head Admin (can view and manage all campuses)
+              </Label>
+            </div>
+
+            <DialogFooter className="pt-4">
+              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
+              <Button onClick={handleUpdateAdmin} disabled={isUpdating}>
+                {isUpdating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Save Changes
+              </Button>
+            </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Add Officer Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
