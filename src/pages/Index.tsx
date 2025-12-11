@@ -22,7 +22,7 @@ const Index = () => {
     } else if (userRole === 'security') {
       navigate('/security', { replace: true });
     } else if (userRole === 'student') {
-      navigate('/dashboard', { replace: true });
+      navigate('/profile', { replace: true });
     } else {
       // Default to auth if no role
       navigate('/auth', { replace: true });
