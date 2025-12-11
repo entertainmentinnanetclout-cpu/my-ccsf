@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -6,10 +6,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { motion } from 'framer-motion';
-import { Shield, Loader2, MapPin, User, Phone, BookOpen, Home as HomeIcon } from 'lucide-react';
+import { Shield, Loader2, MapPin, User, Phone, BookOpen, Home as HomeIcon, CheckCircle2 } from 'lucide-react';
 import tutLogo from '@/assets/tut-logo.png';
 
 const campusOptions = [
@@ -43,7 +44,7 @@ const residenceOptions = [
 ];
 
 const ProfileCompletion = () => {
-  const { user, userProfile, loading: authLoading } = useAuth();
+  const { user, userProfile, loading: authLoading, profileCompleted } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -59,6 +60,32 @@ const ProfileCompletion = () => {
     course: '',
     year_of_study: '',
   });
+
+  // Calculate profile completion percentage
+  const completionPercentage = useMemo(() => {
+    const requiredFields = ['full_name', 'campus'];
+    const optionalFields = ['first_name', 'last_name', 'student_number', 'phone_number', 'residence', 'course', 'year_of_study'];
+    
+    let filled = 0;
+    let total = requiredFields.length + optionalFields.length;
+    
+    requiredFields.forEach(field => {
+      if (formData[field as keyof typeof formData]) filled += 1;
+    });
+    
+    optionalFields.forEach(field => {
+      if (formData[field as keyof typeof formData]) filled += 1;
+    });
+    
+    return Math.round((filled / total) * 100);
+  }, [formData]);
+
+  // Redirect if profile already completed
+  useEffect(() => {
+    if (!authLoading && profileCompleted) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [authLoading, profileCompleted, navigate]);
 
   useEffect(() => {
     const fetchFullProfile = async () => {
@@ -178,6 +205,24 @@ const ProfileCompletion = () => {
             <h1 className="text-2xl font-bold text-foreground">Complete Your Profile</h1>
           </div>
           <p className="text-foreground/80">Help us serve you better by completing your profile</p>
+        </motion.div>
+
+        {/* Progress Bar */}
+        <motion.div
+          className="mb-6"
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-foreground">Profile Completion</span>
+            <span className="text-sm font-bold text-primary">{completionPercentage}%</span>
+          </div>
+          <Progress value={completionPercentage} className="h-3" />
+          <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+            <CheckCircle2 className="h-3 w-3" />
+            <span>Complete your profile to access all features</span>
+          </div>
         </motion.div>
 
         <Card className="shadow-large">

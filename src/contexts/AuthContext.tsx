@@ -11,6 +11,7 @@ interface UserProfile {
   full_name: string | null;
   campus: string | null;
   email: string;
+  profile_completed: boolean;
 }
 
 interface AuthContextType {
@@ -23,6 +24,7 @@ interface AuthContextType {
   isSuperAdmin: boolean;
   isCampusAdmin: boolean;
   isStudent: boolean;
+  profileCompleted: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -58,26 +60,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       setUserRole(dbRole);
 
-      // Fetch profile data
+      // Fetch profile data including profile_completed status
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('id, full_name, campus, email')
+        .select('id, full_name, campus, email, profile_completed')
         .eq('id', userId)
         .maybeSingle();
 
       if (profileData) {
-        setUserProfile(profileData);
+        setUserProfile({
+          ...profileData,
+          profile_completed: profileData.profile_completed ?? false
+        });
       }
 
-      return dbRole;
+      return { role: dbRole, profileCompleted: profileData?.profile_completed ?? false };
     } catch (error) {
       console.error('Error fetching user role/profile:', error);
-      return null;
+      return { role: null, profileCompleted: false };
     }
   }, []);
 
-  const redirectBasedOnRole = useCallback((role: UserRole) => {
+  const redirectBasedOnRole = useCallback((role: UserRole, profileCompleted: boolean) => {
     const currentPath = location.pathname;
+
+    // Students with incomplete profiles go to profile completion
+    if (role === 'student' && !profileCompleted) {
+      if (currentPath !== '/profile-completion') {
+        navigate('/profile-completion', { replace: true });
+      }
+      return;
+    }
 
     // Redirect to correct portal based on role
     if (role === 'admin') {
@@ -89,7 +102,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         navigate('/security', { replace: true });
       }
     } else if (role === 'student') {
-      if (!currentPath.startsWith('/dashboard')) {
+      if (!currentPath.startsWith('/dashboard') && !currentPath.startsWith('/profile')) {
         navigate('/dashboard', { replace: true });
       }
     }
@@ -105,10 +118,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (session?.user) {
           // Use setTimeout to prevent potential deadlock
           setTimeout(() => {
-            fetchUserRoleAndProfile(session.user.id).then((role) => {
+            fetchUserRoleAndProfile(session.user.id).then(({ role, profileCompleted }) => {
               setLoading(false);
               if (role && event === 'SIGNED_IN') {
-                redirectBasedOnRole(role);
+                redirectBasedOnRole(role, profileCompleted);
               }
             });
           }, 0);
@@ -150,6 +163,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const isSuperAdmin = userRole === 'admin';
   const isCampusAdmin = userRole === 'security';
   const isStudent = userRole === 'student';
+  const profileCompleted = userProfile?.profile_completed ?? false;
 
   return (
     <AuthContext.Provider value={{ 
@@ -161,7 +175,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       signOut,
       isSuperAdmin,
       isCampusAdmin,
-      isStudent
+      isStudent,
+      profileCompleted
     }}>
       {children}
     </AuthContext.Provider>

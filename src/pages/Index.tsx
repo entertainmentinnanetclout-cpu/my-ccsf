@@ -7,6 +7,8 @@ const Index = () => {
   const navigate = useNavigate();
   const { user, userRole, loading } = useAuth();
 
+  const { profileCompleted } = useAuth();
+
   useEffect(() => {
     if (loading) return;
 
@@ -22,12 +24,17 @@ const Index = () => {
     } else if (userRole === 'security') {
       navigate('/security', { replace: true });
     } else if (userRole === 'student') {
-      navigate('/profile', { replace: true });
+      // Check if profile is complete
+      if (!profileCompleted) {
+        navigate('/profile-completion', { replace: true });
+      } else {
+        navigate('/dashboard', { replace: true });
+      }
     } else {
       // Default to auth if no role
       navigate('/auth', { replace: true });
     }
-  }, [user, userRole, loading, navigate]);
+  }, [user, userRole, loading, navigate, profileCompleted]);
 
   // Show loading while determining redirect
   return (

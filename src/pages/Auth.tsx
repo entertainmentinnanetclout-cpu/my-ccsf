@@ -52,20 +52,25 @@ const Auth = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { user, userRole, loading: authLoading } = useAuth();
+  const { user, userRole, loading: authLoading, profileCompleted } = useAuth();
 
   // Redirect if already logged in
   useEffect(() => {
     if (user && userRole) {
       if (userRole === 'student') {
-        navigate('/dashboard', { replace: true });
+        // Check if profile is complete
+        if (!profileCompleted) {
+          navigate('/profile-completion', { replace: true });
+        } else {
+          navigate('/dashboard', { replace: true });
+        }
       } else if (userRole === 'security') {
         navigate('/security', { replace: true });
       } else if (userRole === 'admin') {
         navigate('/admin', { replace: true });
       }
     }
-  }, [user, userRole, navigate]);
+  }, [user, userRole, navigate, profileCompleted]);
 
   const validateForm = () => {
     try {
