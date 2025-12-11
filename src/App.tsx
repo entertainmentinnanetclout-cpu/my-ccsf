@@ -48,7 +48,7 @@ const App = () => (
                     <Route path="/admin/*" element={<Admin />} />
                     <Route path="/office" element={<Office />} />
                     <Route path="/profile" element={<Profile />} />
-                    <Route path="/profile/complete" element={<ProfileCompletion />} />
+                    <Route path="/profile-completion" element={<ProfileCompletion />} />
                     <Route path="/judiciary" element={<Judiciary />} />
                   </>
                 ) : (
@@ -79,7 +79,7 @@ const App = () => (
                         <Profile />
                       </ProtectedRoute>
                     } />
-                    <Route path="/profile/complete" element={
+                    <Route path="/profile-completion" element={
                       <ProtectedRoute allowedRoles={['student', 'security', 'admin']}>
                         <ProfileCompletion />
                       </ProtectedRoute>
