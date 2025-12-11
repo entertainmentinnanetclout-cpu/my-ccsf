@@ -16,6 +16,7 @@ import { RealTimeIncidents } from '@/components/admin/RealTimeIncidents';
 import { IncidentAnalytics } from '@/components/admin/IncidentAnalytics';
 import { OfficerSettings } from '@/components/admin/OfficerSettings';
 import { MasterSyncProvider, useMasterSync } from '@/contexts/MasterSyncContext';
+import { CasesProvider } from '@/contexts/CasesContext';
 import { MasterSyncButton } from '@/components/admin/MasterSyncButton';
 import { VirtualStudentList } from '@/components/shared/VirtualStudentList';
 import { NotificationBell } from '@/components/shared/NotificationBell';
@@ -74,6 +75,7 @@ const Security = () => {
 
   return (
     <MasterSyncProvider>
+      <CasesProvider>
       <div className="min-h-screen bg-gradient-admin admin-theme" data-testid="ready-campus-admin">
         {/* Header */}
         <motion.header
@@ -212,6 +214,7 @@ const Security = () => {
           </footer>
         </main>
       </div>
+      </CasesProvider>
     </MasterSyncProvider>
   );
 };
