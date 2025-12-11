@@ -7,8 +7,9 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { UserPlus, Trash2, Shield, Search, Crown } from 'lucide-react';
+import { UserPlus, Trash2, Shield, Search, Crown, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -49,11 +50,22 @@ export const CampusAdminManager = () => {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [dialogTab, setDialogTab] = useState<'assign' | 'create'>('create');
   const { toast } = useToast();
 
   const [formData, setFormData] = useState({
     userId: '',
+    campus: 'pretoria_west_main',
+    isHead: false
+  });
+
+  const [createFormData, setCreateFormData] = useState({
+    email: '',
+    password: '',
+    fullName: '',
     campus: 'pretoria_west_main',
     isHead: false
   });
@@ -111,10 +123,56 @@ export const CampusAdminManager = () => {
       console.error('Error assigning admin:', error);
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     } else {
-      toast({ title: 'Campus admin assigned successfully' });
+      toast({ title: 'Campus officer assigned successfully' });
       fetchAdmins();
       setIsDialogOpen(false);
       setFormData({ userId: '', campus: 'pretoria_west_main', isHead: false });
+    }
+  };
+
+  const handleCreateAdmin = async () => {
+    if (!createFormData.email || !createFormData.password || !createFormData.fullName || !createFormData.campus) {
+      toast({ title: 'Please fill in all required fields', variant: 'destructive' });
+      return;
+    }
+
+    if (createFormData.password.length < 6) {
+      toast({ title: 'Password must be at least 6 characters', variant: 'destructive' });
+      return;
+    }
+
+    setIsCreating(true);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      const response = await supabase.functions.invoke('create-campus-admin', {
+        body: {
+          email: createFormData.email,
+          password: createFormData.password,
+          full_name: createFormData.fullName,
+          campus: createFormData.campus,
+          is_head: createFormData.isHead
+        }
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message);
+      }
+
+      if (response.data?.error) {
+        throw new Error(response.data.error);
+      }
+
+      toast({ title: 'CCSF Officer created successfully', description: `${createFormData.fullName} can now log in with their credentials` });
+      fetchAdmins();
+      setIsDialogOpen(false);
+      setCreateFormData({ email: '', password: '', fullName: '', campus: 'pretoria_west_main', isHead: false });
+    } catch (error: any) {
+      console.error('Error creating admin:', error);
+      toast({ title: 'Error', description: error.message || 'Failed to create officer', variant: 'destructive' });
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -127,7 +185,7 @@ export const CampusAdminManager = () => {
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     } else {
-      toast({ title: 'Campus admin removed' });
+      toast({ title: 'Campus officer removed' });
       fetchAdmins();
     }
   };
@@ -156,13 +214,13 @@ export const CampusAdminManager = () => {
         <div>
           <h2 className="text-2xl font-bold flex items-center gap-2">
             <Shield className="h-6 w-6 text-primary" />
-            Campus Admin Management
+            CCSF Officer Management
           </h2>
-          <p className="text-muted-foreground">Assign security officers to manage campus safety</p>
+          <p className="text-muted-foreground">Create and manage Campus Community Safety Forum officers</p>
         </div>
         <Button onClick={() => setIsDialogOpen(true)}>
           <UserPlus className="h-4 w-4 mr-2" />
-          Assign Admin
+          Add Officer
         </Button>
       </div>
 
@@ -174,13 +232,13 @@ export const CampusAdminManager = () => {
         <Card>
           <CardContent className="p-12 text-center">
             <Shield className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No Campus Admins</h3>
+            <h3 className="text-lg font-semibold mb-2">No CCSF Officers</h3>
             <p className="text-muted-foreground mb-4">
-              Assign users as campus security administrators
+              Create officers to manage campus safety operations
             </p>
             <Button onClick={() => setIsDialogOpen(true)}>
               <UserPlus className="h-4 w-4 mr-2" />
-              Assign First Admin
+              Create First Officer
             </Button>
           </CardContent>
         </Card>
@@ -242,73 +300,165 @@ export const CampusAdminManager = () => {
         </div>
       )}
 
-      {/* Assign Admin Dialog */}
+      {/* Add Officer Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Assign Campus Admin</DialogTitle>
+            <DialogTitle>Add CCSF Officer</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>Search User</Label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          
+          <Tabs value={dialogTab} onValueChange={(v) => setDialogTab(v as 'assign' | 'create')}>
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="create">Create New</TabsTrigger>
+              <TabsTrigger value="assign">Assign Existing</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="create" className="space-y-4 pt-4">
+              <div className="space-y-2">
+                <Label htmlFor="fullName">Full Name *</Label>
                 <Input
-                  placeholder="Search by name or email..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  id="fullName"
+                  placeholder="Officer's full name"
+                  value={createFormData.fullName}
+                  onChange={(e) => setCreateFormData({ ...createFormData, fullName: e.target.value })}
                 />
               </div>
-            </div>
 
-            <div className="space-y-2">
-              <Label>Select User</Label>
-              <Select value={formData.userId} onValueChange={(v) => setFormData({ ...formData, userId: v })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a user" />
-                </SelectTrigger>
-                <SelectContent>
-                  {filteredUsers.slice(0, 20).map(user => (
-                    <SelectItem key={user.id} value={user.id}>
-                      {user.full_name || user.email}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email Address *</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="officer@email.com"
+                  value={createFormData.email}
+                  onChange={(e) => setCreateFormData({ ...createFormData, email: e.target.value })}
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label>Campus</Label>
-              <Select value={formData.campus} onValueChange={(v) => setFormData({ ...formData, campus: v })}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {CAMPUSES.map(campus => (
-                    <SelectItem key={campus.value} value={campus.value}>{campus.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password *</Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Minimum 6 characters"
+                    value={createFormData.password}
+                    onChange={(e) => setCreateFormData({ ...createFormData, password: e.target.value })}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-0 top-0 h-full px-3"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </div>
 
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="isHead"
-                checked={formData.isHead}
-                onChange={(e) => setFormData({ ...formData, isHead: e.target.checked })}
-                className="rounded"
-              />
-              <Label htmlFor="isHead" className="cursor-pointer">
-                Assign as Head Admin (can manage all campuses)
-              </Label>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleAssign}>Assign Admin</Button>
-          </DialogFooter>
+              <div className="space-y-2">
+                <Label>Campus *</Label>
+                <Select 
+                  value={createFormData.campus} 
+                  onValueChange={(v) => setCreateFormData({ ...createFormData, campus: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CAMPUSES.map(campus => (
+                      <SelectItem key={campus.value} value={campus.value}>{campus.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="createIsHead"
+                  checked={createFormData.isHead}
+                  onChange={(e) => setCreateFormData({ ...createFormData, isHead: e.target.checked })}
+                  className="rounded"
+                />
+                <Label htmlFor="createIsHead" className="cursor-pointer">
+                  Assign as Head Admin (can manage all campuses)
+                </Label>
+              </div>
+
+              <DialogFooter className="pt-4">
+                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
+                <Button onClick={handleCreateAdmin} disabled={isCreating}>
+                  {isCreating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  Create Officer
+                </Button>
+              </DialogFooter>
+            </TabsContent>
+
+            <TabsContent value="assign" className="space-y-4 pt-4">
+              <div className="space-y-2">
+                <Label>Search User</Label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search by name or email..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Select User</Label>
+                <Select value={formData.userId} onValueChange={(v) => setFormData({ ...formData, userId: v })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a user" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filteredUsers.slice(0, 20).map(user => (
+                      <SelectItem key={user.id} value={user.id}>
+                        {user.full_name || user.email}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Campus</Label>
+                <Select value={formData.campus} onValueChange={(v) => setFormData({ ...formData, campus: v })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CAMPUSES.map(campus => (
+                      <SelectItem key={campus.value} value={campus.value}>{campus.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="isHead"
+                  checked={formData.isHead}
+                  onChange={(e) => setFormData({ ...formData, isHead: e.target.checked })}
+                  className="rounded"
+                />
+                <Label htmlFor="isHead" className="cursor-pointer">
+                  Assign as Head Admin (can manage all campuses)
+                </Label>
+              </div>
+
+              <DialogFooter className="pt-4">
+                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
+                <Button onClick={handleAssign}>Assign Officer</Button>
+              </DialogFooter>
+            </TabsContent>
+          </Tabs>
         </DialogContent>
       </Dialog>
     </div>
