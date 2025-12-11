@@ -15,6 +15,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Constants } from '@/integrations/supabase/types';
+import { AvatarUpload } from '@/components/shared/AvatarUpload';
 
 const campuses = Constants.public.Enums.campus_location;
 
@@ -39,6 +40,7 @@ const Profile = () => {
   
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     full_name: '',
     first_name: '',
@@ -103,6 +105,7 @@ const Profile = () => {
           medical_aid_name: data.medical_aid_name || '',
           medical_aid_number: data.medical_aid_number || '',
         });
+        setAvatarUrl(data.avatar_url);
       }
       setLoading(false);
     };
@@ -273,13 +276,17 @@ const Profile = () => {
         >
           <Card className="p-6 shadow-large max-w-3xl mx-auto">
             <div className="flex items-center gap-4 mb-6">
-              <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center">
-                <User className="h-8 w-8 text-primary" />
-              </div>
+              <AvatarUpload
+                userId={user?.id || ''}
+                currentAvatarUrl={avatarUrl}
+                userName={formData.full_name}
+                onUploadComplete={(url) => setAvatarUrl(url)}
+                size="lg"
+              />
               <div>
                 <h2 className="text-xl font-bold">Complete Your Profile</h2>
                 <p className="text-muted-foreground text-sm">
-                  Please provide your information for safety purposes
+                  Click the camera icon to upload a profile photo
                 </p>
               </div>
             </div>
