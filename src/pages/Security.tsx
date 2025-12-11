@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { motion } from 'framer-motion';
-import { Shield, LayoutDashboard, AlertCircle, Megaphone, MessageSquare, MapPin, Users, BarChart3 } from 'lucide-react';
+import { Shield, LayoutDashboard, AlertCircle, Megaphone, MessageSquare, MapPin, Users, BarChart3, Settings } from 'lucide-react';
 import tutLogo from '@/assets/tut-logo.png';
 import { AdminOverview } from '@/components/admin/AdminOverview';
 import { AdminIncidents } from '@/components/admin/AdminIncidents';
@@ -14,6 +14,7 @@ import { ResolveCases } from '@/components/admin/ResolveCases';
 import { StaffCommunication } from '@/components/admin/StaffCommunication';
 import { RealTimeIncidents } from '@/components/admin/RealTimeIncidents';
 import { IncidentAnalytics } from '@/components/admin/IncidentAnalytics';
+import { OfficerSettings } from '@/components/admin/OfficerSettings';
 import { MasterSyncProvider, useMasterSync } from '@/contexts/MasterSyncContext';
 import { MasterSyncButton } from '@/components/admin/MasterSyncButton';
 import { VirtualStudentList } from '@/components/shared/VirtualStudentList';
@@ -39,7 +40,7 @@ const campusDisplayNames: Record<string, string> = {
 const Security = () => {
   const navigate = useNavigate();
   const { userProfile, signOut } = useAuth();
-  const [activeView, setActiveView] = useState<'overview' | 'incidents' | 'announcements' | 'communication' | 'students' | 'analytics'>('overview');
+  const [activeView, setActiveView] = useState<'overview' | 'incidents' | 'announcements' | 'communication' | 'students' | 'analytics' | 'settings'>('overview');
   const [campusStudentCount, setCampusStudentCount] = useState(0);
   const [campusIncidentCount, setCampusIncidentCount] = useState(0);
 
@@ -174,6 +175,11 @@ const Security = () => {
                     <MessageSquare className="h-4 w-4 mr-2" />Comms
                   </Button>
                 </motion.div>
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <Button variant={activeView === 'settings' ? 'default' : 'ghost'} onClick={() => setActiveView('settings')} className="transition-all">
+                    <Settings className="h-4 w-4 mr-2" />Settings
+                  </Button>
+                </motion.div>
               </div>
             </Card>
           </motion.div>
@@ -197,6 +203,7 @@ const Security = () => {
             {activeView === 'students' && <CampusStudentsList campus={userProfile?.campus} />}
             {activeView === 'announcements' && <AdminAnnouncements />}
             {activeView === 'communication' && <StaffCommunication />}
+            {activeView === 'settings' && <OfficerSettings />}
           </motion.div>
 
           {/* Footer */}
