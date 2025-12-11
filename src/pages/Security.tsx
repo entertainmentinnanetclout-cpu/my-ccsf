@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { motion } from 'framer-motion';
-import { Shield, LayoutDashboard, AlertCircle, Megaphone, Home, MessageSquare, MapPin, Users, BarChart3 } from 'lucide-react';
+import { Shield, LayoutDashboard, AlertCircle, Megaphone, MessageSquare, MapPin, Users, BarChart3 } from 'lucide-react';
 import tutLogo from '@/assets/tut-logo.png';
 import { AdminOverview } from '@/components/admin/AdminOverview';
 import { AdminIncidents } from '@/components/admin/AdminIncidents';
@@ -115,9 +115,9 @@ const Security = () => {
                   </div>
                 </div>
                 <NotificationBell />
-                <motion.div whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.95 }}>
-                  <Button variant="default" size="icon" onClick={() => navigate('/')}>
-                    <Home className="h-5 w-5" />
+<motion.div whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.95 }}>
+                  <Button variant="destructive" size="sm" onClick={() => signOut()}>
+                    Sign Out
                   </Button>
                 </motion.div>
               </div>
@@ -210,25 +210,45 @@ const CampusStudentsList = ({ campus }: { campus: string | null | undefined }) =
   const [students, setStudents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const fetchStudents = async () => {
+    if (!campus) return;
+
+    const campusValue = campus as CampusLocation;
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, full_name, email, student_number, phone_number, residence')
+      .eq('campus', campusValue)
+      .order('full_name', { ascending: true });
+
+    if (!error && data) {
+      setStudents(data);
+    }
+    setLoading(false);
+  };
+
   useEffect(() => {
-    const fetchStudents = async () => {
-      if (!campus) return;
-
-      const campusValue = campus as CampusLocation;
-
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, full_name, email, student_number, phone_number, residence')
-        .eq('campus', campusValue)
-        .order('full_name', { ascending: true });
-
-      if (!error && data) {
-        setStudents(data);
-      }
-      setLoading(false);
-    };
-
     fetchStudents();
+
+    // Real-time subscription for students
+    const channel = supabase
+      .channel('campus-students-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'profiles',
+        },
+        () => {
+          fetchStudents();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [campus]);
 
   if (loading) {

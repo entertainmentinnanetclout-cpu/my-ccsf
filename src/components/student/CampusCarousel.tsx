@@ -1,23 +1,8 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Shield } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Shield, ImageOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
-
-// Fallback images if no database images exist
-import campusBuilding from '@/assets/campus-building.jpg';
-import campusPolokwaneEntrance from '@/assets/campus-polokwane-entrance.jpg';
-import campusSecurityStaff from '@/assets/campus-security-staff.jpg';
-import campusTutHall from '@/assets/campus-tut-hall.jpg';
-import campusCourtyard from '@/assets/campus-courtyard.jpg';
-
-const fallbackItems = [
-  { image: campusBuilding, title: 'TUT Campus Building', type: 'Campus' },
-  { image: campusPolokwaneEntrance, title: 'Polokwane Campus Entrance', type: 'Campus' },
-  { image: campusSecurityStaff, title: 'Campus Security Team', type: 'Security' },
-  { image: campusTutHall, title: 'TUT Main Hall', type: 'Campus' },
-  { image: campusCourtyard, title: 'Campus Courtyard', type: 'Facilities' },
-];
 
 interface CarouselImage {
   id: string;
@@ -41,7 +26,7 @@ export const CampusCarousel = ({ campus }: CampusCarouselProps) => {
 
     // Real-time subscription for carousel updates
     const channel = supabase
-      .channel('carousel-images')
+      .channel('carousel-images-realtime')
       .on(
         'postgres_changes',
         {
@@ -76,16 +61,18 @@ export const CampusCarousel = ({ campus }: CampusCarouselProps) => {
 
     const { data, error } = await query;
 
-    if (!error && data && data.length > 0) {
+    if (!error && data) {
       setDbImages(data);
     }
     setIsLoading(false);
   };
 
-  // Use database images if available, otherwise use fallback
-  const carouselItems = dbImages.length > 0 
-    ? dbImages.map(img => ({ image: img.image_url, title: img.title, type: img.category }))
-    : fallbackItems;
+  // Use database images only - no fallbacks
+  const carouselItems = dbImages.map(img => ({ 
+    image: img.image_url, 
+    title: img.title, 
+    type: img.category 
+  }));
 
   useEffect(() => {
     if (isHovered || carouselItems.length === 0) return;
@@ -106,6 +93,17 @@ export const CampusCarousel = ({ campus }: CampusCarouselProps) => {
   if (isLoading) {
     return (
       <div className="w-full h-[180px] xs:h-[200px] sm:h-[280px] md:h-[350px] lg:h-[400px] rounded-xl sm:rounded-2xl bg-muted animate-pulse" />
+    );
+  }
+
+  // Show empty state if no images
+  if (carouselItems.length === 0) {
+    return (
+      <div className="w-full h-[180px] xs:h-[200px] sm:h-[280px] md:h-[350px] lg:h-[400px] rounded-xl sm:rounded-2xl bg-muted flex flex-col items-center justify-center">
+        <ImageOff className="h-12 w-12 text-muted-foreground mb-3" />
+        <p className="text-muted-foreground text-sm">No campus images available</p>
+        <p className="text-muted-foreground text-xs mt-1">Images will appear once uploaded by admin</p>
+      </div>
     );
   }
 
