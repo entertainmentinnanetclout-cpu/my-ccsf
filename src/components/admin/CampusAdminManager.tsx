@@ -77,23 +77,51 @@ export const CampusAdminManager = () => {
 
   const fetchAdmins = async () => {
     setIsLoading(true);
-    const { data, error } = await supabase
-      .from('admin_access')
-      .select(`
-        id,
-        admin_id,
-        campus,
-        is_head,
-        profile:profiles!admin_access_admin_id_fkey(full_name, email)
-      `)
-      .order('campus', { ascending: true });
+    try {
+      // Fetch admin_access records
+      const { data: accessData, error: accessError } = await supabase
+        .from('admin_access')
+        .select('id, admin_id, campus, is_head')
+        .order('campus', { ascending: true });
 
-    if (error) {
-      console.error('Error fetching admins:', error);
-    } else {
-      setAdmins((data as unknown as CampusAdmin[]) || []);
+      if (accessError) {
+        console.error('Error fetching admin access:', accessError);
+        setAdmins([]);
+        return;
+      }
+
+      if (!accessData || accessData.length === 0) {
+        setAdmins([]);
+        return;
+      }
+
+      // Fetch profiles for these admins
+      const adminIds = accessData.map(a => a.admin_id);
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .in('id', adminIds);
+
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+      }
+
+      // Merge the data
+      const mergedAdmins: CampusAdmin[] = accessData.map(access => ({
+        id: access.id,
+        admin_id: access.admin_id,
+        campus: access.campus,
+        is_head: access.is_head || false,
+        profile: profilesData?.find(p => p.id === access.admin_id) || null
+      }));
+
+      setAdmins(mergedAdmins);
+    } catch (err) {
+      console.error('Error in fetchAdmins:', err);
+      setAdmins([]);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   const fetchUsers = async () => {
