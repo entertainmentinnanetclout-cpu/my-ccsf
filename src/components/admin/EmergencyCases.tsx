@@ -1,15 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { supabase } from '@/integrations/supabase/client';
-import type { Tables } from '@/integrations/supabase/types';
-import { AlertTriangle, X, Filter, BarChart3 } from 'lucide-react';
+import { AlertTriangle, Filter, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { format } from 'date-fns';
-
-type Incident = Tables<'incidents'>;
+import { useMasterSync } from '@/contexts/MasterSyncContext';
 
 const COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6', '#ec4899'];
 
@@ -21,91 +18,50 @@ const formatCampusName = (campus: string) => {
 };
 
 export const EmergencyCases = () => {
-  const [cases, setCases] = useState<Incident[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { incidents, isLoading } = useMasterSync();
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [selectedCampus, setSelectedCampus] = useState<string>('all');
 
-  useEffect(() => {
-    const fetchEmergencyCases = async () => {
-      const { data, error } = await supabase
-        .from('incidents')
-        .select('*')
-        .in('status', ['pending', 'assigned'])
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching emergency cases:', error);
-      } else {
-        setCases(data || []);
-      }
-      setLoading(false);
-    };
-
-    fetchEmergencyCases();
-
-    // Real-time subscription
-    const channel = supabase
-      .channel('emergency-cases-realtime')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'incidents',
-        },
-        (payload) => {
-          if (payload.eventType === 'INSERT') {
-            const newIncident = payload.new as Incident;
-            if (newIncident.status === 'pending' || newIncident.status === 'assigned') {
-              setCases(prev => [newIncident, ...prev]);
-            }
-          } else if (payload.eventType === 'UPDATE') {
-            const updatedIncident = payload.new as Incident;
-            if (updatedIncident.status === 'resolved' || updatedIncident.status === 'rejected') {
-              setCases(prev => prev.filter(c => c.id !== updatedIncident.id));
-            } else {
-              setCases(prev => prev.map(c => c.id === updatedIncident.id ? updatedIncident : c));
-            }
-          } else if (payload.eventType === 'DELETE') {
-            setCases(prev => prev.filter(c => c.id !== (payload.old as Incident).id));
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
+  // Filter for active emergency cases (pending or assigned)
+  const cases = useMemo(() => {
+    return incidents.filter(i => i.status === 'pending' || i.status === 'assigned');
+  }, [incidents]);
 
   // Get unique campuses from cases
-  const campuses = [...new Set(cases.map(c => c.campus).filter(Boolean))];
+  const campuses = useMemo(() => {
+    return [...new Set(cases.map(c => c.campus).filter(Boolean))];
+  }, [cases]);
 
   // Filter cases by selected campus
-  const filteredCases = selectedCampus === 'all' 
-    ? cases 
-    : cases.filter(c => c.campus === selectedCampus);
+  const filteredCases = useMemo(() => {
+    return selectedCampus === 'all' 
+      ? cases 
+      : cases.filter(c => c.campus === selectedCampus);
+  }, [cases, selectedCampus]);
 
   // Prepare chart data
-  const casesByCampus = campuses.map(campus => ({
-    name: formatCampusName(campus || 'Unknown'),
-    value: cases.filter(c => c.campus === campus).length,
-  }));
+  const casesByCampus = useMemo(() => {
+    return campuses.map(campus => ({
+      name: formatCampusName(campus || 'Unknown'),
+      value: cases.filter(c => c.campus === campus).length,
+    }));
+  }, [cases, campuses]);
 
-  const casesByCategory = Object.entries(
-    cases.reduce((acc, c) => {
-      acc[c.category] = (acc[c.category] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>)
-  ).map(([name, value]) => ({ name, value }));
+  const casesByCategory = useMemo(() => {
+    return Object.entries(
+      cases.reduce((acc, c) => {
+        acc[c.category] = (acc[c.category] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>)
+    ).map(([name, value]) => ({ name, value }));
+  }, [cases]);
 
-  const casesByStatus = [
+  const casesByStatus = useMemo(() => [
     { name: 'Pending', value: cases.filter(c => c.status === 'pending').length },
     { name: 'Assigned', value: cases.filter(c => c.status === 'assigned').length },
-  ];
+  ], [cases]);
 
-  if (loading) {
+  if (isLoading) {
     return (
       <motion.div
         className="bg-card p-4 rounded-lg shadow-large"

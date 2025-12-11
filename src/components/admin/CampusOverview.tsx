@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -18,10 +18,10 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ImageCropper } from '@/components/shared/ImageCropper';
+import { useMasterSync } from '@/contexts/MasterSyncContext';
 import type { Database } from '@/integrations/supabase/types';
 
 type CampusLocation = Database['public']['Enums']['campus_location'];
-type Incident = Database['public']['Tables']['incidents']['Row'];
 
 interface CampusMetrics {
   total: number;
@@ -74,10 +74,8 @@ const MetricCard = ({
 );
 
 export const CampusOverview = () => {
-  const [incidents, setIncidents] = useState<Incident[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { incidents, carouselImages, isLoading, refreshIncidents, refreshCarouselImages } = useMasterSync();
   const [selectedCampus, setSelectedCampus] = useState<CampusLocation | null>(null);
-  const [campusImages, setCampusImages] = useState<Record<string, string>>({});
   const [uploadingFor, setUploadingFor] = useState<CampusLocation | null>(null);
   
   // Cropper state
@@ -85,69 +83,18 @@ export const CampusOverview = () => {
   const [imageToCrop, setImageToCrop] = useState<string | null>(null);
   const [pendingCampusId, setPendingCampusId] = useState<CampusLocation | null>(null);
 
-  const fetchIncidents = async () => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from('incidents')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (!error && data) {
-      setIncidents(data);
-    }
-    setLoading(false);
-  };
-
-  const fetchCampusImages = async () => {
-    const { data } = await supabase
-      .from('carousel_images')
-      .select('*')
-      .eq('category', 'campus_entrance')
-      .eq('is_active', true);
-
-    if (data) {
-      const imageMap: Record<string, string> = {};
-      data.forEach(img => {
+  // Build campus images map from carousel images
+  const campusImagesMap = useMemo(() => {
+    const imageMap: Record<string, string> = {};
+    carouselImages
+      .filter(img => img.category === 'campus_entrance')
+      .forEach(img => {
         imageMap[img.campus] = img.image_url;
       });
-      setCampusImages(imageMap);
-    }
-  };
+    return imageMap;
+  }, [carouselImages]);
 
-  useEffect(() => {
-    fetchIncidents();
-    fetchCampusImages();
-
-    const channel = supabase
-      .channel('campus-incidents-realtime')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'incidents'
-        },
-        (payload) => {
-          if (payload.eventType === 'INSERT') {
-            setIncidents(prev => [payload.new as Incident, ...prev]);
-            toast.info('New incident reported');
-          } else if (payload.eventType === 'UPDATE') {
-            setIncidents(prev => 
-              prev.map(inc => inc.id === payload.new.id ? payload.new as Incident : inc)
-            );
-          } else if (payload.eventType === 'DELETE') {
-            setIncidents(prev => prev.filter(inc => inc.id !== payload.old.id));
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
-
-  const getCampusMetrics = (campusId: CampusLocation): CampusMetrics => {
+  const getCampusMetrics = useCallback((campusId: CampusLocation): CampusMetrics => {
     const campusIncidents = incidents.filter(i => i.campus === campusId);
     return {
       total: campusIncidents.length,
@@ -157,7 +104,7 @@ export const CampusOverview = () => {
       rejected: campusIncidents.filter(i => i.status === 'rejected').length,
       emergencies: campusIncidents.filter(i => i.title.includes('EMERGENCY')).length,
     };
-  };
+  }, [incidents]);
 
   const handleFileSelect = (file: File, campusId: CampusLocation) => {
     const reader = new FileReader();
@@ -214,7 +161,7 @@ export const CampusOverview = () => {
           });
       }
 
-      setCampusImages(prev => ({ ...prev, [pendingCampusId]: urlData.publicUrl }));
+      await refreshCarouselImages();
       toast.success('Campus image uploaded successfully');
     } catch (error) {
       console.error('Upload error:', error);
@@ -237,13 +184,13 @@ export const CampusOverview = () => {
           <Badge variant="outline" className="text-xs">
             {incidents.length} total incidents
           </Badge>
-          <Button variant="ghost" size="icon" onClick={fetchIncidents} disabled={loading}>
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          <Button variant="ghost" size="icon" onClick={refreshIncidents} disabled={isLoading}>
+            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
           </Button>
         </div>
       </div>
 
-      {loading ? (
+      {isLoading ? (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           {[...Array(10)].map((_, i) => (
             <div key={i} className="h-52 bg-muted/50 rounded-xl animate-pulse" />
@@ -255,7 +202,7 @@ export const CampusOverview = () => {
             const metrics = getCampusMetrics(campus.id);
             const hasEmergencies = metrics.emergencies > 0;
             const hasPending = metrics.pending > 0;
-            const campusImage = campusImages[campus.id];
+            const campusImage = campusImagesMap[campus.id];
 
             return (
               <motion.button
@@ -343,9 +290,9 @@ export const CampusOverview = () => {
           {selectedMetrics && selectedCampus && (
             <div className="space-y-4">
               <div className="relative h-36 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center border border-border overflow-hidden group">
-                {campusImages[selectedCampus] ? (
+                {campusImagesMap[selectedCampus] ? (
                   <img 
-                    src={campusImages[selectedCampus]} 
+                    src={campusImagesMap[selectedCampus]} 
                     alt={selectedCampusInfo?.fullName}
                     className="w-full h-full object-cover"
                   />
