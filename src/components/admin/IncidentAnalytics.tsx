@@ -1,12 +1,12 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts';
-import { TrendingUp, TrendingDown, Clock, AlertTriangle, CheckCircle, XCircle, Timer } from 'lucide-react';
+import { TrendingUp, Clock, AlertTriangle, CheckCircle, Timer, RefreshCw } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { format, subDays, differenceInHours, startOfMonth, endOfMonth } from 'date-fns';
+import { format, differenceInHours } from 'date-fns';
+import { useMasterSync } from '@/contexts/MasterSyncContext';
+import { Button } from '@/components/ui/button';
 
 const COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6', '#ec4899', '#14b8a6'];
 
@@ -28,58 +28,29 @@ const campusDisplayNames: Record<string, string> = {
   emalahleni: 'eMalahleni'
 };
 
-interface Incident {
-  id: string;
-  category: string;
-  status: string;
-  campus: string | null;
-  created_at: string;
-  resolved_at: string | null;
-}
-
 export const IncidentAnalytics = () => {
-  const [incidents, setIncidents] = useState<Incident[]>([]);
-  const [timeRange, setTimeRange] = useState('30');
-  const [isLoading, setIsLoading] = useState(true);
+  const { incidents, isLoading, refreshIncidents, lastSyncTime } = useMasterSync();
 
-  useEffect(() => {
-    fetchIncidents();
-  }, [timeRange]);
-
-  const fetchIncidents = async () => {
-    setIsLoading(true);
-    const startDate = subDays(new Date(), parseInt(timeRange));
-    
-    const { data, error } = await supabase
-      .from('incidents')
-      .select('id, category, status, campus, created_at, resolved_at')
-      .gte('created_at', startDate.toISOString())
-      .order('created_at', { ascending: true });
-
-    if (!error && data) {
-      setIncidents(data);
-    }
-    setIsLoading(false);
-  };
-
-  // Calculate statistics
-  const stats = {
+  // Calculate statistics from centralized data
+  const stats = useMemo(() => ({
     total: incidents.length,
     pending: incidents.filter(i => i.status === 'pending').length,
     assigned: incidents.filter(i => i.status === 'assigned').length,
     resolved: incidents.filter(i => i.status === 'resolved').length,
     rejected: incidents.filter(i => i.status === 'rejected').length,
     emergencies: incidents.filter(i => EMERGENCY_CATEGORIES.includes(i.category)).length
-  };
+  }), [incidents]);
 
-  // Calculate average response time (time to assign)
-  const assignedOrResolved = incidents.filter(i => i.resolved_at);
-  const avgResponseTime = assignedOrResolved.length > 0
-    ? assignedOrResolved.reduce((acc, i) => {
-        const hours = differenceInHours(new Date(i.resolved_at!), new Date(i.created_at));
-        return acc + hours;
-      }, 0) / assignedOrResolved.length
-    : 0;
+  // Calculate average response time (time to resolve)
+  const avgResponseTime = useMemo(() => {
+    const resolvedIncidents = incidents.filter(i => i.resolved_at);
+    if (resolvedIncidents.length === 0) return 0;
+    
+    return resolvedIncidents.reduce((acc, i) => {
+      const hours = differenceInHours(new Date(i.resolved_at!), new Date(i.created_at));
+      return acc + hours;
+    }, 0) / resolvedIncidents.length;
+  }, [incidents]);
 
   // Resolution rate
   const resolutionRate = stats.total > 0 
@@ -87,51 +58,60 @@ export const IncidentAnalytics = () => {
     : '0';
 
   // Category breakdown for pie chart
-  const categoryData = Object.entries(
-    incidents.reduce((acc, i) => {
+  const categoryData = useMemo(() => {
+    const categories = incidents.reduce((acc, i) => {
       acc[i.category] = (acc[i.category] || 0) + 1;
       return acc;
-    }, {} as Record<string, number>)
-  ).map(([name, value]) => ({ name, value }))
-    .sort((a, b) => b.value - a.value)
-    .slice(0, 8);
+    }, {} as Record<string, number>);
+    
+    return Object.entries(categories)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 8);
+  }, [incidents]);
 
   // Campus breakdown
-  const campusData = Object.entries(
-    incidents.reduce((acc, i) => {
+  const campusData = useMemo(() => {
+    const campuses = incidents.reduce((acc, i) => {
       const campus = i.campus || 'Unknown';
       acc[campus] = (acc[campus] || 0) + 1;
       return acc;
-    }, {} as Record<string, number>)
-  ).map(([name, value]) => ({ 
-    name: campusDisplayNames[name] || name, 
-    value 
-  })).sort((a, b) => b.value - a.value);
+    }, {} as Record<string, number>);
+    
+    return Object.entries(campuses)
+      .map(([name, value]) => ({ 
+        name: campusDisplayNames[name] || name, 
+        value 
+      }))
+      .sort((a, b) => b.value - a.value);
+  }, [incidents]);
 
-  // Daily trend data
-  const dailyTrend = incidents.reduce((acc, i) => {
-    const date = format(new Date(i.created_at), 'MMM dd');
-    const existing = acc.find(d => d.date === date);
-    if (existing) {
-      existing.total += 1;
-      if (EMERGENCY_CATEGORIES.includes(i.category)) existing.emergencies += 1;
-    } else {
-      acc.push({ 
-        date, 
-        total: 1, 
-        emergencies: EMERGENCY_CATEGORIES.includes(i.category) ? 1 : 0 
-      });
-    }
-    return acc;
-  }, [] as { date: string; total: number; emergencies: number }[]);
+  // Daily trend data (last 30 days)
+  const dailyTrend = useMemo(() => {
+    return incidents.reduce((acc, i) => {
+      const date = format(new Date(i.created_at), 'MMM dd');
+      const existing = acc.find(d => d.date === date);
+      if (existing) {
+        existing.total += 1;
+        if (EMERGENCY_CATEGORIES.includes(i.category)) existing.emergencies += 1;
+      } else {
+        acc.push({ 
+          date, 
+          total: 1, 
+          emergencies: EMERGENCY_CATEGORIES.includes(i.category) ? 1 : 0 
+        });
+      }
+      return acc;
+    }, [] as { date: string; total: number; emergencies: number }[]);
+  }, [incidents]);
 
   // Status distribution for donut
-  const statusData = [
+  const statusData = useMemo(() => [
     { name: 'Pending', value: stats.pending, color: '#f59e0b' },
     { name: 'Assigned', value: stats.assigned, color: '#3b82f6' },
     { name: 'Resolved', value: stats.resolved, color: '#22c55e' },
     { name: 'Rejected', value: stats.rejected, color: '#ef4444' }
-  ].filter(s => s.value > 0);
+  ].filter(s => s.value > 0), [stats]);
 
   if (isLoading) {
     return (
@@ -143,20 +123,19 @@ export const IncidentAnalytics = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header with Time Range */}
+      {/* Header with Sync Info */}
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">Incident Analytics</h2>
-        <Select value={timeRange} onValueChange={setTimeRange}>
-          <SelectTrigger className="w-40">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="7">Last 7 days</SelectItem>
-            <SelectItem value="30">Last 30 days</SelectItem>
-            <SelectItem value="90">Last 90 days</SelectItem>
-            <SelectItem value="365">Last year</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          {lastSyncTime && (
+            <Badge variant="outline" className="text-xs">
+              Last sync: {format(lastSyncTime, 'HH:mm:ss')}
+            </Badge>
+          )}
+          <Button variant="ghost" size="icon" onClick={refreshIncidents}>
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       {/* Key Metrics Cards */}

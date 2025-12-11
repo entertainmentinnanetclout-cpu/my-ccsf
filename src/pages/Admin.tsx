@@ -14,14 +14,15 @@ import { IncidentAnalytics } from '@/components/admin/IncidentAnalytics';
 import { CarouselManager } from '@/components/admin/CarouselManager';
 import { CampusAdminManager } from '@/components/admin/CampusAdminManager';
 import { NotificationBell } from '@/components/shared/NotificationBell';
-import { CasesProvider } from '@/contexts/CasesContext';
+import { MasterSyncProvider } from '@/contexts/MasterSyncContext';
+import { MasterSyncButton } from '@/components/admin/MasterSyncButton';
 
 const Admin = () => {
   const navigate = useNavigate();
   const [activeView, setActiveView] = useState<'overview' | 'incidents' | 'analytics' | 'announcements' | 'communication' | 'carousel' | 'admins'>('overview');
 
   return (
-    <CasesProvider>
+    <MasterSyncProvider>
       <div className="min-h-screen bg-gradient-admin admin-theme" data-testid="ready-admin">
         {/* Header */}
         <motion.header
@@ -50,8 +51,9 @@ const Admin = () => {
               </div>
 
               <div className="flex items-center gap-2">
+                <MasterSyncButton />
                 <NotificationBell />
-<motion.div whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.95 }}>
+                <motion.div whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.95 }}>
                   <Button variant="destructive" size="sm" onClick={async () => {
                     const { supabase } = await import('@/integrations/supabase/client');
                     await supabase.auth.signOut();
@@ -142,7 +144,7 @@ const Admin = () => {
           </footer>
         </main>
       </div>
-    </CasesProvider>
+    </MasterSyncProvider>
   );
 };
 

@@ -13,7 +13,8 @@ import { ResolveCases } from '@/components/admin/ResolveCases';
 import { StaffCommunication } from '@/components/admin/StaffCommunication';
 import { RealTimeIncidents } from '@/components/admin/RealTimeIncidents';
 import { IncidentAnalytics } from '@/components/admin/IncidentAnalytics';
-import { CasesProvider } from '@/contexts/CasesContext';
+import { MasterSyncProvider } from '@/contexts/MasterSyncContext';
+import { MasterSyncButton } from '@/components/admin/MasterSyncButton';
 import { NotificationBell } from '@/components/shared/NotificationBell';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
@@ -69,7 +70,7 @@ const Security = () => {
   }, [userProfile?.campus]);
 
   return (
-    <CasesProvider>
+    <MasterSyncProvider>
       <div className="min-h-screen bg-gradient-admin admin-theme" data-testid="ready-campus-admin">
         {/* Header */}
         <motion.header
@@ -114,8 +115,9 @@ const Security = () => {
                     <p className="text-xs text-white/70">Incidents</p>
                   </div>
                 </div>
+                <MasterSyncButton />
                 <NotificationBell />
-<motion.div whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.95 }}>
+                <motion.div whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.95 }}>
                   <Button variant="destructive" size="sm" onClick={() => signOut()}>
                     Sign Out
                   </Button>
@@ -201,7 +203,7 @@ const Security = () => {
           </footer>
         </main>
       </div>
-    </CasesProvider>
+    </MasterSyncProvider>
   );
 };
 
