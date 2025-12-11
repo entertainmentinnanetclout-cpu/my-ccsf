@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { motion } from 'framer-motion';
 import { 
   Users, Clock, CheckCircle, AlertCircle, TrendingUp, 
-  Video, VideoOff, Wifi, AlertTriangle, BarChart3, ArrowLeft, User
+  BarChart3, ArrowLeft, User
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -46,20 +46,7 @@ interface Stats {
   rejected: number;
 }
 
-const mockAlerts = [
-  { id: 1, type: 'warning', message: 'Unusual activity detected near Gate 3', time: '5 min ago' },
-  { id: 2, type: 'info', message: 'Security patrol completed in Sector A', time: '15 min ago' },
-  { id: 3, type: 'success', message: 'All CCTV cameras operational', time: '30 min ago' },
-];
-
-const mockCameras = [
-  { id: 1, name: 'Gate 1 - Main Entrance', status: 'online', location: 'Building A' },
-  { id: 2, name: 'Parking Lot A', status: 'online', location: 'External' },
-  { id: 3, name: 'Library Hall', status: 'offline', location: 'Building B' },
-  { id: 4, name: 'Sports Complex', status: 'online', location: 'Building C' },
-  { id: 5, name: 'Residence Block 1', status: 'online', location: 'Residence' },
-  { id: 6, name: 'Cafeteria', status: 'online', location: 'Building A' },
-];
+// Real-time data is fetched from database - no mock data
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))'];
 const STATUS_COLORS: Record<string, string> = {
@@ -121,11 +108,29 @@ export const AdminOverview = () => {
   const [trendData, setTrendData] = useState<{ date: string; incidents: number }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const onlineCameras = mockCameras.filter(c => c.status === 'online').length;
-  const offlineCameras = mockCameras.filter(c => c.status === 'offline').length;
 
   useEffect(() => {
     fetchIncidents();
+
+    // Real-time subscription for incidents
+    const channel = supabase
+      .channel('incidents-overview-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'incidents',
+        },
+        () => {
+          fetchIncidents();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [userProfile?.campus]);
 
   const fetchIncidents = async () => {
@@ -477,98 +482,6 @@ export const AdminOverview = () => {
         </motion.div>
       )}
 
-      {/* Quick Action Buttons */}
-      <div className="flex flex-wrap gap-3">
-        {/* Alerts Dialog */}
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button variant="outline" className="gap-2">
-              <AlertTriangle className="h-4 w-4 text-amber-500" />
-              Live Alerts ({mockAlerts.length})
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-md bg-background">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-amber-500" />
-                Live Alerts
-              </DialogTitle>
-            </DialogHeader>
-            <div className="space-y-3 max-h-[60vh] overflow-y-auto">
-              {mockAlerts.map((alert) => (
-                <div
-                  key={alert.id}
-                  className={`p-3 rounded-lg border ${
-                    alert.type === 'warning' 
-                      ? 'bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-800' 
-                      : alert.type === 'success'
-                      ? 'bg-green-50 border-green-200 dark:bg-green-950/30 dark:border-green-800'
-                      : 'bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:border-blue-800'
-                  }`}
-                >
-                  <p className="text-sm font-medium">{alert.message}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{alert.time}</p>
-                </div>
-              ))}
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* CCTV Dialog */}
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button variant="outline" className="gap-2">
-              <Video className="h-4 w-4" />
-              CCTV
-              <span className="text-green-600">{onlineCameras}</span>
-              <span className="text-muted-foreground">/</span>
-              <span className="text-destructive">{offlineCameras}</span>
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl bg-background">
-            <DialogHeader>
-              <DialogTitle className="flex items-center justify-between">
-                <span className="flex items-center gap-2">
-                  <Video className="h-5 w-5" />
-                  CCTV Status
-                </span>
-                <div className="flex items-center gap-4 text-sm">
-                  <span className="flex items-center gap-1 text-green-600">
-                    <Wifi className="h-4 w-4" /> {onlineCameras} Online
-                  </span>
-                  <span className="flex items-center gap-1 text-destructive">
-                    <VideoOff className="h-4 w-4" /> {offlineCameras} Offline
-                  </span>
-                </div>
-              </DialogTitle>
-            </DialogHeader>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto">
-              {mockCameras.map((camera) => (
-                <div
-                  key={camera.id}
-                  className={`p-3 rounded-lg border ${
-                    camera.status === 'online'
-                      ? 'bg-green-50 border-green-200 dark:bg-green-950/30 dark:border-green-800'
-                      : 'bg-red-50 border-red-200 dark:bg-red-950/30 dark:border-red-800'
-                  }`}
-                >
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="font-medium text-sm">{camera.name}</p>
-                      <p className="text-xs text-muted-foreground">{camera.location}</p>
-                    </div>
-                    {camera.status === 'online' ? (
-                      <Video className="h-4 w-4 text-green-600" />
-                    ) : (
-                      <VideoOff className="h-4 w-4 text-destructive" />
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </DialogContent>
-        </Dialog>
-      </div>
 
       {/* Campus Overview Section for Super Admin */}
       {!selectedView && (

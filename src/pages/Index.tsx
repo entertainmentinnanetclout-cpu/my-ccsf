@@ -1,110 +1,38 @@
-import { Button } from '@/components/ui/button';
-import { Shield, Users, Building2, Crown } from 'lucide-react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import tutLogo from '@/assets/tut-logo.png';
+import { useAuth } from '@/contexts/AuthContext';
+import { Loader2 } from 'lucide-react';
 
 const Index = () => {
   const navigate = useNavigate();
-  
+  const { user, userRole, loading } = useAuth();
+
+  useEffect(() => {
+    if (loading) return;
+
+    // Redirect based on authentication and role
+    if (!user) {
+      navigate('/auth', { replace: true });
+      return;
+    }
+
+    // Redirect based on role
+    if (userRole === 'admin') {
+      navigate('/admin', { replace: true });
+    } else if (userRole === 'security') {
+      navigate('/security', { replace: true });
+    } else if (userRole === 'student') {
+      navigate('/dashboard', { replace: true });
+    } else {
+      // Default to auth if no role
+      navigate('/auth', { replace: true });
+    }
+  }, [user, userRole, loading, navigate]);
+
+  // Show loading while determining redirect
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-primary user-theme">
-      <motion.div
-        initial={{ opacity: 0, y: 25 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: 'easeInOut' }}
-        className="text-center space-y-6 px-4"
-      >
-        <motion.img
-          src={tutLogo}
-          alt="TUT"
-          className="h-20 mx-auto mb-8 logo-glow"
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: 0.2, duration: 0.4 }}
-        />
-        
-        <motion.div
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: 0.3, duration: 0.4 }}
-        >
-          <Shield className="h-16 w-16 mx-auto text-foreground drop-shadow-lg" />
-        </motion.div>
-        
-        <motion.h1
-          className="text-5xl font-bold text-foreground"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.4, duration: 0.4 }}
-        >
-          MY CCSF
-        </motion.h1>
-        
-        <motion.p
-          className="text-xl text-foreground/90 max-w-md mx-auto"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5, duration: 0.4 }}
-        >
-          Report incidents, stay informed, and help keep our campus safe.
-        </motion.p>
-        
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6, duration: 0.4 }}
-          className="flex flex-col items-center gap-4 mt-8 w-full max-w-md mx-auto"
-        >
-          {/* Student Portal */}
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="w-full">
-            <Button
-              onClick={() => navigate('/dashboard')}
-              size="lg"
-              className="w-full flex items-center justify-center gap-2"
-            >
-              <Users className="h-5 w-5" />
-              Student Portal
-            </Button>
-          </motion.div>
-          
-          {/* Campus Admin Portal */}
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="w-full">
-            <Button
-              onClick={() => navigate('/security')}
-              size="lg"
-              variant="secondary"
-              className="w-full flex items-center justify-center gap-2"
-            >
-              <Building2 className="h-5 w-5" />
-              Campus Admin Portal
-            </Button>
-          </motion.div>
-          
-          {/* Super Admin Portal */}
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="w-full">
-            <Button
-              onClick={() => navigate('/admin')}
-              size="lg"
-              variant="outline"
-              className="w-full flex items-center justify-center gap-2"
-            >
-              <Crown className="h-5 w-5" />
-              Super Admin Portal
-            </Button>
-          </motion.div>
-        </motion.div>
-        
-        {/* Dev Mode Notice */}
-        <motion.p
-          className="text-xs text-foreground/50 mt-8"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.8 }}
-        >
-          Development Mode - Auth bypassed
-        </motion.p>
-      </motion.div>
+    <div className="flex min-h-screen items-center justify-center bg-gradient-primary">
+      <Loader2 className="h-8 w-8 animate-spin text-primary" />
     </div>
   );
 };

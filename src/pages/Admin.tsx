@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { motion } from 'framer-motion';
-import { Shield, LayoutDashboard, AlertCircle, Megaphone, Home, MessageSquare, BarChart3, Images, Users } from 'lucide-react';
+import { Shield, LayoutDashboard, AlertCircle, Megaphone, MessageSquare, BarChart3, Images, Users } from 'lucide-react';
 import tutLogo from '@/assets/tut-logo.png';
 import { AdminOverview } from '@/components/admin/AdminOverview';
 import { AdminIncidents } from '@/components/admin/AdminIncidents';
@@ -51,9 +51,13 @@ const Admin = () => {
 
               <div className="flex items-center gap-2">
                 <NotificationBell />
-                <motion.div whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.95 }}>
-                  <Button variant="default" size="icon" onClick={() => navigate('/')}>
-                    <Home className="h-5 w-5" />
+<motion.div whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.95 }}>
+                  <Button variant="destructive" size="sm" onClick={async () => {
+                    const { supabase } = await import('@/integrations/supabase/client');
+                    await supabase.auth.signOut();
+                    navigate('/auth');
+                  }}>
+                    Sign Out
                   </Button>
                 </motion.div>
               </div>
