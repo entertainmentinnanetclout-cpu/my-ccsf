@@ -88,6 +88,9 @@ export default {
         'soft': 'var(--shadow-soft)',
         'medium': 'var(--shadow-medium)',
         'large': 'var(--shadow-large)',
+        'glow': 'var(--shadow-glow)',
+        'card': 'var(--shadow-card)',
+        'elevated': 'var(--shadow-elevated)',
       },
       borderRadius: {
         lg: "var(--radius)",
