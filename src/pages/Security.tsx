@@ -87,23 +87,23 @@ const Security = () => {
           <div className="container mx-auto px-4 py-3">
             <div className="flex items-center justify-between gap-4">
               {/* Left: Logo and Title */}
-              <div className="flex items-center gap-3 min-w-0 flex-shrink">
+              <div className="flex items-center gap-3 min-w-0 flex-shrink-0">
                 <motion.img
                   src={tutLogo}
                   alt="TUT Logo"
-                  className="h-9 w-9 flex-shrink-0 logo-glow"
+                  className="h-10 w-auto object-contain flex-shrink-0 logo-glow"
                   whileHover={{ scale: 1.1, rotate: -5 }}
                   transition={{ type: "spring", stiffness: 300, damping: 20 }}
                 />
-                <div className="min-w-0">
+                <div className="hidden sm:block min-w-0">
                   <div className="flex items-center gap-2">
                     <Shield className="h-4 w-4 text-white animate-pulse flex-shrink-0" />
-                    <h1 className="text-base md:text-lg font-bold text-white truncate">CCSF Portal</h1>
+                    <h1 className="text-base md:text-lg font-bold text-white whitespace-nowrap">CCSF Portal</h1>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 mt-0.5">
                     <span className="px-2 py-0.5 bg-white/20 rounded-full text-xs text-white font-medium flex items-center gap-1">
                       <MapPin className="h-3 w-3 flex-shrink-0" />
-                      <span className="truncate max-w-[120px]">{userCampus}</span>
+                      <span className="truncate max-w-[100px] md:max-w-[150px]">{userCampus}</span>
                     </span>
                   </div>
                 </div>

@@ -57,44 +57,57 @@ const Dashboard = () => {
     <div className="min-h-screen bg-gradient-primary user-theme" data-testid="ready-dashboard">
       <EmergencyReport />
 
-      {/* Header */}
+      {/* Header with Glass Effect */}
       <div className="relative">
         <motion.header
           initial={{ y: -100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.5, ease: 'easeInOut' }}
-          className="sticky top-0 z-40 bg-gradient-to-r from-secondary/95 to-primary/95 border-b border-white/10 shadow-large backdrop-blur-md"
+          className="sticky top-0 z-40 bg-gradient-to-r from-secondary/95 to-primary/95 border-b border-white/20 shadow-large backdrop-blur-xl"
         >
           <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 sm:gap-3">
-                <motion.img
-                  src={tutLogo}
-                  alt="TUT Logo"
-                  className="h-8 sm:h-10 logo-glow"
+                <motion.div
+                  className="relative"
                   whileHover={{ scale: 1.1, rotate: 5 }}
                   transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                />
+                >
+                  <img
+                    src={tutLogo}
+                    alt="TUT Logo"
+                    className="h-9 sm:h-11 w-auto object-contain logo-glow"
+                  />
+                  <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-success rounded-full border-2 border-white animate-pulse" />
+                </motion.div>
                 <div className="hidden sm:block">
                   <div className="flex items-center gap-2">
-                    <Shield className="h-5 w-5 text-white animate-pulse" />
-                    <h1 className="text-lg sm:text-xl font-bold text-white">Campus Community Safety Forum</h1>
+                    <Shield className="h-5 w-5 text-white drop-shadow-lg" />
+                    <h1 className="text-lg sm:text-xl font-bold text-white drop-shadow-md">Campus Safety Forum</h1>
                   </div>
-                  <p className="text-xs sm:text-sm text-white/70">CCSF Student Portal</p>
+                  <p className="text-xs sm:text-sm text-white/80 font-medium">CCSF Student Portal</p>
                 </div>
               </div>
 
               <div className="flex items-center gap-2 sm:gap-3">
-                <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 bg-white/10 rounded-full">
-                  <MapPin className="h-3.5 w-3.5 text-white" />
-                  <span className="text-xs sm:text-sm font-medium text-white">{userCampus}</span>
-                </div>
+                <motion.div 
+                  className="hidden md:flex items-center gap-2 px-4 py-2 bg-white/15 backdrop-blur-sm rounded-full border border-white/20 shadow-lg"
+                  whileHover={{ scale: 1.02, backgroundColor: 'rgba(255,255,255,0.2)' }}
+                >
+                  <MapPin className="h-4 w-4 text-white drop-shadow" />
+                  <span className="text-sm font-semibold text-white drop-shadow">{userCampus}</span>
+                </motion.div>
 
                 <NotificationBell />
 
                 <motion.div whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.95 }}>
-                  <Button variant="default" size="icon" onClick={signOut} className="hidden sm:flex">
-                    <LogOut className="h-5 w-5" />
+                  <Button 
+                    variant="default" 
+                    size="icon" 
+                    onClick={signOut} 
+                    className="hidden sm:flex bg-white/20 hover:bg-white/30 border border-white/20 backdrop-blur-sm shadow-lg"
+                  >
+                    <LogOut className="h-5 w-5 text-white" />
                   </Button>
                 </motion.div>
                 <motion.div whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.95 }}>
@@ -102,9 +115,9 @@ const Dashboard = () => {
                     variant="default"
                     size="icon"
                     onClick={() => setShowMobileMenu(!showMobileMenu)}
-                    className="sm:hidden"
+                    className="sm:hidden bg-white/20 hover:bg-white/30 border border-white/20"
                   >
-                    <Menu className="h-5 w-5" />
+                    <Menu className="h-5 w-5 text-white" />
                   </Button>
                 </motion.div>
               </div>
@@ -114,16 +127,17 @@ const Dashboard = () => {
 
         {showMobileMenu && (
           <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="absolute top-full right-2 sm:right-4 z-50 mt-2 w-48 p-2 bg-card rounded-2xl shadow-large sm:hidden"
+            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+            className="absolute top-full right-2 sm:right-4 z-50 mt-2 w-52 p-3 bg-card/95 backdrop-blur-xl rounded-2xl shadow-elevated border border-border/50 sm:hidden"
           >
-            <div className="flex items-center gap-2 px-3 py-2 mb-2 bg-primary/10 rounded-lg">
+            <div className="flex items-center gap-2 px-3 py-2.5 mb-2 bg-gradient-to-r from-primary/10 to-primary/5 rounded-xl border border-primary/20">
               <MapPin className="h-4 w-4 text-primary" />
-              <span className="text-sm font-medium">{userCampus}</span>
+              <span className="text-sm font-semibold">{userCampus}</span>
             </div>
             <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-              <Button onClick={signOut} variant="destructive" className="w-full">
+              <Button onClick={signOut} variant="destructive" className="w-full shadow-md">
                 <LogOut className="h-4 w-4 mr-2" />
                 Sign Out
               </Button>
@@ -134,69 +148,41 @@ const Dashboard = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-3 sm:px-4 pb-6">
-        {/* Navigation Tabs */}
+        {/* Navigation Tabs - Enhanced */}
         <motion.div
           initial={{ opacity: 0, y: 25 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4, duration: 0.4 }}
         >
-          <Card className="p-1.5 sm:p-2 mb-4 sm:mb-6 shadow-large">
-            <div className="grid grid-cols-5 gap-1 sm:gap-2">
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button
-                  variant={activeView === 'home' ? 'default' : 'ghost'}
-                  onClick={() => setActiveView('home')}
-                  className="w-full transition-all text-xs sm:text-sm px-1 sm:px-3"
-                  size="sm"
+          <Card className="p-2 sm:p-3 mb-4 sm:mb-6 shadow-elevated bg-card/95 backdrop-blur-sm border-border/50">
+            <div className="grid grid-cols-5 gap-1.5 sm:gap-2">
+              {[
+                { view: 'home', icon: Home, label: 'Home' },
+                { view: 'mycases', icon: FileText, label: 'My Cases' },
+                { view: 'report', icon: Plus, label: 'Report' },
+                { view: 'map', icon: Map, label: 'Map' },
+                { view: 'messages', icon: MessageCircle, label: 'Messages' },
+              ].map(({ view, icon: Icon, label }) => (
+                <motion.div 
+                  key={view}
+                  whileHover={{ scale: 1.05, y: -2 }} 
+                  whileTap={{ scale: 0.95 }}
                 >
-                  <Home className="h-4 w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Home</span>
-                </Button>
-              </motion.div>
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button
-                  variant={activeView === 'mycases' ? 'default' : 'ghost'}
-                  onClick={() => setActiveView('mycases')}
-                  className="w-full transition-all text-xs sm:text-sm px-1 sm:px-3"
-                  size="sm"
-                >
-                  <FileText className="h-4 w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">My Cases</span>
-                </Button>
-              </motion.div>
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button
-                  variant={activeView === 'report' ? 'default' : 'ghost'}
-                  onClick={() => setActiveView('report')}
-                  className="w-full transition-all text-xs sm:text-sm px-1 sm:px-3"
-                  size="sm"
-                >
-                  <Plus className="h-4 w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Report</span>
-                </Button>
-              </motion.div>
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button
-                  variant={activeView === 'map' ? 'default' : 'ghost'}
-                  onClick={() => setActiveView('map')}
-                  className="w-full transition-all text-xs sm:text-sm px-1 sm:px-3"
-                  size="sm"
-                >
-                  <Map className="h-4 w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Map</span>
-                </Button>
-              </motion.div>
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button
-                  variant={activeView === 'messages' ? 'default' : 'ghost'}
-                  onClick={() => setActiveView('messages')}
-                  className="w-full transition-all text-xs sm:text-sm px-1 sm:px-3"
-                  size="sm"
-                >
-                  <MessageCircle className="h-4 w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Messages</span>
-                </Button>
-              </motion.div>
+                  <Button
+                    variant={activeView === view ? 'default' : 'ghost'}
+                    onClick={() => setActiveView(view as typeof activeView)}
+                    className={`w-full transition-all text-xs sm:text-sm px-1 sm:px-3 ${
+                      activeView === view 
+                        ? 'shadow-lg bg-gradient-to-r from-primary to-secondary' 
+                        : 'hover:bg-primary/10'
+                    }`}
+                    size="sm"
+                  >
+                    <Icon className={`h-4 w-4 ${activeView === view ? '' : 'sm:mr-2'}`} />
+                    <span className="hidden sm:inline">{label}</span>
+                  </Button>
+                </motion.div>
+              ))}
             </div>
           </Card>
         </motion.div>
@@ -221,9 +207,17 @@ const Dashboard = () => {
           {activeView === 'messages' && <StudentChat />}
         </motion.div>
 
-        {/* Footer */}
-        <footer className="mt-8 sm:mt-12 pb-6 text-center text-xs sm:text-sm">
-          <p className="text-white font-medium">Powered By Campus Protection Service</p>
+        {/* Footer - Enhanced */}
+        <footer className="mt-8 sm:mt-12 pb-6 text-center">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full border border-white/20"
+          >
+            <Shield className="h-4 w-4 text-white/80" />
+            <p className="text-xs sm:text-sm text-white font-medium">Powered By Campus Protection Service</p>
+          </motion.div>
         </footer>
       </main>
     </div>
