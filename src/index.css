@@ -24,7 +24,7 @@ All colors MUST be HSL.
     --secondary-foreground: 0 0% 100%;
 
     --muted: 0 5% 96%;
-    --muted-foreground: 0 72% 41%;
+    --muted-foreground: 0 40% 35%;
 
     --accent: 0 100% 97%;
     --accent-foreground: 0 72% 41%;
@@ -41,20 +41,28 @@ All colors MUST be HSL.
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 90%;
+    --border: 0 0% 88%;
     --input: 0 0% 100%;
     --ring: 0 72% 41%;
 
     --radius: 1rem;
 
-    --gradient-primary: linear-gradient(to bottom right, hsl(0 72% 41%), hsl(0 69% 50%));
+    /* Enhanced Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(0 72% 41%) 0%, hsl(0 69% 55%) 50%, hsl(0 72% 41%) 100%);
     --gradient-danger: linear-gradient(135deg, hsl(0 84% 60%), hsl(0 84% 70%));
     --gradient-success: linear-gradient(135deg, hsl(142 71% 45%), hsl(142 71% 55%));
-    --gradient-admin: linear-gradient(to bottom right, hsl(0 80% 35%), hsl(0 72% 41%));
+    --gradient-admin: linear-gradient(135deg, hsl(0 80% 32%) 0%, hsl(0 72% 41%) 50%, hsl(0 65% 48%) 100%);
+    --gradient-glass: linear-gradient(135deg, hsla(0, 0%, 100%, 0.15) 0%, hsla(0, 0%, 100%, 0.05) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(0 5% 98%) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(0 72% 38%) 0%, hsl(0 72% 45%) 25%, hsl(0 65% 52%) 50%, hsl(0 72% 45%) 75%, hsl(0 72% 38%) 100%);
 
-    --shadow-soft: 0 2px 8px -2px hsl(0 0% 100% / 0.3);
-    --shadow-medium: 0 8px 16px -4px hsl(0 0% 100% / 0.4);
-    --shadow-large: 0 16px 32px -8px hsl(0 0% 100% / 0.5);
+    /* Enhanced Shadows */
+    --shadow-soft: 0 2px 8px -2px hsla(0, 72%, 41%, 0.15);
+    --shadow-medium: 0 8px 20px -4px hsla(0, 72%, 41%, 0.2);
+    --shadow-large: 0 16px 40px -8px hsla(0, 72%, 41%, 0.25);
+    --shadow-glow: 0 0 30px hsla(0, 72%, 41%, 0.3);
+    --shadow-card: 0 4px 16px -2px hsla(0, 0%, 0%, 0.08), 0 2px 4px -1px hsla(0, 0%, 0%, 0.04);
+    --shadow-elevated: 0 12px 32px -4px hsla(0, 0%, 0%, 0.12), 0 4px 8px -2px hsla(0, 0%, 0%, 0.06);
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -64,6 +72,13 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Chart colors */
+    --chart-1: 0 72% 41%;
+    --chart-2: 142 71% 45%;
+    --chart-3: 38 92% 50%;
+    --chart-4: 217 91% 60%;
+    --chart-5: 280 65% 60%;
   }
 
   .dark {
@@ -83,7 +98,7 @@ All colors MUST be HSL.
     --secondary-foreground: 0 0% 100%;
 
     --muted: 0 5% 96%;
-    --muted-foreground: 0 72% 41%;
+    --muted-foreground: 0 40% 35%;
 
     --accent: 0 100% 97%;
     --accent-foreground: 0 72% 41%;
@@ -104,10 +119,10 @@ All colors MUST be HSL.
     --input: 0 0% 100%;
     --ring: 0 0% 100%;
 
-    --gradient-primary: linear-gradient(to bottom right, hsl(0 72% 41%), hsl(0 69% 50%));
+    --gradient-primary: linear-gradient(135deg, hsl(0 72% 41%) 0%, hsl(0 69% 55%) 50%, hsl(0 72% 41%) 100%);
     --gradient-danger: linear-gradient(135deg, hsl(0 84% 60%), hsl(0 84% 70%));
     --gradient-success: linear-gradient(135deg, hsl(142 71% 45%), hsl(142 71% 55%));
-    --gradient-admin: linear-gradient(to bottom right, hsl(0 80% 35%), hsl(0 72% 41%));
+    --gradient-admin: linear-gradient(135deg, hsl(0 80% 32%) 0%, hsl(0 72% 41%) 50%, hsl(0 65% 48%) 100%);
 
     --shadow-soft: 0 2px 8px -2px hsl(0 0% 100% / 0.3);
     --shadow-medium: 0 8px 16px -4px hsl(0 0% 100% / 0.4);
@@ -124,11 +139,21 @@ All colors MUST be HSL.
   }
 
   .admin-theme {
-    background: linear-gradient(to bottom right, hsl(0 80% 35%), hsl(0 72% 41%));
+    background: linear-gradient(135deg, hsl(0 80% 32%) 0%, hsl(0 72% 41%) 50%, hsl(0 65% 48%) 100%);
+    background-size: 200% 200%;
+    animation: gradient-shift 15s ease infinite;
   }
 
   .user-theme {
-    background: linear-gradient(to bottom right, hsl(0 72% 41%), hsl(0 69% 50%));
+    background: linear-gradient(135deg, hsl(0 72% 38%) 0%, hsl(0 72% 45%) 25%, hsl(0 65% 52%) 50%, hsl(0 72% 45%) 75%, hsl(0 72% 38%) 100%);
+    background-size: 300% 300%;
+    animation: gradient-shift 20s ease infinite;
+  }
+
+  @keyframes gradient-shift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
   }
 }
 
@@ -143,10 +168,92 @@ All colors MUST be HSL.
   }
 
   .logo-glow {
-    filter: drop-shadow(0 2px 4px rgba(255, 255, 255, 0.3));
+    filter: drop-shadow(0 2px 8px rgba(255, 255, 255, 0.4)) drop-shadow(0 0 20px rgba(255, 255, 255, 0.2));
   }
 
   input, textarea, select {
     @apply bg-white text-black;
+  }
+}
+
+@layer components {
+  /* Glass morphism effect */
+  .glass {
+    @apply bg-white/10 backdrop-blur-md border border-white/20;
+  }
+
+  .glass-card {
+    @apply bg-white/95 backdrop-blur-sm shadow-card hover:shadow-elevated transition-shadow duration-300;
+  }
+
+  /* Animated gradient border */
+  .gradient-border {
+    position: relative;
+  }
+  .gradient-border::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 2px;
+    background: linear-gradient(135deg, hsl(0 72% 41%), hsl(0 65% 55%), hsl(0 72% 41%));
+    background-size: 200% 200%;
+    animation: gradient-shift 3s ease infinite;
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+  }
+
+  /* Pulse ring animation */
+  .pulse-ring {
+    position: relative;
+  }
+  .pulse-ring::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    border: 2px solid hsl(0 72% 41%);
+    animation: pulse-ring 2s ease-out infinite;
+  }
+
+  @keyframes pulse-ring {
+    0% { transform: scale(1); opacity: 0.5; }
+    100% { transform: scale(1.5); opacity: 0; }
+  }
+
+  /* Shimmer effect */
+  .shimmer {
+    position: relative;
+    overflow: hidden;
+  }
+  .shimmer::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, hsla(0, 0%, 100%, 0.3), transparent);
+    animation: shimmer 2s infinite;
+  }
+
+  @keyframes shimmer {
+    100% { left: 100%; }
+  }
+
+  /* Interactive card hover */
+  .card-hover {
+    @apply transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1 hover:shadow-elevated;
+  }
+
+  /* Status indicator dot */
+  .status-dot {
+    @apply relative;
+  }
+  .status-dot::before {
+    content: '';
+    @apply absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-success animate-pulse;
   }
 }
