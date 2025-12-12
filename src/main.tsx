@@ -1,3 +1,4 @@
+import React from "react";
 import { createRoot } from "react-dom/client";
 import { useState, useEffect } from "react";
 import { AnimatePresence } from "framer-motion";
@@ -30,7 +31,7 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-const Root = () => {
+const Root: React.FC = () => {
   const [showSplash, setShowSplash] = useState(true);
   const [appReady, setAppReady] = useState(false);
 
@@ -52,18 +53,18 @@ const Root = () => {
   };
 
   return (
-    <>
+    <React.StrictMode>
       <AnimatePresence mode="wait">
         {showSplash && (
           <SplashScreen 
             key="splash"
             onComplete={handleSplashComplete} 
-            minDuration={4000}  // 4 seconds for premium experience
+            minDuration={4000}
           />
         )}
       </AnimatePresence>
       {appReady && <App />}
-    </>
+    </React.StrictMode>
   );
 };
 
