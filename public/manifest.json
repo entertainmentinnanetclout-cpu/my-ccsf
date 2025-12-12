@@ -1,0 +1,16 @@
+{
+  "name": "My CCSF",
+  "short_name": "My CCSF",
+  "description": "Campus Crime Safety Forum - Report incidents, stay informed, and keep your campus safe",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#dc2626",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
