@@ -114,7 +114,7 @@ const Security = () => {
         }} transition={{
           duration: 0.5,
           ease: 'easeInOut'
-        }} className="sticky top-0 z-50 bg-gradient-to-r from-secondary/95 to-primary/95 border-b border-white/10 shadow-large backdrop-blur-md">
+        }} className="sticky top-0 z-50 bg-gradient-to-r from-secondary to-primary border-b border-white/10 shadow-large">
           <div className="container mx-auto px-4 py-3">
             <div className="flex items-center justify-between gap-4">
               {/* Left: Logo and Title */}
