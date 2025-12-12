@@ -82,26 +82,26 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 0 80% 35%;
-    --foreground: 0 0% 100%;
+    --background: 220 20% 10%;
+    --foreground: 0 0% 98%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 0 72% 41%;
+    --card: 220 18% 14%;
+    --card-foreground: 0 0% 98%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 72% 41%;
+    --popover: 220 18% 14%;
+    --popover-foreground: 0 0% 98%;
 
-    --primary: 0 72% 41%;
+    --primary: 0 72% 50%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 0 69% 50%;
+    --secondary: 0 55% 40%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 0 5% 96%;
-    --muted-foreground: 0 40% 35%;
+    --muted: 220 15% 20%;
+    --muted-foreground: 220 10% 65%;
 
-    --accent: 0 100% 97%;
-    --accent-foreground: 0 72% 41%;
+    --accent: 220 15% 25%;
+    --accent-foreground: 0 0% 98%;
 
     --success: 142 71% 45%;
     --success-foreground: 0 0% 100%;
@@ -112,30 +112,33 @@ All colors MUST be HSL.
     --danger: 0 84% 60%;
     --danger-foreground: 0 0% 100%;
 
-    --destructive: 0 63% 31%;
+    --destructive: 0 63% 45%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 100%;
-    --input: 0 0% 100%;
-    --ring: 0 0% 100%;
+    --border: 220 15% 25%;
+    --input: 220 15% 20%;
+    --ring: 0 72% 50%;
 
-    --gradient-primary: linear-gradient(135deg, hsl(0 72% 41%) 0%, hsl(0 69% 55%) 50%, hsl(0 72% 41%) 100%);
-    --gradient-danger: linear-gradient(135deg, hsl(0 84% 60%), hsl(0 84% 70%));
-    --gradient-success: linear-gradient(135deg, hsl(142 71% 45%), hsl(142 71% 55%));
-    --gradient-admin: linear-gradient(135deg, hsl(0 80% 32%) 0%, hsl(0 72% 41%) 50%, hsl(0 65% 48%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(0 72% 45%) 0%, hsl(0 65% 55%) 50%, hsl(0 72% 45%) 100%);
+    --gradient-danger: linear-gradient(135deg, hsl(0 84% 55%), hsl(0 84% 65%));
+    --gradient-success: linear-gradient(135deg, hsl(142 71% 40%), hsl(142 71% 50%));
+    --gradient-admin: linear-gradient(135deg, hsl(220 20% 12%) 0%, hsl(0 72% 35%) 50%, hsl(220 20% 12%) 100%);
 
-    --shadow-soft: 0 2px 8px -2px hsl(0 0% 100% / 0.3);
-    --shadow-medium: 0 8px 16px -4px hsl(0 0% 100% / 0.4);
-    --shadow-large: 0 16px 32px -8px hsl(0 0% 100% / 0.5);
+    --shadow-soft: 0 2px 8px -2px hsla(0, 0%, 0%, 0.4);
+    --shadow-medium: 0 8px 16px -4px hsla(0, 0%, 0%, 0.5);
+    --shadow-large: 0 16px 32px -8px hsla(0, 0%, 0%, 0.6);
+    --shadow-glow: 0 0 30px hsla(0, 72%, 50%, 0.3);
+    --shadow-card: 0 4px 16px -2px hsla(0, 0%, 0%, 0.3);
+    --shadow-elevated: 0 12px 32px -4px hsla(0, 0%, 0%, 0.4);
 
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-background: 220 18% 12%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 0 72% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 220 15% 20%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 220 15% 20%;
+    --sidebar-ring: 0 72% 50%;
   }
 
   .admin-theme {
@@ -144,16 +147,36 @@ All colors MUST be HSL.
     animation: gradient-shift 15s ease infinite;
   }
 
+  .dark .admin-theme {
+    background: linear-gradient(135deg, hsl(220 20% 8%) 0%, hsl(0 50% 25%) 50%, hsl(220 20% 12%) 100%);
+  }
+
   .user-theme {
     background: linear-gradient(135deg, hsl(0 72% 38%) 0%, hsl(0 72% 45%) 25%, hsl(0 65% 52%) 50%, hsl(0 72% 45%) 75%, hsl(0 72% 38%) 100%);
     background-size: 300% 300%;
     animation: gradient-shift 20s ease infinite;
   }
 
+  .dark .user-theme {
+    background: linear-gradient(135deg, hsl(220 20% 6%) 0%, hsl(0 45% 22%) 50%, hsl(220 20% 10%) 100%);
+  }
+
   @keyframes gradient-shift {
     0% { background-position: 0% 50%; }
     50% { background-position: 100% 50%; }
     100% { background-position: 0% 50%; }
+  }
+
+  /* Smooth theme transition */
+  * {
+    transition-property: background-color, border-color, color;
+    transition-duration: 200ms;
+    transition-timing-function: ease-out;
+  }
+
+  /* Disable transition on transform/opacity for animations */
+  [class*="animate-"], [class*="motion-"] {
+    transition-property: none;
   }
 }
 

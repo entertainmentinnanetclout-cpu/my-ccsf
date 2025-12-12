@@ -13,6 +13,8 @@ import { NewsFeed } from '@/components/student/NewsFeed';
 import { StudentChat } from '@/components/student/StudentChat';
 import { MyCaseReports } from '@/components/student/MyCaseReports';
 import { NotificationBell } from '@/components/shared/NotificationBell';
+import { ThemeToggle } from '@/components/shared/ThemeToggle';
+import { MobileNavMenu } from '@/components/shared/MobileNavMenu';
 import { supabase } from '@/integrations/supabase/client';
 
 const Dashboard = () => {
@@ -52,6 +54,13 @@ const Dashboard = () => {
 
     checkProfile();
   }, [user]);
+  const navItems = [
+    { view: 'home', icon: Home, label: 'Home' },
+    { view: 'mycases', icon: FileText, label: 'My Cases' },
+    { view: 'report', icon: Plus, label: 'Report' },
+    { view: 'map', icon: Map, label: 'Map' },
+    { view: 'messages', icon: MessageCircle, label: 'Messages' },
+  ];
 
   return (
     <div className="min-h-screen bg-gradient-primary user-theme" data-testid="ready-dashboard">
@@ -91,13 +100,14 @@ const Dashboard = () => {
 
               <div className="flex items-center gap-2 sm:gap-3">
                 <motion.div 
-                  className="hidden md:flex items-center gap-2 px-4 py-2 bg-white/15 backdrop-blur-sm rounded-full border border-white/20 shadow-lg"
+                  className="hidden lg:flex items-center gap-2 px-4 py-2 bg-white/15 backdrop-blur-sm rounded-full border border-white/20 shadow-lg"
                   whileHover={{ scale: 1.02, backgroundColor: 'rgba(255,255,255,0.2)' }}
                 >
                   <MapPin className="h-4 w-4 text-white drop-shadow" />
                   <span className="text-sm font-semibold text-white drop-shadow">{userCampus}</span>
                 </motion.div>
 
+                <ThemeToggle />
                 <NotificationBell />
 
                 <motion.div whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.95 }}>
@@ -148,21 +158,27 @@ const Dashboard = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-3 sm:px-4 pb-6">
-        {/* Navigation Tabs - Enhanced */}
+        {/* Navigation - Desktop Tabs + Mobile Menu */}
         <motion.div
           initial={{ opacity: 0, y: 25 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4, duration: 0.4 }}
+          className="mb-4 sm:mb-6"
         >
-          <Card className="p-2 sm:p-3 mb-4 sm:mb-6 shadow-elevated bg-card/95 backdrop-blur-sm border-border/50">
+          {/* Mobile Navigation Menu */}
+          <div className="flex justify-center md:hidden mb-4">
+            <MobileNavMenu
+              items={navItems}
+              activeView={activeView}
+              onViewChange={(view) => setActiveView(view as typeof activeView)}
+              title="Student Portal"
+            />
+          </div>
+
+          {/* Desktop Navigation Tabs */}
+          <Card className="hidden md:block p-2 sm:p-3 shadow-elevated bg-card/95 backdrop-blur-sm border-border/50">
             <div className="grid grid-cols-5 gap-1.5 sm:gap-2">
-              {[
-                { view: 'home', icon: Home, label: 'Home' },
-                { view: 'mycases', icon: FileText, label: 'My Cases' },
-                { view: 'report', icon: Plus, label: 'Report' },
-                { view: 'map', icon: Map, label: 'Map' },
-                { view: 'messages', icon: MessageCircle, label: 'Messages' },
-              ].map(({ view, icon: Icon, label }) => (
+              {navItems.map(({ view, icon: Icon, label }) => (
                 <motion.div 
                   key={view}
                   whileHover={{ scale: 1.05, y: -2 }} 
@@ -178,8 +194,8 @@ const Dashboard = () => {
                     }`}
                     size="sm"
                   >
-                    <Icon className={`h-4 w-4 ${activeView === view ? '' : 'sm:mr-2'}`} />
-                    <span className="hidden sm:inline">{label}</span>
+                    <Icon className={`h-4 w-4 ${activeView === view ? '' : 'lg:mr-2'}`} />
+                    <span className="hidden lg:inline">{label}</span>
                   </Button>
                 </motion.div>
               ))}
