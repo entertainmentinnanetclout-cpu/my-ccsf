@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Shield, ImageOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
+import { CarouselSkeleton } from '@/components/shared/LoadingSkeletons';
+import { triggerHaptic } from '@/hooks/useHapticFeedback';
 
 interface CarouselImage {
   id: string;
@@ -87,13 +89,18 @@ export const CampusCarousel = ({ campus }: CampusCarouselProps) => {
     setCurrentIndex(0);
   }, [dbImages]);
 
-  const goToPrevious = () => setCurrentIndex((prev) => (prev - 1 + carouselItems.length) % carouselItems.length);
-  const goToNext = () => setCurrentIndex((prev) => (prev + 1) % carouselItems.length);
+  const goToPrevious = () => {
+    triggerHaptic('light');
+    setCurrentIndex((prev) => (prev - 1 + carouselItems.length) % carouselItems.length);
+  };
+  
+  const goToNext = () => {
+    triggerHaptic('light');
+    setCurrentIndex((prev) => (prev + 1) % carouselItems.length);
+  };
 
   if (isLoading) {
-    return (
-      <div className="w-full h-[180px] xs:h-[200px] sm:h-[280px] md:h-[350px] lg:h-[400px] rounded-xl sm:rounded-2xl bg-muted animate-pulse" />
-    );
+    return <CarouselSkeleton />;
   }
 
   // Show empty state if no images

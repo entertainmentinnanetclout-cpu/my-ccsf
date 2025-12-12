@@ -5,6 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { Newspaper, Clock, ChevronRight, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
+import { NewsFeedSkeleton } from '@/components/shared/LoadingSkeletons';
+import { triggerHaptic } from '@/hooks/useHapticFeedback';
 
 interface Announcement {
   id: string;
@@ -63,9 +65,9 @@ export const NewsFeed = () => {
       case 'urgent':
         return 'bg-destructive text-destructive-foreground';
       case 'high':
-        return 'bg-amber-500 text-white';
+        return 'bg-warning text-warning-foreground';
       default:
-        return 'bg-secondary text-secondary-foreground';
+        return 'bg-muted text-muted-foreground';
     }
   };
 
@@ -88,25 +90,12 @@ export const NewsFeed = () => {
     }
   };
 
+  const handleCardClick = () => {
+    triggerHaptic('light');
+  };
+
   if (isLoading) {
-    return (
-      <div className="space-y-4">
-        <div className="flex items-center gap-2 mb-4">
-          <Newspaper className="h-5 w-5 text-primary" />
-          <h2 className="text-lg font-semibold text-foreground">Campus News Feed</h2>
-        </div>
-        <div className="space-y-3">
-          {[1, 2, 3].map((i) => (
-            <Card key={i} className="animate-pulse">
-              <CardContent className="p-4">
-                <div className="h-4 bg-muted rounded w-3/4 mb-2" />
-                <div className="h-3 bg-muted rounded w-1/2" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-    );
+    return <NewsFeedSkeleton />;
   }
 
   return (
@@ -135,7 +124,10 @@ export const NewsFeed = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
             >
-              <Card className="overflow-hidden cursor-pointer hover:shadow-large transition-all group active:scale-[0.99]">
+              <Card 
+                className="overflow-hidden cursor-pointer hover:shadow-large transition-all group active:scale-[0.99] bg-card"
+                onClick={handleCardClick}
+              >
                 <CardContent className="p-0">
                   <div className="p-4">
                     <div className="flex items-start justify-between gap-2">
@@ -149,7 +141,7 @@ export const NewsFeed = () => {
                             {formatTimeAgo(item.created_at)}
                           </span>
                         </div>
-                        <h3 className="font-semibold text-sm sm:text-base text-foreground line-clamp-2">
+                        <h3 className="font-semibold text-sm sm:text-base text-card-foreground line-clamp-2">
                           {item.title}
                         </h3>
                         <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2">
