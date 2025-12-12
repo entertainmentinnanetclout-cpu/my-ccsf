@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Shield, Lock, Eye, AlertTriangle } from 'lucide-react';
+import tutLogo from '@/assets/tut-logo.png';
 
 interface SplashScreenProps {
   onComplete: () => void;
@@ -31,210 +32,253 @@ const SplashScreen = ({ onComplete, minDuration = 2500 }: SplashScreenProps) => 
     };
   }, [onComplete, minDuration]);
 
-  // Floating security icons
   const floatingIcons = [
-    { Icon: Shield, delay: 0, x: -120, y: -80 },
-    { Icon: Lock, delay: 0.2, x: 130, y: -60 },
-    { Icon: Eye, delay: 0.4, x: -100, y: 90 },
-    { Icon: AlertTriangle, delay: 0.6, x: 110, y: 70 },
+    { Icon: Shield, delay: 0, x: -140, y: -100 },
+    { Icon: Lock, delay: 0.3, x: 150, y: -80 },
+    { Icon: Eye, delay: 0.6, x: -120, y: 110 },
+    { Icon: AlertTriangle, delay: 0.9, x: 130, y: 90 },
   ];
 
   return (
     <motion.div
       className="fixed inset-0 z-[9999] flex flex-col items-center justify-center overflow-hidden"
-      style={{
-        background: 'linear-gradient(135deg, hsl(0 72% 51%) 0%, hsl(0 84% 40%) 50%, hsl(0 72% 30%) 100%)',
-      }}
       initial={{ opacity: 1 }}
-      exit={{ opacity: 0, scale: 1.1 }}
-      transition={{ duration: 0.5 }}
+      exit={{ opacity: 0, scale: 1.05 }}
+      transition={{ duration: 0.6, ease: 'easeInOut' }}
     >
-      {/* Animated background particles */}
-      <div className="absolute inset-0 overflow-hidden">
-        {[...Array(20)].map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute w-2 h-2 bg-white/20 rounded-full"
-            initial={{
-              x: Math.random() * window.innerWidth,
-              y: window.innerHeight + 20,
-            }}
-            animate={{
-              y: -20,
-              x: Math.random() * window.innerWidth,
-            }}
-            transition={{
-              duration: Math.random() * 3 + 2,
-              repeat: Infinity,
-              delay: Math.random() * 2,
-              ease: "linear",
-            }}
-          />
-        ))}
-      </div>
+      {/* Premium gradient background */}
+      <div 
+        className="absolute inset-0"
+        style={{
+          background: `
+            radial-gradient(ellipse 80% 50% at 50% -20%, rgba(220, 38, 38, 0.3) 0%, transparent 50%),
+            radial-gradient(ellipse 60% 40% at 80% 80%, rgba(153, 27, 27, 0.2) 0%, transparent 40%),
+            radial-gradient(ellipse 50% 30% at 20% 90%, rgba(185, 28, 28, 0.15) 0%, transparent 40%),
+            linear-gradient(180deg, #0a0a0a 0%, #171717 50%, #0f0f0f 100%)
+          `,
+        }}
+      />
 
-      {/* 3D rotating shield container */}
-      <div className="relative" style={{ perspective: '1000px' }}>
-        {/* Floating icons around the main logo */}
+      {/* Subtle grid pattern overlay */}
+      <div 
+        className="absolute inset-0 opacity-[0.03]"
+        style={{
+          backgroundImage: `
+            linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)
+          `,
+          backgroundSize: '60px 60px',
+        }}
+      />
+
+      {/* Animated glow orbs */}
+      <motion.div
+        className="absolute w-[500px] h-[500px] rounded-full"
+        style={{
+          background: 'radial-gradient(circle, rgba(220, 38, 38, 0.15) 0%, transparent 70%)',
+          filter: 'blur(60px)',
+        }}
+        animate={{
+          scale: [1, 1.2, 1],
+          opacity: [0.5, 0.8, 0.5],
+        }}
+        transition={{
+          duration: 4,
+          repeat: Infinity,
+          ease: 'easeInOut',
+        }}
+      />
+
+      {/* Secondary glow */}
+      <motion.div
+        className="absolute w-[300px] h-[300px] rounded-full"
+        style={{
+          background: 'radial-gradient(circle, rgba(255, 255, 255, 0.05) 0%, transparent 60%)',
+          filter: 'blur(40px)',
+        }}
+        animate={{
+          scale: [1.2, 1, 1.2],
+          opacity: [0.3, 0.6, 0.3],
+        }}
+        transition={{
+          duration: 3,
+          repeat: Infinity,
+          ease: 'easeInOut',
+          delay: 0.5,
+        }}
+      />
+
+      {/* Main content container */}
+      <div className="relative z-10" style={{ perspective: '1200px' }}>
+        {/* Floating security icons */}
         {floatingIcons.map(({ Icon, delay, x, y }, index) => (
           <motion.div
             key={index}
-            className="absolute"
-            style={{ left: '50%', top: '50%' }}
+            className="absolute left-1/2 top-1/2"
             initial={{ opacity: 0, scale: 0, x: 0, y: 0 }}
             animate={{
-              opacity: [0, 1, 1, 0],
-              scale: [0, 1, 1, 0.5],
-              x: [0, x, x * 1.2, x * 0.5],
-              y: [0, y, y * 1.2, y * 0.5],
+              opacity: [0, 0.6, 0.6, 0],
+              scale: [0.5, 1, 1, 0.8],
+              x: [0, x, x * 1.1, x * 0.7],
+              y: [0, y, y * 1.1, y * 0.7],
             }}
             transition={{
-              duration: 2,
+              duration: 2.5,
               delay,
               repeat: Infinity,
-              repeatDelay: 0.5,
+              repeatDelay: 0.3,
+              ease: 'easeOut',
             }}
           >
-            <Icon className="h-8 w-8 text-white/60" />
+            <Icon className="h-6 w-6 text-red-500/50" />
           </motion.div>
         ))}
 
-        {/* Main 3D rotating shield */}
+        {/* 3D rotating logo container */}
         <motion.div
           className="relative"
-          initial={{ rotateY: 0, rotateX: 0 }}
-          animate={{
-            rotateY: [0, 360],
-            rotateX: [0, 15, 0, -15, 0],
-          }}
+          initial={{ rotateY: 0 }}
+          animate={{ rotateY: 360 }}
           transition={{
-            rotateY: { duration: 3, repeat: Infinity, ease: "linear" },
-            rotateX: { duration: 2, repeat: Infinity, ease: "easeInOut" },
+            duration: 4,
+            repeat: Infinity,
+            ease: 'linear',
           }}
           style={{ transformStyle: 'preserve-3d' }}
         >
-          {/* Glowing backdrop */}
+          {/* Outer glow ring */}
           <motion.div
-            className="absolute inset-0 rounded-full blur-3xl"
+            className="absolute inset-0 rounded-full"
             style={{
-              background: 'radial-gradient(circle, rgba(255,255,255,0.4) 0%, transparent 70%)',
-              transform: 'scale(2)',
+              width: '180px',
+              height: '180px',
+              left: '-30px',
+              top: '-30px',
+              background: 'conic-gradient(from 0deg, transparent, rgba(220, 38, 38, 0.4), transparent, rgba(220, 38, 38, 0.2), transparent)',
+              filter: 'blur(2px)',
             }}
-            animate={{
-              scale: [2, 2.5, 2],
-              opacity: [0.4, 0.7, 0.4],
-            }}
+            animate={{ rotate: 360 }}
             transition={{
-              duration: 2,
+              duration: 3,
               repeat: Infinity,
-              ease: "easeInOut",
+              ease: 'linear',
             }}
           />
 
-          {/* Shield icon with 3D effect */}
+          {/* Logo container with glassmorphism */}
           <motion.div
-            className="relative z-10 flex items-center justify-center w-32 h-32 rounded-full"
+            className="relative z-10 flex items-center justify-center w-[120px] h-[120px] rounded-full"
             style={{
-              background: 'linear-gradient(145deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.1) 100%)',
-              boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5), inset 0 2px 4px rgba(255,255,255,0.3)',
-              backdropFilter: 'blur(10px)',
+              background: 'linear-gradient(145deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.02) 100%)',
+              boxShadow: `
+                0 0 60px rgba(220, 38, 38, 0.3),
+                0 25px 50px -12px rgba(0,0,0,0.5),
+                inset 0 1px 1px rgba(255,255,255,0.1)
+              `,
+              border: '1px solid rgba(255,255,255,0.1)',
+              backdropFilter: 'blur(20px)',
             }}
             animate={{
               boxShadow: [
-                '0 25px 50px -12px rgba(0,0,0,0.5), inset 0 2px 4px rgba(255,255,255,0.3)',
-                '0 35px 60px -15px rgba(0,0,0,0.6), inset 0 4px 8px rgba(255,255,255,0.4)',
-                '0 25px 50px -12px rgba(0,0,0,0.5), inset 0 2px 4px rgba(255,255,255,0.3)',
+                '0 0 60px rgba(220, 38, 38, 0.3), 0 25px 50px -12px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255,255,255,0.1)',
+                '0 0 80px rgba(220, 38, 38, 0.5), 0 30px 60px -15px rgba(0,0,0,0.6), inset 0 1px 2px rgba(255,255,255,0.15)',
+                '0 0 60px rgba(220, 38, 38, 0.3), 0 25px 50px -12px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255,255,255,0.1)',
               ],
             }}
             transition={{
               duration: 2,
               repeat: Infinity,
-              ease: "easeInOut",
+              ease: 'easeInOut',
             }}
           >
-            <Shield className="h-16 w-16 text-white drop-shadow-2xl" />
+            {/* TUT Logo */}
+            <motion.img
+              src={tutLogo}
+              alt="TUT Logo"
+              className="w-16 h-16 object-contain"
+              style={{
+                filter: 'drop-shadow(0 0 20px rgba(220, 38, 38, 0.5))',
+              }}
+              animate={{
+                scale: [1, 1.05, 1],
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: 'easeInOut',
+              }}
+            />
           </motion.div>
         </motion.div>
       </div>
 
-      {/* App name with stagger animation */}
+      {/* App name with elegant typography */}
       <motion.div
-        className="mt-8 text-center"
-        initial={{ opacity: 0, y: 20 }}
+        className="relative z-10 mt-10 text-center"
+        initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5 }}
+        transition={{ delay: 0.4, duration: 0.6 }}
       >
         <motion.h1
-          className="text-4xl md:text-5xl font-bold text-white tracking-tight"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
+          className="text-4xl md:text-5xl font-bold tracking-tight"
+          style={{
+            background: 'linear-gradient(135deg, #ffffff 0%, #a3a3a3 50%, #ffffff 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            textShadow: '0 0 40px rgba(255,255,255,0.1)',
+          }}
         >
-          {"My CCSF".split('').map((char, i) => (
-            <motion.span
-              key={i}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.7 + i * 0.1 }}
-              className="inline-block"
-            >
-              {char === ' ' ? '\u00A0' : char}
-            </motion.span>
-          ))}
+          My CCSF
         </motion.h1>
         <motion.p
-          className="mt-2 text-white/80 text-lg"
+          className="mt-3 text-neutral-400 text-base tracking-wide"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 1.3 }}
+          transition={{ delay: 0.7 }}
         >
           Campus Crime Safety Forum
         </motion.p>
       </motion.div>
 
-      {/* Progress bar */}
+      {/* Premium progress bar */}
       <motion.div
-        className="mt-8 w-64"
+        className="relative z-10 mt-10 w-56"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 1.5 }}
+        transition={{ delay: 0.8 }}
       >
-        <div className="h-1.5 bg-white/20 rounded-full overflow-hidden">
+        <div 
+          className="h-1 rounded-full overflow-hidden"
+          style={{
+            background: 'rgba(255,255,255,0.1)',
+            boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.3)',
+          }}
+        >
           <motion.div
-            className="h-full bg-white rounded-full"
+            className="h-full rounded-full"
+            style={{
+              background: 'linear-gradient(90deg, #dc2626 0%, #ef4444 50%, #dc2626 100%)',
+              boxShadow: '0 0 20px rgba(220, 38, 38, 0.5)',
+            }}
             initial={{ width: 0 }}
             animate={{ width: `${progress}%` }}
             transition={{ duration: 0.1 }}
           />
         </div>
         <motion.p
-          className="mt-2 text-center text-white/60 text-sm"
-          animate={{ opacity: [0.6, 1, 0.6] }}
-          transition={{ duration: 1.5, repeat: Infinity }}
+          className="mt-3 text-center text-neutral-500 text-sm"
+          animate={{ opacity: [0.5, 1, 0.5] }}
+          transition={{ duration: 2, repeat: Infinity }}
         >
           Securing your campus...
         </motion.p>
       </motion.div>
 
-      {/* Decorative rings */}
-      {[1, 2, 3].map((ring) => (
-        <motion.div
-          key={ring}
-          className="absolute rounded-full border border-white/10"
-          style={{
-            width: `${ring * 200 + 100}px`,
-            height: `${ring * 200 + 100}px`,
-          }}
-          animate={{
-            rotate: ring % 2 === 0 ? 360 : -360,
-            scale: [1, 1.05, 1],
-          }}
-          transition={{
-            rotate: { duration: 10 + ring * 5, repeat: Infinity, ease: "linear" },
-            scale: { duration: 3, repeat: Infinity, ease: "easeInOut" },
-          }}
-        />
-      ))}
+      {/* Decorative corner elements */}
+      <div className="absolute top-8 left-8 w-16 h-16 border-l-2 border-t-2 border-red-600/20 rounded-tl-lg" />
+      <div className="absolute top-8 right-8 w-16 h-16 border-r-2 border-t-2 border-red-600/20 rounded-tr-lg" />
+      <div className="absolute bottom-8 left-8 w-16 h-16 border-l-2 border-b-2 border-red-600/20 rounded-bl-lg" />
+      <div className="absolute bottom-8 right-8 w-16 h-16 border-r-2 border-b-2 border-red-600/20 rounded-br-lg" />
     </motion.div>
   );
 };
