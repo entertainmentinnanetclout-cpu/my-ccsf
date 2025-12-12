@@ -72,7 +72,7 @@ const Dashboard = () => {
           initial={{ y: -100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.5, ease: 'easeInOut' }}
-          className="sticky top-0 z-40 bg-gradient-to-r from-secondary/95 to-primary/95 border-b border-white/20 shadow-large backdrop-blur-xl"
+          className="sticky top-0 z-40 bg-primary border-b border-white/20 shadow-large"
         >
           <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
             <div className="flex items-center justify-between">
