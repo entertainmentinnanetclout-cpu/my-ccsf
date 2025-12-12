@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -14,6 +14,8 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow, format } from 'date-fns';
 import type { Tables } from '@/integrations/supabase/types';
+import PullToRefresh from '@/components/shared/PullToRefresh';
+import { triggerHaptic } from '@/hooks/useHapticFeedback';
 
 type Incident = Tables<'incidents'>;
 
@@ -85,7 +87,7 @@ export const MyCaseReports = () => {
     };
   }, [user, toast]);
 
-  const fetchMyReports = async () => {
+  const fetchMyReports = useCallback(async () => {
     if (!user) return;
     try {
       const { data, error } = await supabase
@@ -103,7 +105,12 @@ export const MyCaseReports = () => {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [user, toast]);
+
+  const handlePullRefresh = useCallback(async () => {
+    triggerHaptic('medium');
+    await fetchMyReports();
+  }, [fetchMyReports]);
 
   const fetchCaseUpdates = async (incidentId: string) => {
     setLoadingUpdates(true);
@@ -124,11 +131,16 @@ export const MyCaseReports = () => {
   };
 
   const handleViewDetails = (incident: Incident) => {
+    triggerHaptic('light');
     setSelectedIncident(incident);
     fetchCaseUpdates(incident.id);
   };
 
   const handleRefresh = () => {
+    triggerHaptic('light');
+    setRefreshing(true);
+    fetchMyReports();
+  };
     setRefreshing(true);
     fetchMyReports();
   };
@@ -163,11 +175,12 @@ export const MyCaseReports = () => {
   }
 
   return (
-    <>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h2 className="text-xl font-bold text-white">My Case Reports</h2>
+    <PullToRefresh onRefresh={handlePullRefresh}>
+      <>
+        {/* Header */}
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-xl font-bold text-white">My Case Reports</h2>
           <p className="text-sm text-white/70">{incidents.length} case(s) submitted</p>
         </div>
         <Button 
@@ -415,6 +428,7 @@ export const MyCaseReports = () => {
           )}
         </DialogContent>
       </Dialog>
-    </>
+      </>
+    </PullToRefresh>
   );
 };
