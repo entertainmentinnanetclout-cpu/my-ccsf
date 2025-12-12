@@ -178,7 +178,7 @@ const SplashScreen = ({ onComplete, minDuration = 2500 }: SplashScreenProps) => 
           </motion.div>
         ))}
 
-        {/* 3D rotating logo container */}
+        {/* 3D rotating logo - clean, no container shapes */}
         <motion.div
           className="relative"
           initial={{ rotateY: 0 }}
@@ -190,69 +190,23 @@ const SplashScreen = ({ onComplete, minDuration = 2500 }: SplashScreenProps) => 
           }}
           style={{ transformStyle: 'preserve-3d' }}
         >
-          {/* Outer glow ring */}
-          <motion.div
-            className="absolute inset-0 rounded-full"
+          {/* TUT Logo - transparent, no circle */}
+          <motion.img
+            src={tutLogo}
+            alt="TUT Logo"
+            className="w-24 h-24 object-contain"
             style={{
-              width: '180px',
-              height: '180px',
-              left: '-30px',
-              top: '-30px',
-              background: 'conic-gradient(from 0deg, transparent, rgba(220, 38, 38, 0.4), transparent, rgba(220, 38, 38, 0.2), transparent)',
-              filter: 'blur(2px)',
-            }}
-            animate={{ rotate: 360 }}
-            transition={{
-              duration: 3,
-              repeat: Infinity,
-              ease: 'linear',
-            }}
-          />
-
-          {/* Logo container with glassmorphism */}
-          <motion.div
-            className="relative z-10 flex items-center justify-center w-[120px] h-[120px] rounded-full"
-            style={{
-              background: 'linear-gradient(145deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.02) 100%)',
-              boxShadow: `
-                0 0 60px rgba(220, 38, 38, 0.3),
-                0 25px 50px -12px rgba(0,0,0,0.5),
-                inset 0 1px 1px rgba(255,255,255,0.1)
-              `,
-              border: '1px solid rgba(255,255,255,0.1)',
-              backdropFilter: 'blur(20px)',
+              filter: 'drop-shadow(0 0 30px rgba(220, 38, 38, 0.6))',
             }}
             animate={{
-              boxShadow: [
-                '0 0 60px rgba(220, 38, 38, 0.3), 0 25px 50px -12px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255,255,255,0.1)',
-                '0 0 80px rgba(220, 38, 38, 0.5), 0 30px 60px -15px rgba(0,0,0,0.6), inset 0 1px 2px rgba(255,255,255,0.15)',
-                '0 0 60px rgba(220, 38, 38, 0.3), 0 25px 50px -12px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255,255,255,0.1)',
-              ],
+              scale: [1, 1.08, 1],
             }}
             transition={{
               duration: 2,
               repeat: Infinity,
               ease: 'easeInOut',
             }}
-          >
-            {/* TUT Logo */}
-            <motion.img
-              src={tutLogo}
-              alt="TUT Logo"
-              className="w-16 h-16 object-contain"
-              style={{
-                filter: 'drop-shadow(0 0 20px rgba(220, 38, 38, 0.5))',
-              }}
-              animate={{
-                scale: [1, 1.05, 1],
-              }}
-              transition={{
-                duration: 2,
-                repeat: Infinity,
-                ease: 'easeInOut',
-              }}
-            />
-          </motion.div>
+          />
         </motion.div>
       </div>
 
@@ -280,7 +234,7 @@ const SplashScreen = ({ onComplete, minDuration = 2500 }: SplashScreenProps) => 
           animate={{ opacity: 1 }}
           transition={{ delay: 0.7 }}
         >
-          Campus Crime Safety Forum
+          Campus Community Safety Forum
         </motion.p>
       </motion.div>
 
