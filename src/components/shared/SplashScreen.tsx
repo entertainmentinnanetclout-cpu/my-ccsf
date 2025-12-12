@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Shield, Lock, Eye, AlertTriangle } from 'lucide-react';
 import tutLogo from '@/assets/tut-logo.png';
@@ -8,10 +8,54 @@ interface SplashScreenProps {
   minDuration?: number;
 }
 
+// Create a simple startup sound using Web Audio API
+const playStartupSound = () => {
+  try {
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    
+    // Create a pleasant startup chime
+    const playTone = (frequency: number, startTime: number, duration: number, gain: number) => {
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime + startTime);
+      
+      gainNode.gain.setValueAtTime(0, audioContext.currentTime + startTime);
+      gainNode.gain.linearRampToValueAtTime(gain * 0.15, audioContext.currentTime + startTime + 0.05);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + startTime + duration);
+      
+      oscillator.start(audioContext.currentTime + startTime);
+      oscillator.stop(audioContext.currentTime + startTime + duration);
+    };
+
+    // Pleasant ascending chime sequence
+    playTone(523.25, 0, 0.4, 0.8);      // C5
+    playTone(659.25, 0.15, 0.4, 0.7);   // E5
+    playTone(783.99, 0.3, 0.5, 0.9);    // G5
+    playTone(1046.50, 0.5, 0.8, 0.6);   // C6 (octave)
+    
+  } catch (e) {
+    // Audio not supported or blocked, fail silently
+    console.log('Audio not available');
+  }
+};
+
 const SplashScreen = ({ onComplete, minDuration = 2500 }: SplashScreenProps) => {
   const [progress, setProgress] = useState(0);
+  const audioPlayedRef = useRef(false);
 
   useEffect(() => {
+    // Play startup sound once
+    if (!audioPlayedRef.current) {
+      audioPlayedRef.current = true;
+      // Small delay to ensure smooth animation start
+      setTimeout(playStartupSound, 300);
+    }
+
     const interval = setInterval(() => {
       setProgress(prev => {
         if (prev >= 100) {
