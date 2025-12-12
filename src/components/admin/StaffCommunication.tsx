@@ -13,8 +13,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Paperclip, Send, Plus, MessageSquare, Users, Search, 
-  Image as ImageIcon, File, X, Check, CheckCheck, 
-  Phone, Video, MoreVertical, Smile, Mic, Camera,
+  File, X, Check, CheckCheck, 
+  Phone, Video, MoreVertical, Camera,
   UserPlus, Settings, Hash, Lock
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -23,6 +23,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import imageCompression from 'browser-image-compression';
+import { EmojiPicker, ReactionPicker } from './EmojiPicker';
 
 type ChatRoom = {
   id: string;
@@ -39,6 +40,14 @@ type ChatRoom = {
   unread_count?: number;
 };
 
+type MessageReaction = {
+  id: string;
+  message_id: string;
+  user_id: string;
+  emoji: string;
+  created_at: string;
+};
+
 type ChatMessage = {
   id: string;
   room_id: string;
@@ -49,6 +58,7 @@ type ChatMessage = {
   media_url: string | null;
   media_type: string | null;
   is_read: boolean;
+  reactions?: MessageReaction[];
 };
 
 type UserProfile = {
@@ -124,15 +134,6 @@ export const StaffCommunication = () => {
     const fetchRooms = async () => {
       if (!user) return;
       
-      // Get rooms user is a member of
-      const { data: memberRooms } = await supabase
-        .from('chat_room_members')
-        .select('room_id')
-        .eq('user_id', user.id);
-      
-      const roomIds = memberRooms?.map(m => m.room_id) || [];
-      
-      // Also get all public rooms
       const { data: rooms, error } = await supabase
         .from('chat_rooms')
         .select('*')
@@ -141,7 +142,6 @@ export const StaffCommunication = () => {
       if (error) {
         console.error('Error fetching rooms:', error);
       } else if (rooms) {
-        // Enrich rooms with member count and last message
         const enrichedRooms = await Promise.all(rooms.map(async (room) => {
           const { count } = await supabase
             .from('chat_room_members')
@@ -160,7 +160,7 @@ export const StaffCommunication = () => {
             ...room,
             member_count: count || 0,
             last_message: lastMsg?.media_type ? `📎 ${lastMsg.media_type}` : lastMsg?.content?.substring(0, 50) || '',
-            unread_count: 0 // TODO: implement unread tracking
+            unread_count: 0
           };
         }));
         
@@ -174,7 +174,6 @@ export const StaffCommunication = () => {
 
     fetchRooms();
 
-    // Subscribe to room changes
     const roomChannel = supabase
       .channel('rooms-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_rooms' }, () => {
@@ -187,12 +186,11 @@ export const StaffCommunication = () => {
     };
   }, [user]);
 
-  // Fetch messages and room members for active room
+  // Fetch messages, reactions, and room members for active room
   useEffect(() => {
     if (!activeRoom) return;
 
     const fetchMessagesAndMembers = async () => {
-      // Fetch messages
       const { data: msgs, error } = await supabase
         .from('chat_messages')
         .select('*')
@@ -201,11 +199,32 @@ export const StaffCommunication = () => {
 
       if (error) {
         console.error('Error fetching messages:', error);
-      } else {
-        setMessages(msgs || []);
+      } else if (msgs) {
+        // Fetch reactions for all messages
+        const messageIds = msgs.map(m => m.id);
+        const { data: reactions } = await supabase
+          .from('message_reactions')
+          .select('*')
+          .in('message_id', messageIds);
         
-        // Fetch profiles for message senders
-        const senderIds = [...new Set((msgs || []).map(m => m.sender_id))];
+        // Group reactions by message
+        const reactionsByMessage: Record<string, MessageReaction[]> = {};
+        reactions?.forEach(r => {
+          if (!reactionsByMessage[r.message_id]) {
+            reactionsByMessage[r.message_id] = [];
+          }
+          reactionsByMessage[r.message_id].push(r);
+        });
+        
+        // Attach reactions to messages
+        const messagesWithReactions = msgs.map(m => ({
+          ...m,
+          reactions: reactionsByMessage[m.id] || []
+        }));
+        
+        setMessages(messagesWithReactions);
+        
+        const senderIds = [...new Set(msgs.map(m => m.sender_id))];
         if (senderIds.length > 0) {
           const { data: profiles } = await supabase
             .from('profiles')
@@ -222,7 +241,6 @@ export const StaffCommunication = () => {
         }
       }
 
-      // Fetch room members
       const { data: members } = await supabase
         .from('chat_room_members')
         .select('user_id')
@@ -255,7 +273,6 @@ export const StaffCommunication = () => {
         async (payload) => {
           const newMsg = payload.new as ChatMessage;
           
-          // Fetch sender profile if not cached
           if (!userProfiles[newMsg.sender_id]) {
             const { data: profile } = await supabase
               .from('profiles')
@@ -268,12 +285,42 @@ export const StaffCommunication = () => {
             }
           }
           
-          setMessages(prev => [...prev, newMsg]);
+          setMessages(prev => [...prev, { ...newMsg, reactions: [] }]);
         }
       )
       .subscribe();
 
-    // Typing indicators subscription using presence
+    // Real-time reactions subscription
+    const reactionChannel = supabase
+      .channel(`room-reactions-${activeRoom.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'message_reactions',
+        },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const reaction = payload.new as MessageReaction;
+            setMessages(prev => prev.map(m => 
+              m.id === reaction.message_id 
+                ? { ...m, reactions: [...(m.reactions || []), reaction] }
+                : m
+            ));
+          } else if (payload.eventType === 'DELETE') {
+            const reaction = payload.old as MessageReaction;
+            setMessages(prev => prev.map(m => 
+              m.id === reaction.message_id 
+                ? { ...m, reactions: (m.reactions || []).filter(r => r.id !== reaction.id) }
+                : m
+            ));
+          }
+        }
+      )
+      .subscribe();
+
+    // Typing indicators
     const typingChannel = supabase
       .channel(`typing-${activeRoom.id}`)
       .on('presence', { event: 'sync' }, () => {
@@ -292,16 +339,15 @@ export const StaffCommunication = () => {
 
     return () => {
       supabase.removeChannel(messageChannel);
+      supabase.removeChannel(reactionChannel);
       supabase.removeChannel(typingChannel);
     };
   }, [activeRoom, user]);
 
-  // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Handle typing indicator
   const handleTyping = useCallback(async () => {
     if (!activeRoom || !user) return;
     
@@ -314,7 +360,6 @@ export const StaffCommunication = () => {
       typing: true
     });
 
-    // Clear typing after 2 seconds of inactivity
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
@@ -326,6 +371,31 @@ export const StaffCommunication = () => {
       });
     }, 2000);
   }, [activeRoom, user, userProfiles]);
+
+  const handleReaction = async (messageId: string, emoji: string) => {
+    if (!user) return;
+    
+    const existingReaction = messages
+      .find(m => m.id === messageId)
+      ?.reactions?.find(r => r.user_id === user.id && r.emoji === emoji);
+    
+    if (existingReaction) {
+      // Remove reaction
+      await supabase
+        .from('message_reactions')
+        .delete()
+        .eq('id', existingReaction.id);
+    } else {
+      // Add reaction
+      await supabase
+        .from('message_reactions')
+        .insert({
+          message_id: messageId,
+          user_id: user.id,
+          emoji
+        });
+    }
+  };
 
   const handleCreateRoom = async () => {
     if (!newRoomName.trim() || !user) return;
@@ -346,14 +416,12 @@ export const StaffCommunication = () => {
       return;
     }
 
-    // Add creator as admin member
     await supabase.from('chat_room_members').insert({
       room_id: data.id,
       user_id: user.id,
       is_admin: true
     });
 
-    // Add selected members
     if (selectedMembers.length > 0) {
       const memberInserts = selectedMembers.map(memberId => ({
         room_id: data.id,
@@ -378,7 +446,6 @@ export const StaffCommunication = () => {
     let mediaUrl = null;
     let mediaType = null;
 
-    // Upload media if present
     if (previewMedia) {
       setIsUploading(true);
       try {
@@ -386,7 +453,7 @@ export const StaffCommunication = () => {
         const blob = await response.blob();
         const fileName = `${user.id}/${Date.now()}.${previewMedia.type.split('/')[1] || 'file'}`;
         
-        const { data: uploadData, error: uploadError } = await supabase.storage
+        const { error: uploadError } = await supabase.storage
           .from('chat-media')
           .upload(fileName, blob, { contentType: previewMedia.type });
 
@@ -423,7 +490,6 @@ export const StaffCommunication = () => {
       setNewMessage('');
       setPreviewMedia(null);
       
-      // Update room's last_message_at
       await supabase
         .from('chat_rooms')
         .update({ last_message_at: new Date().toISOString() })
@@ -435,7 +501,6 @@ export const StaffCommunication = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Compress image if it's an image
     if (file.type.startsWith('image/')) {
       try {
         const compressedFile = await imageCompression(file, {
@@ -459,6 +524,10 @@ export const StaffCommunication = () => {
     }
   };
 
+  const handleEmojiSelect = (emoji: string) => {
+    setNewMessage(prev => prev + emoji);
+  };
+
   const addMemberToRoom = async (userId: string) => {
     if (!activeRoom) return;
     
@@ -478,7 +547,6 @@ export const StaffCommunication = () => {
       }
     } else {
       toast({ title: 'Success', description: 'Member added to room' });
-      // Refresh room members
       const memberProfile = allStaff.find(s => s.id === userId);
       if (memberProfile) {
         setRoomMembers(prev => [...prev, memberProfile]);
@@ -503,6 +571,19 @@ export const StaffCommunication = () => {
       return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
     }
     return email.substring(0, 2).toUpperCase();
+  };
+
+  // Group reactions by emoji
+  const groupReactions = (reactions: MessageReaction[]) => {
+    const grouped: Record<string, { count: number; users: string[] }> = {};
+    reactions.forEach(r => {
+      if (!grouped[r.emoji]) {
+        grouped[r.emoji] = { count: 0, users: [] };
+      }
+      grouped[r.emoji].count++;
+      grouped[r.emoji].users.push(r.user_id);
+    });
+    return grouped;
   };
 
   const filteredRooms = rooms.filter(room => {
@@ -863,13 +944,14 @@ export const StaffCommunication = () => {
                       const sender = userProfiles[msg.sender_id];
                       const senderName = sender?.full_name || sender?.email?.split('@')[0] || 'Unknown';
                       const showAvatar = !isMe && (index === 0 || messages[index - 1].sender_id !== msg.sender_id);
+                      const groupedReactions = groupReactions(msg.reactions || []);
 
                       return (
                         <motion.div
                           key={msg.id}
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
-                          className={`flex gap-2 ${isMe ? 'justify-end' : ''}`}
+                          className={`flex gap-2 group ${isMe ? 'justify-end' : ''}`}
                         >
                           {!isMe && (
                             <div className="w-8">
@@ -889,49 +971,79 @@ export const StaffCommunication = () => {
                               <p className="text-xs text-muted-foreground mb-1 ml-1">{senderName}</p>
                             )}
                             
-                            <div className={`rounded-2xl overflow-hidden ${
-                              isMe 
-                                ? 'bg-primary text-primary-foreground rounded-br-sm' 
-                                : 'bg-muted rounded-bl-sm'
-                            }`}>
-                              {msg.media_url && (
-                                <div className="relative">
-                                  {msg.media_type === 'image' ? (
-                                    <img 
-                                      src={msg.media_url} 
-                                      alt="Shared media" 
-                                      className="max-w-full max-h-64 object-cover"
-                                    />
-                                  ) : (
-                                    <a 
-                                      href={msg.media_url} 
-                                      target="_blank" 
-                                      rel="noopener noreferrer"
-                                      className="flex items-center gap-2 p-3 hover:bg-black/5"
-                                    >
-                                      <File className="h-8 w-8" />
-                                      <span className="text-sm">Download File</span>
-                                    </a>
+                            <div className="relative">
+                              <div className={`rounded-2xl overflow-hidden ${
+                                isMe 
+                                  ? 'bg-primary text-primary-foreground rounded-br-sm' 
+                                  : 'bg-muted rounded-bl-sm'
+                              }`}>
+                                {msg.media_url && (
+                                  <div className="relative">
+                                    {msg.media_type === 'image' ? (
+                                      <img 
+                                        src={msg.media_url} 
+                                        alt="Shared media" 
+                                        className="max-w-full max-h-64 object-cover"
+                                      />
+                                    ) : (
+                                      <a 
+                                        href={msg.media_url} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-2 p-3 hover:bg-black/5"
+                                      >
+                                        <File className="h-8 w-8" />
+                                        <span className="text-sm">Download File</span>
+                                      </a>
+                                    )}
+                                  </div>
+                                )}
+                                
+                                {msg.content && (
+                                  <p className="text-sm p-3 pt-2">{msg.content}</p>
+                                )}
+                                
+                                <div className={`flex items-center justify-end gap-1 px-3 pb-2 ${
+                                  isMe ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                                }`}>
+                                  <span className="text-xs">{formatTime(msg.created_at)}</span>
+                                  {isMe && (
+                                    msg.is_read ? (
+                                      <CheckCheck className="h-3.5 w-3.5 text-blue-400" />
+                                    ) : (
+                                      <Check className="h-3.5 w-3.5" />
+                                    )
                                   )}
                                 </div>
-                              )}
-                              
-                              {msg.content && (
-                                <p className="text-sm p-3 pt-2">{msg.content}</p>
-                              )}
-                              
-                              <div className={`flex items-center justify-end gap-1 px-3 pb-2 ${
-                                isMe ? 'text-primary-foreground/70' : 'text-muted-foreground'
-                              }`}>
-                                <span className="text-xs">{formatTime(msg.created_at)}</span>
-                                {isMe && (
-                                  msg.is_read ? (
-                                    <CheckCheck className="h-3.5 w-3.5 text-blue-400" />
-                                  ) : (
-                                    <Check className="h-3.5 w-3.5" />
-                                  )
-                                )}
                               </div>
+                              
+                              {/* Reaction picker */}
+                              <div className={`absolute top-0 ${isMe ? 'left-0 -translate-x-full' : 'right-0 translate-x-full'} px-1`}>
+                                <ReactionPicker 
+                                  onReact={(emoji) => handleReaction(msg.id, emoji)}
+                                  existingReactions={msg.reactions?.filter(r => r.user_id === user?.id).map(r => r.emoji) || []}
+                                />
+                              </div>
+                              
+                              {/* Reactions display */}
+                              {Object.keys(groupedReactions).length > 0 && (
+                                <div className={`flex flex-wrap gap-1 mt-1 ${isMe ? 'justify-end' : 'justify-start'}`}>
+                                  {Object.entries(groupedReactions).map(([emoji, data]) => (
+                                    <button
+                                      key={emoji}
+                                      onClick={() => handleReaction(msg.id, emoji)}
+                                      className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs transition-colors ${
+                                        data.users.includes(user?.id || '') 
+                                          ? 'bg-primary/20 border border-primary/30' 
+                                          : 'bg-muted hover:bg-muted/80'
+                                      }`}
+                                    >
+                                      <span>{emoji}</span>
+                                      <span className="text-muted-foreground">{data.count}</span>
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                           </div>
                           
@@ -1021,13 +1133,9 @@ export const StaffCommunication = () => {
                     className="min-h-[44px] max-h-32 resize-none pr-12"
                     rows={1}
                   />
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="absolute right-1 top-1 h-8 w-8"
-                  >
-                    <Smile className="h-5 w-5" />
-                  </Button>
+                  <div className="absolute right-1 top-1">
+                    <EmojiPicker onSelect={handleEmojiSelect} triggerClassName="h-8 w-8" />
+                  </div>
                 </div>
                 
                 <Button 
