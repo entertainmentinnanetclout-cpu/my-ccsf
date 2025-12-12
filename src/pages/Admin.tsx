@@ -14,12 +14,24 @@ import { IncidentAnalytics } from '@/components/admin/IncidentAnalytics';
 import { CarouselManager } from '@/components/admin/CarouselManager';
 import { CampusAdminManager } from '@/components/admin/CampusAdminManager';
 import { NotificationBell } from '@/components/shared/NotificationBell';
+import { ThemeToggle } from '@/components/shared/ThemeToggle';
+import { MobileNavMenu } from '@/components/shared/MobileNavMenu';
 import { MasterSyncProvider } from '@/contexts/MasterSyncContext';
 import { MasterSyncButton } from '@/components/admin/MasterSyncButton';
 
 const Admin = () => {
   const navigate = useNavigate();
   const [activeView, setActiveView] = useState<'overview' | 'incidents' | 'analytics' | 'announcements' | 'communication' | 'carousel' | 'admins'>('overview');
+
+  const navItems = [
+    { view: 'overview', icon: LayoutDashboard, label: 'Overview' },
+    { view: 'incidents', icon: AlertCircle, label: 'Incidents' },
+    { view: 'analytics', icon: BarChart3, label: 'Analytics' },
+    { view: 'announcements', icon: Megaphone, label: 'Announcements' },
+    { view: 'communication', icon: MessageSquare, label: 'Staff Chat' },
+    { view: 'carousel', icon: Images, label: 'Carousel' },
+    { view: 'admins', icon: Users, label: 'Admins' },
+  ];
 
   return (
     <MasterSyncProvider>
@@ -50,16 +62,18 @@ const Admin = () => {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <ThemeToggle />
                 <MasterSyncButton />
                 <NotificationBell />
                 <motion.div whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.95 }}>
-                  <Button variant="destructive" size="sm" onClick={async () => {
+                  <Button variant="destructive" size="sm" className="text-xs px-2 sm:px-3" onClick={async () => {
                     const { supabase } = await import('@/integrations/supabase/client');
                     await supabase.auth.signOut();
                     navigate('/auth');
                   }}>
-                    Sign Out
+                    <span className="hidden sm:inline">Sign Out</span>
+                    <span className="sm:hidden">Exit</span>
                   </Button>
                 </motion.div>
               </div>
@@ -74,49 +88,39 @@ const Admin = () => {
 
         {/* Main Content */}
         <main className="container mx-auto px-4 py-6">
-          {/* Navigation Tabs */}
+          {/* Navigation - Desktop Tabs + Mobile Menu */}
           <motion.div
             initial={{ opacity: 0, y: 25 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2, duration: 0.4 }}
+            className="mb-6"
           >
-            <Card className="p-3 mb-6 shadow-large">
+            {/* Mobile Navigation Menu */}
+            <div className="flex justify-center md:hidden mb-4">
+              <MobileNavMenu
+                items={navItems}
+                activeView={activeView}
+                onViewChange={(view) => setActiveView(view as typeof activeView)}
+                title="Super Admin"
+              />
+            </div>
+
+            {/* Desktop Navigation Tabs */}
+            <Card className="hidden md:block p-3 shadow-large">
               <div className="flex flex-wrap justify-center gap-2">
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Button variant={activeView === 'overview' ? 'default' : 'ghost'} onClick={() => setActiveView('overview')} className="transition-all">
-                    <LayoutDashboard className="h-4 w-4 mr-2" />Overview
-                  </Button>
-                </motion.div>
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Button variant={activeView === 'incidents' ? 'default' : 'ghost'} onClick={() => setActiveView('incidents')} className="transition-all">
-                    <AlertCircle className="h-4 w-4 mr-2" />Incidents
-                  </Button>
-                </motion.div>
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Button variant={activeView === 'analytics' ? 'default' : 'ghost'} onClick={() => setActiveView('analytics')} className="transition-all">
-                    <BarChart3 className="h-4 w-4 mr-2" />Analytics
-                  </Button>
-                </motion.div>
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Button variant={activeView === 'announcements' ? 'default' : 'ghost'} onClick={() => setActiveView('announcements')} className="transition-all">
-                    <Megaphone className="h-4 w-4 mr-2" />Announcements
-                  </Button>
-                </motion.div>
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Button variant={activeView === 'communication' ? 'default' : 'ghost'} onClick={() => setActiveView('communication')} className="transition-all">
-                    <MessageSquare className="h-4 w-4 mr-2" />Staff Chat
-                  </Button>
-                </motion.div>
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Button variant={activeView === 'carousel' ? 'default' : 'ghost'} onClick={() => setActiveView('carousel')} className="transition-all">
-                    <Images className="h-4 w-4 mr-2" />Carousel
-                  </Button>
-                </motion.div>
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Button variant={activeView === 'admins' ? 'default' : 'ghost'} onClick={() => setActiveView('admins')} className="transition-all">
-                    <Users className="h-4 w-4 mr-2" />Admins
-                  </Button>
-                </motion.div>
+                {navItems.map(({ view, icon: Icon, label }) => (
+                  <motion.div key={view} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                    <Button 
+                      variant={activeView === view ? 'default' : 'ghost'} 
+                      onClick={() => setActiveView(view as typeof activeView)} 
+                      className="transition-all"
+                      size="sm"
+                    >
+                      <Icon className="h-4 w-4 lg:mr-2" />
+                      <span className="hidden lg:inline">{label}</span>
+                    </Button>
+                  </motion.div>
+                ))}
               </div>
             </Card>
           </motion.div>
