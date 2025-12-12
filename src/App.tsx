@@ -12,6 +12,7 @@ const queryClient = new QueryClient();
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import Layout from './components/shared/Layout';
+import PWAInstallPrompt from './components/shared/PWAInstallPrompt';
 
 const Index = lazy(() => import('./pages/Index'));
 const NotFound = lazy(() => import('./pages/NotFound'));
@@ -98,6 +99,7 @@ const App = () => (
                 </Route>
               </Routes>
             </Suspense>
+            <PWAInstallPrompt />
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>

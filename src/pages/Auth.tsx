@@ -165,7 +165,7 @@ const Auth = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-primary user-theme p-4">
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'linear-gradient(135deg, hsl(0 72% 51%) 0%, hsl(0 84% 40%) 50%, hsl(0 72% 35%) 100%)' }}>
       <motion.div
         initial={{ opacity: 0, y: 25 }}
         animate={{ opacity: 1, y: 0 }}
@@ -198,7 +198,7 @@ const Auth = () => {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.4, duration: 0.3 }}
         >
-          <Card className="shadow-large">
+          <Card className="shadow-large border-0 bg-card/95 backdrop-blur-sm">
             <CardHeader>
               <CardTitle>{isLogin ? 'Sign In' : 'Create Account'}</CardTitle>
               <CardDescription>
