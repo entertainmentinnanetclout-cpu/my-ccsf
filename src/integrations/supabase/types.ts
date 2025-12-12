@@ -271,6 +271,9 @@ export type Database = {
           created_at: string | null
           id: string
           incident_id: string | null
+          is_read: boolean | null
+          media_type: string | null
+          media_url: string | null
           room_id: string
           sender_id: string
         }
@@ -279,6 +282,9 @@ export type Database = {
           created_at?: string | null
           id?: string
           incident_id?: string | null
+          is_read?: boolean | null
+          media_type?: string | null
+          media_url?: string | null
           room_id: string
           sender_id: string
         }
@@ -287,6 +293,9 @@ export type Database = {
           created_at?: string | null
           id?: string
           incident_id?: string | null
+          is_read?: boolean | null
+          media_type?: string | null
+          media_url?: string | null
           room_id?: string
           sender_id?: string
         }
@@ -314,27 +323,74 @@ export type Database = {
           },
         ]
       }
+      chat_room_members: {
+        Row: {
+          id: string
+          is_admin: boolean | null
+          joined_at: string | null
+          last_read_at: string | null
+          room_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          is_admin?: boolean | null
+          joined_at?: string | null
+          last_read_at?: string | null
+          room_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          is_admin?: boolean | null
+          joined_at?: string | null
+          last_read_at?: string | null
+          room_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_room_members_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "chat_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_rooms: {
         Row: {
+          avatar_url: string | null
           campus: Database["public"]["Enums"]["campus_location"] | null
           created_at: string | null
           created_by: string | null
+          description: string | null
           id: string
+          last_message_at: string | null
           name: string
+          room_type: string | null
         }
         Insert: {
+          avatar_url?: string | null
           campus?: Database["public"]["Enums"]["campus_location"] | null
           created_at?: string | null
           created_by?: string | null
+          description?: string | null
           id?: string
+          last_message_at?: string | null
           name: string
+          room_type?: string | null
         }
         Update: {
+          avatar_url?: string | null
           campus?: Database["public"]["Enums"]["campus_location"] | null
           created_at?: string | null
           created_by?: string | null
+          description?: string | null
           id?: string
+          last_message_at?: string | null
           name?: string
+          room_type?: string | null
         }
         Relationships: [
           {
@@ -682,6 +738,35 @@ export type Database = {
           },
         ]
       }
+      typing_indicators: {
+        Row: {
+          id: string
+          room_id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          room_id: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          id?: string
+          room_id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "typing_indicators_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "chat_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -716,6 +801,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      ensure_all_staff_room: { Args: never; Returns: undefined }
       get_security_officers: {
         Args: { p_campus?: Database["public"]["Enums"]["campus_location"] }
         Returns: {
