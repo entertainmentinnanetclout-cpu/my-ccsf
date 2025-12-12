@@ -141,9 +141,6 @@ export const MyCaseReports = () => {
     setRefreshing(true);
     fetchMyReports();
   };
-    setRefreshing(true);
-    fetchMyReports();
-  };
 
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString('en-ZA', {
@@ -432,3 +429,5 @@ export const MyCaseReports = () => {
     </PullToRefresh>
   );
 };
+
+export default MyCaseReports;
