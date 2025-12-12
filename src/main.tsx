@@ -1,6 +1,5 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { createRoot } from "react-dom/client";
-import { useState, useEffect } from "react";
 import { AnimatePresence } from "framer-motion";
 import App from "./App.tsx";
 import SplashScreen from "./components/shared/SplashScreen.tsx";
@@ -53,7 +52,7 @@ const Root: React.FC = () => {
   };
 
   return (
-    <React.StrictMode>
+    <>
       <AnimatePresence mode="wait">
         {showSplash && (
           <SplashScreen 
@@ -64,8 +63,12 @@ const Root: React.FC = () => {
         )}
       </AnimatePresence>
       {appReady && <App />}
-    </React.StrictMode>
+    </>
   );
 };
 
-createRoot(document.getElementById("root")!).render(<Root />);
+createRoot(document.getElementById("root")!).render(
+  <React.StrictMode>
+    <Root />
+  </React.StrictMode>
+);
