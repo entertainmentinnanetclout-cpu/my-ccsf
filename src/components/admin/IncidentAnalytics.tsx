@@ -1,14 +1,15 @@
 import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts';
-import { TrendingUp, Clock, AlertTriangle, CheckCircle, Timer, RefreshCw } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend, AreaChart, Area } from 'recharts';
+import { TrendingUp, Clock, AlertTriangle, CheckCircle, Timer, RefreshCw, Activity, Target, Zap } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { format, differenceInHours } from 'date-fns';
 import { useMasterSync } from '@/contexts/MasterSyncContext';
 import { Button } from '@/components/ui/button';
+import { GlassStatCard, CircularGauge, LiveIndicator, HeatmapCalendar, HourlyHeatmap } from './metrics';
 
-const COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6', '#ec4899', '#14b8a6'];
+const COLORS = ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
 
 const EMERGENCY_CATEGORIES = [
   'Rape', 'Sexual assault', 'Gbv', 'Murder', 'Attempted murder',
@@ -54,8 +55,35 @@ export const IncidentAnalytics = () => {
 
   // Resolution rate
   const resolutionRate = stats.total > 0 
-    ? ((stats.resolved / stats.total) * 100).toFixed(1)
-    : '0';
+    ? Math.round((stats.resolved / stats.total) * 100)
+    : 0;
+
+  // Heatmap data
+  const heatmapData = useMemo(() => {
+    const data: { date: string; count: number }[] = [];
+    const dateMap = new Map<string, number>();
+    
+    incidents.forEach(inc => {
+      const date = format(new Date(inc.created_at), 'yyyy-MM-dd');
+      dateMap.set(date, (dateMap.get(date) || 0) + 1);
+    });
+    
+    dateMap.forEach((count, date) => {
+      data.push({ date, count });
+    });
+    
+    return data;
+  }, [incidents]);
+
+  // Hourly pattern data
+  const hourlyData = useMemo(() => {
+    const hours = Array.from({ length: 24 }, (_, i) => ({ hour: i, count: 0 }));
+    incidents.forEach(i => {
+      const hour = new Date(i.created_at).getHours();
+      hours[hour].count++;
+    });
+    return hours;
+  }, [incidents]);
 
   // Category breakdown for pie chart
   const categoryData = useMemo(() => {
@@ -65,7 +93,7 @@ export const IncidentAnalytics = () => {
     }, {} as Record<string, number>);
     
     return Object.entries(categories)
-      .map(([name, value]) => ({ name, value }))
+      .map(([name, value]) => ({ name: name.length > 15 ? name.slice(0, 15) + '...' : name, fullName: name, value }))
       .sort((a, b) => b.value - a.value)
       .slice(0, 8);
   }, [incidents]);
@@ -123,106 +151,108 @@ export const IncidentAnalytics = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header with Sync Info */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Incident Analytics</h2>
-        <div className="flex items-center gap-2">
-          {lastSyncTime && (
-            <Badge variant="outline" className="text-xs">
-              Last sync: {format(lastSyncTime, 'HH:mm:ss')}
-            </Badge>
-          )}
+      {/* Header with Live Status */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold flex items-center gap-2">
+            <Activity className="h-6 w-6 text-primary" />
+            Incident Analytics
+          </h2>
+          <p className="text-muted-foreground text-sm">Real-time insights across all campuses</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <LiveIndicator status="online" lastSync={lastSyncTime || undefined} />
           <Button variant="ghost" size="icon" onClick={refreshIncidents}>
             <RefreshCw className="h-4 w-4" />
           </Button>
         </div>
       </div>
 
-      {/* Key Metrics Cards */}
+      {/* Premium Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-muted-foreground">Total Cases</p>
-                  <p className="text-2xl font-bold">{stats.total}</p>
-                </div>
-                <TrendingUp className="h-8 w-8 text-primary/50" />
-              </div>
-            </CardContent>
+        <GlassStatCard
+          title="Total Cases"
+          value={stats.total}
+          icon={Activity}
+          color="primary"
+          delay={0}
+          showLiveIndicator
+        />
+        <GlassStatCard
+          title="Pending"
+          value={stats.pending}
+          subtitle="Needs review"
+          icon={Clock}
+          color="warning"
+          delay={0.05}
+        />
+        <GlassStatCard
+          title="Resolved"
+          value={stats.resolved}
+          icon={CheckCircle}
+          color="success"
+          delay={0.1}
+        />
+        <GlassStatCard
+          title="Emergencies"
+          value={stats.emergencies}
+          subtitle="High priority"
+          icon={AlertTriangle}
+          color="danger"
+          delay={0.15}
+        />
+        
+        {/* Resolution Rate Gauge */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.2 }}
+        >
+          <Card className="h-full flex items-center justify-center p-4 bg-gradient-to-br from-muted/30 to-muted/10">
+            <CircularGauge
+              value={resolutionRate}
+              size="sm"
+              color="gradient"
+              label="Resolution"
+            />
           </Card>
         </motion.div>
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
-          <Card className="border-amber-500/30 bg-amber-500/5">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-amber-600">Pending</p>
-                  <p className="text-2xl font-bold text-amber-600">{stats.pending}</p>
-                </div>
-                <Clock className="h-8 w-8 text-amber-500/50" />
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
+        <GlassStatCard
+          title="Avg Response"
+          value={`${avgResponseTime.toFixed(1)}h`}
+          subtitle="Time to resolve"
+          icon={Timer}
+          color="info"
+          delay={0.25}
+        />
+      </div>
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-          <Card className="border-emerald-500/30 bg-emerald-500/5">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-emerald-600">Resolved</p>
-                  <p className="text-2xl font-bold text-emerald-600">{stats.resolved}</p>
-                </div>
-                <CheckCircle className="h-8 w-8 text-emerald-500/50" />
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
+      {/* Activity Heatmaps Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="p-4">
+          <CardHeader className="p-0 pb-4">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Target className="h-4 w-4 text-primary" />
+              12-Week Activity Heatmap
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <HeatmapCalendar data={heatmapData} weeks={12} colorScheme="default" />
+          </CardContent>
+        </Card>
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
-          <Card className="border-red-500/30 bg-red-500/5">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-red-600">Emergencies</p>
-                  <p className="text-2xl font-bold text-red-600">{stats.emergencies}</p>
-                </div>
-                <AlertTriangle className="h-8 w-8 text-red-500/50" />
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-muted-foreground">Resolution Rate</p>
-                  <p className="text-2xl font-bold">{resolutionRate}%</p>
-                </div>
-                <TrendingUp className="h-8 w-8 text-primary/50" />
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-muted-foreground">Avg Response</p>
-                  <p className="text-2xl font-bold">{avgResponseTime.toFixed(1)}h</p>
-                </div>
-                <Timer className="h-8 w-8 text-primary/50" />
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
+        <Card className="p-4">
+          <CardHeader className="p-0 pb-4">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Zap className="h-4 w-4 text-primary" />
+              Hourly Incident Pattern
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <HourlyHeatmap data={hourlyData} colorScheme="danger" />
+          </CardContent>
+        </Card>
       </div>
 
       {/* Charts Row 1 */}
@@ -230,26 +260,36 @@ export const IncidentAnalytics = () => {
         {/* Daily Trend */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Incident Trend</CardTitle>
+            <CardTitle className="text-base flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-primary" />
+              Incident Trend
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={dailyTrend}>
+                <AreaChart data={dailyTrend}>
+                  <defs>
+                    <linearGradient id="totalGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.4}/>
+                      <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="date" tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
                   <YAxis tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
                   <Tooltip 
                     contentStyle={{ 
-                      backgroundColor: 'hsl(var(--card))', 
+                      backgroundColor: 'hsl(var(--popover))', 
                       border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px'
+                      borderRadius: '12px',
+                      boxShadow: '0 8px 32px -8px rgba(0,0,0,0.2)'
                     }} 
                   />
                   <Legend />
-                  <Line type="monotone" dataKey="total" stroke="hsl(var(--primary))" strokeWidth={2} name="Total" />
-                  <Line type="monotone" dataKey="emergencies" stroke="#ef4444" strokeWidth={2} name="Emergencies" />
-                </LineChart>
+                  <Area type="monotone" dataKey="total" stroke="hsl(var(--primary))" fill="url(#totalGradient)" strokeWidth={2} name="Total" />
+                  <Line type="monotone" dataKey="emergencies" stroke="#ef4444" strokeWidth={2} name="Emergencies" dot={{ r: 3 }} />
+                </AreaChart>
               </ResponsiveContainer>
             </div>
           </CardContent>
@@ -258,7 +298,10 @@ export const IncidentAnalytics = () => {
         {/* Status Distribution */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Status Distribution</CardTitle>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Target className="h-4 w-4 text-primary" />
+              Status Distribution
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-64 flex items-center justify-center">
@@ -273,12 +316,20 @@ export const IncidentAnalytics = () => {
                     paddingAngle={5}
                     dataKey="value"
                     label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    labelLine={false}
                   >
                     {statusData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
-                  <Tooltip />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--popover))', 
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '12px',
+                      boxShadow: '0 8px 32px -8px rgba(0,0,0,0.2)'
+                    }} 
+                  />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -291,27 +342,37 @@ export const IncidentAnalytics = () => {
         {/* Category Breakdown */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Top Categories</CardTitle>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Zap className="h-4 w-4 text-primary" />
+              Top Categories
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={categoryData} layout="vertical">
+                  <defs>
+                    <linearGradient id="categoryGradient" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.8}/>
+                      <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={1}/>
+                    </linearGradient>
+                  </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis type="number" tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
                   <YAxis dataKey="name" type="category" width={120} tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
                   <Tooltip 
                     contentStyle={{ 
-                      backgroundColor: 'hsl(var(--card))', 
+                      backgroundColor: 'hsl(var(--popover))', 
                       border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px'
+                      borderRadius: '12px',
+                      boxShadow: '0 8px 32px -8px rgba(0,0,0,0.2)'
                     }} 
                   />
-                  <Bar dataKey="value" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]}>
+                  <Bar dataKey="value" fill="url(#categoryGradient)" radius={[0, 6, 6, 0]}>
                     {categoryData.map((entry, index) => (
                       <Cell 
                         key={`cell-${index}`} 
-                        fill={EMERGENCY_CATEGORIES.includes(entry.name) ? '#ef4444' : COLORS[index % COLORS.length]} 
+                        fill={EMERGENCY_CATEGORIES.includes(entry.fullName) ? '#ef4444' : COLORS[index % COLORS.length]} 
                       />
                     ))}
                   </Bar>
@@ -324,23 +385,33 @@ export const IncidentAnalytics = () => {
         {/* Campus Breakdown */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Incidents by Campus</CardTitle>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Activity className="h-4 w-4 text-primary" />
+              Incidents by Campus
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={campusData}>
+                  <defs>
+                    <linearGradient id="campusGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={1}/>
+                      <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.6}/>
+                    </linearGradient>
+                  </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="name" tick={{ fontSize: 10 }} height={60} stroke="hsl(var(--muted-foreground))" />
                   <YAxis tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
                   <Tooltip
                     contentStyle={{ 
-                      backgroundColor: 'hsl(var(--card))', 
+                      backgroundColor: 'hsl(var(--popover))', 
                       border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px'
+                      borderRadius: '12px',
+                      boxShadow: '0 8px 32px -8px rgba(0,0,0,0.2)'
                     }} 
                   />
-                  <Bar dataKey="value" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]}>
+                  <Bar dataKey="value" fill="url(#campusGradient)" radius={[6, 6, 0, 0]}>
                     {campusData.map((_, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
