@@ -3,7 +3,7 @@ import { useRef } from 'react';
 import { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-interface GlassStatCardProps {
+export interface GlassStatCardProps {
   title: string;
   value: number | string;
   subtitle?: string;
@@ -17,6 +17,7 @@ interface GlassStatCardProps {
   delay?: number;
   sparklineData?: number[];
   showLiveIndicator?: boolean;
+  className?: string;
 }
 
 const colorVariants = {
