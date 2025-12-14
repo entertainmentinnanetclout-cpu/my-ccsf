@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -38,7 +37,6 @@ const campusDisplayNames: Record<string, string> = {
   'emalahleni': 'Emalahleni'
 };
 const Security = () => {
-  const navigate = useNavigate();
   const {
     userProfile,
     signOut
