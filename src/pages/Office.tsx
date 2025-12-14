@@ -1,52 +1,114 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { motion } from 'framer-motion';
-import { Shield, Home, Search, AlertCircle, BarChart3, FileText } from 'lucide-react';
+import { Shield, Home, Search, AlertCircle, BarChart3, FileText, Loader2, MapPin, Clock, User } from 'lucide-react';
 import tutLogo from '@/assets/tut-logo.png';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { format } from 'date-fns';
+import type { Database } from '@/integrations/supabase/types';
 
-const mockReports = [
-  { id: 'RPT-001', title: 'Suspicious activity near library', description: 'Unknown person loitering', status: 'pending', severity: 'medium', location: 'Library', reporter: { name: 'John Doe', residence: 'Block A' } },
-  { id: 'RPT-002', title: 'Theft reported in parking lot', description: 'Vehicle break-in', status: 'investigating', severity: 'high', location: 'Parking Lot B', reporter: { name: 'Jane Smith', residence: 'Block C' } },
-  { id: 'RPT-003', title: 'Fire alarm triggered', description: 'False alarm in dormitory', status: 'resolved', severity: 'critical', location: 'Dormitory 3', reporter: { name: 'Mike Johnson', residence: 'Block B' } },
-];
+type Incident = Database['public']['Tables']['incidents']['Row'];
+type IncidentStatus = Database['public']['Enums']['incident_status'];
 
 const Office = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [activeView, setActiveView] = useState<'reports' | 'stats'>('reports');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [severityFilter, setSeverityFilter] = useState<string>('all');
-
-  const filteredReports = mockReports.filter(report => {
-    const matchesSearch = report.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         report.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || report.status === statusFilter;
-    const matchesSeverity = severityFilter === 'all' || report.severity === severityFilter;
-    return matchesSearch && matchesStatus && matchesSeverity;
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [incidents, setIncidents] = useState<Incident[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    total: 0,
+    pending: 0,
+    investigating: 0,
+    resolved: 0,
   });
 
-  const getSeverityColor = (severity: string) => {
-    switch (severity) {
-      case 'critical': return 'bg-red-500/20 text-red-500 border-red-500';
-      case 'high': return 'bg-orange-500/20 text-orange-500 border-orange-500';
-      case 'medium': return 'bg-yellow-500/20 text-yellow-500 border-yellow-500';
-      case 'low': return 'bg-green-500/20 text-green-500 border-green-500';
-      default: return 'bg-gray-500/20 text-gray-500 border-gray-500';
+  useEffect(() => {
+    fetchIncidents();
+    
+    // Real-time subscription
+    const channel = supabase
+      .channel('office-incidents')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'incidents' }, () => {
+        fetchIncidents();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const fetchIncidents = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('incidents')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      toast({ title: 'Error fetching incidents', description: error.message, variant: 'destructive' });
+    } else if (data) {
+      setIncidents(data);
+      setStats({
+        total: data.length,
+        pending: data.filter(i => i.status === 'pending').length,
+        investigating: data.filter(i => i.status === 'assigned').length,
+        resolved: data.filter(i => i.status === 'resolved').length,
+      });
+    }
+    setLoading(false);
+  };
+
+  const updateIncidentStatus = async (id: string, status: IncidentStatus) => {
+    const { error } = await supabase
+      .from('incidents')
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq('id', id);
+
+    if (error) {
+      toast({ title: 'Error updating status', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Status updated successfully' });
+      fetchIncidents();
+    }
+  };
+
+  const filteredIncidents = incidents.filter(incident => {
+    const matchesSearch = incident.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         incident.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || incident.status === statusFilter;
+    const matchesCategory = categoryFilter === 'all' || incident.category === categoryFilter;
+    return matchesSearch && matchesStatus && matchesCategory;
+  });
+
+  const getCategoryColor = (category: string) => {
+    switch (category) {
+      case 'theft': return 'bg-destructive/20 text-destructive border-destructive';
+      case 'assault': return 'bg-destructive/20 text-destructive border-destructive';
+      case 'vandalism': return 'bg-warning/20 text-warning-foreground border-warning';
+      case 'harassment': return 'bg-warning/20 text-warning-foreground border-warning';
+      case 'suspicious_activity': return 'bg-primary/20 text-primary border-primary';
+      default: return 'bg-muted text-muted-foreground border-muted';
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending': return 'bg-blue-500/20 text-blue-500 border-blue-500';
-      case 'investigating': return 'bg-purple-500/20 text-purple-500 border-purple-500';
-      case 'escalated': return 'bg-red-500/20 text-red-500 border-red-500';
-      case 'resolved': return 'bg-green-500/20 text-green-500 border-green-500';
-      default: return 'bg-gray-500/20 text-gray-500 border-gray-500';
+      case 'pending': return 'bg-warning/20 text-warning-foreground border-warning';
+      case 'assigned': return 'bg-primary/20 text-primary border-primary';
+      case 'rejected': return 'bg-destructive/20 text-destructive border-destructive';
+      case 'resolved': return 'bg-green-500/20 text-green-600 border-green-500';
+      default: return 'bg-muted text-muted-foreground border-muted';
     }
   };
 
@@ -114,10 +176,28 @@ const Office = () => {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6">
         {activeView === 'stats' ? (
-          <Card className="p-6 shadow-large">
-            <h2 className="text-xl font-bold mb-4">Statistics Dashboard</h2>
-            <p className="text-muted-foreground">Office statistics will be displayed here.</p>
-          </Card>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="grid grid-cols-2 md:grid-cols-4 gap-4"
+          >
+            <Card className="p-6 shadow-large">
+              <h3 className="text-sm text-muted-foreground">Total Reports</h3>
+              <p className="text-3xl font-bold text-primary">{stats.total}</p>
+            </Card>
+            <Card className="p-6 shadow-large">
+              <h3 className="text-sm text-muted-foreground">Pending</h3>
+              <p className="text-3xl font-bold text-warning">{stats.pending}</p>
+            </Card>
+            <Card className="p-6 shadow-large">
+              <h3 className="text-sm text-muted-foreground">Investigating</h3>
+              <p className="text-3xl font-bold text-primary">{stats.investigating}</p>
+            </Card>
+            <Card className="p-6 shadow-large">
+              <h3 className="text-sm text-muted-foreground">Resolved</h3>
+              <p className="text-3xl font-bold text-green-600">{stats.resolved}</p>
+            </Card>
+          </motion.div>
         ) : (
           <>
             {/* Filters */}
@@ -146,21 +226,23 @@ const Office = () => {
                     <SelectContent>
                       <SelectItem value="all">All Statuses</SelectItem>
                       <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="investigating">Investigating</SelectItem>
-                      <SelectItem value="escalated">Escalated</SelectItem>
+                      <SelectItem value="assigned">Assigned</SelectItem>
                       <SelectItem value="resolved">Resolved</SelectItem>
+                      <SelectItem value="rejected">Rejected</SelectItem>
                     </SelectContent>
                   </Select>
-                  <Select value={severityFilter} onValueChange={setSeverityFilter}>
+                  <Select value={categoryFilter} onValueChange={setCategoryFilter}>
                     <SelectTrigger className="w-full md:w-[180px]">
-                      <SelectValue placeholder="Filter by severity" />
+                      <SelectValue placeholder="Filter by category" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Severities</SelectItem>
-                      <SelectItem value="critical">Critical</SelectItem>
-                      <SelectItem value="high">High</SelectItem>
-                      <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="low">Low</SelectItem>
+                      <SelectItem value="all">All Categories</SelectItem>
+                      <SelectItem value="theft">Theft</SelectItem>
+                      <SelectItem value="assault">Assault</SelectItem>
+                      <SelectItem value="vandalism">Vandalism</SelectItem>
+                      <SelectItem value="harassment">Harassment</SelectItem>
+                      <SelectItem value="suspicious_activity">Suspicious Activity</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -174,15 +256,19 @@ const Office = () => {
               transition={{ delay: 0.3, duration: 0.4 }}
               className="space-y-4"
             >
-              {filteredReports.length === 0 ? (
+              {loading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : filteredIncidents.length === 0 ? (
                 <Card className="p-8 text-center">
                   <AlertCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                   <p className="text-muted-foreground">No reports match your filters</p>
                 </Card>
               ) : (
-                filteredReports.map((report, index) => (
+                filteredIncidents.map((incident, index) => (
                   <motion.div
-                    key={report.id}
+                    key={incident.id}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.05, duration: 0.3 }}
@@ -192,37 +278,78 @@ const Office = () => {
                         <div className="flex-1">
                           <div className="flex items-start gap-3 mb-3">
                             <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-2">
-                                <h3 className="text-lg font-semibold">{report.title}</h3>
-                                <Badge variant="outline" className={getSeverityColor(report.severity)}>
-                                  {report.severity.toUpperCase()}
+                              <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                <h3 className="text-lg font-semibold">{incident.title}</h3>
+                                <Badge variant="outline" className={getCategoryColor(incident.category)}>
+                                  {incident.category.replace('_', ' ').toUpperCase()}
                                 </Badge>
-                                <Badge variant="outline" className={getStatusColor(report.status)}>
-                                  {report.status.toUpperCase()}
+                                <Badge variant="outline" className={getStatusColor(incident.status)}>
+                                  {incident.status.toUpperCase()}
                                 </Badge>
                               </div>
-                              <p className="text-sm text-muted-foreground mb-2">{report.description}</p>
+                              <p className="text-sm text-muted-foreground mb-2 line-clamp-2">{incident.description}</p>
                               <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                                <span>ID: {report.id}</span>
-                                <span>•</span>
-                                <span>Reporter: {report.reporter.name}</span>
-                                <span>•</span>
-                                <span>Location: {report.location}</span>
-                                <span>•</span>
-                                <span>Residence: {report.reporter.residence}</span>
+                                <span className="flex items-center gap-1">
+                                  <Clock className="h-3 w-3" />
+                                  {format(new Date(incident.created_at), 'MMM d, yyyy h:mm a')}
+                                </span>
+                                {incident.location_description && (
+                                  <>
+                                    <span>•</span>
+                                    <span className="flex items-center gap-1">
+                                      <MapPin className="h-3 w-3" />
+                                      {incident.location_description}
+                                    </span>
+                                  </>
+                                )}
+                                {incident.campus && (
+                                  <>
+                                    <span>•</span>
+                                    <span>Campus: {incident.campus.replace('_', ' ')}</span>
+                                  </>
+                                )}
+                                {incident.is_anonymous && (
+                                  <>
+                                    <span>•</span>
+                                    <span className="flex items-center gap-1">
+                                      <User className="h-3 w-3" />
+                                      Anonymous
+                                    </span>
+                                  </>
+                                )}
                               </div>
                             </div>
                           </div>
                         </div>
                         <div className="flex flex-col gap-2 min-w-[140px]">
-                          {report.status === 'pending' && (
-                            <Button size="sm" className="w-full">Assign Officer</Button>
+                          {incident.status === 'pending' && (
+                            <Button 
+                              size="sm" 
+                              className="w-full"
+                              onClick={() => updateIncidentStatus(incident.id, 'assigned')}
+                            >
+                              Assign
+                            </Button>
                           )}
-                          {(report.status === 'investigating' || report.status === 'pending') && (
-                            <Button size="sm" variant="outline" className="w-full">Escalate</Button>
+                          {incident.status !== 'resolved' && incident.status !== 'rejected' && (
+                            <Button 
+                              size="sm" 
+                              variant="secondary" 
+                              className="w-full"
+                              onClick={() => updateIncidentStatus(incident.id, 'resolved')}
+                            >
+                              Mark Resolved
+                            </Button>
                           )}
-                          {report.status !== 'resolved' && (
-                            <Button size="sm" variant="secondary" className="w-full">Mark Resolved</Button>
+                          {incident.status === 'pending' && (
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="w-full text-destructive"
+                              onClick={() => updateIncidentStatus(incident.id, 'rejected')}
+                            >
+                              Reject
+                            </Button>
                           )}
                         </div>
                       </div>
