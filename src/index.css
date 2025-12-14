@@ -218,13 +218,31 @@ All colors MUST be HSL.
 }
 
 @layer components {
-  /* Glass morphism effect */
+  /* Glass morphism effect - Premium */
   .glass {
     @apply bg-white/10 backdrop-blur-md border border-white/20;
   }
 
   .glass-card {
     @apply bg-white/95 backdrop-blur-sm shadow-card hover:shadow-elevated transition-shadow duration-300;
+  }
+
+  .dark .glass-card {
+    @apply bg-card/95;
+  }
+
+  /* Premium glassmorphic card */
+  .glass-premium {
+    @apply relative overflow-hidden rounded-xl;
+    @apply bg-gradient-to-br from-white/80 via-white/60 to-white/40;
+    @apply backdrop-blur-xl border border-white/30;
+    @apply shadow-[0_8px_32px_-8px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.5)];
+  }
+
+  .dark .glass-premium {
+    @apply bg-gradient-to-br from-card/80 via-card/60 to-card/40;
+    @apply border-white/10;
+    @apply shadow-[0_8px_32px_-8px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.1)];
   }
 
   /* Animated gradient border */
@@ -296,5 +314,90 @@ All colors MUST be HSL.
   .status-dot::before {
     content: '';
     @apply absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-success animate-pulse;
+  }
+
+  /* Premium glow effect */
+  .glow-primary {
+    @apply shadow-[0_0_30px_-5px_hsl(var(--primary)/0.4)];
+  }
+  
+  .glow-success {
+    @apply shadow-[0_0_30px_-5px_hsl(var(--success)/0.4)];
+  }
+  
+  .glow-warning {
+    @apply shadow-[0_0_30px_-5px_hsl(var(--warning)/0.4)];
+  }
+  
+  .glow-danger {
+    @apply shadow-[0_0_30px_-5px_hsl(var(--danger)/0.4)];
+  }
+
+  /* Stat card hover effect */
+  .stat-card-hover {
+    @apply relative overflow-hidden transition-all duration-300;
+  }
+  
+  .stat-card-hover::before {
+    content: '';
+    @apply absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-transparent;
+    @apply opacity-0 transition-opacity duration-300;
+  }
+  
+  .stat-card-hover:hover::before {
+    @apply opacity-100;
+  }
+
+  /* Number flip animation */
+  @keyframes flip {
+    0% { transform: rotateX(0); }
+    50% { transform: rotateX(-90deg); }
+    100% { transform: rotateX(0); }
+  }
+  
+  .number-flip {
+    animation: flip 0.3s ease-in-out;
+  }
+
+  /* Breathing animation */
+  @keyframes breathing {
+    0%, 100% { transform: scale(1); opacity: 0.7; }
+    50% { transform: scale(1.15); opacity: 1; }
+  }
+  
+  .breathing {
+    animation: breathing 2s ease-in-out infinite;
+  }
+
+  /* Chart area glow */
+  .chart-glow {
+    filter: drop-shadow(0 4px 12px hsl(var(--primary) / 0.2));
+  }
+
+  /* Metric card gradient backgrounds */
+  .metric-primary {
+    @apply bg-gradient-to-br from-primary/20 via-primary/10 to-primary/5 border-primary/30;
+  }
+  
+  .metric-success {
+    @apply bg-gradient-to-br from-success/20 via-success/10 to-success/5 border-success/30;
+  }
+  
+  .metric-warning {
+    @apply bg-gradient-to-br from-warning/20 via-warning/10 to-warning/5 border-warning/30;
+  }
+  
+  .metric-danger {
+    @apply bg-gradient-to-br from-danger/20 via-danger/10 to-danger/5 border-danger/30;
+  }
+
+  /* Bento grid */
+  .bento-grid {
+    @apply grid gap-4;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  }
+  
+  .bento-item-featured {
+    @apply col-span-1 lg:col-span-2 row-span-1 lg:row-span-2;
   }
 }
