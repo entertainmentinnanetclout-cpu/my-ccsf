@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { motion } from 'framer-motion';
-import { Shield, LayoutDashboard, AlertCircle, Megaphone, MessageSquare, BarChart3, Images, Users } from 'lucide-react';
+import { Shield, LayoutDashboard, AlertCircle, Megaphone, MessageSquare, BarChart3, Images, Users, Siren } from 'lucide-react';
 import tutLogo from '@/assets/tut-logo.png';
 import { AdminOverview } from '@/components/admin/AdminOverview';
 import { AdminIncidents } from '@/components/admin/AdminIncidents';
@@ -13,14 +13,16 @@ import { RealTimeIncidents } from '@/components/admin/RealTimeIncidents';
 import { IncidentAnalytics } from '@/components/admin/IncidentAnalytics';
 import { CarouselManager } from '@/components/admin/CarouselManager';
 import { CampusAdminManager } from '@/components/admin/CampusAdminManager';
+import { CaseEscalation } from '@/components/admin/CaseEscalation';
 import { NotificationBell } from '@/components/shared/NotificationBell';
 import { ThemeToggle } from '@/components/shared/ThemeToggle';
 import { MobileNavMenu } from '@/components/shared/MobileNavMenu';
 import { MasterSyncProvider } from '@/contexts/MasterSyncContext';
 import { MasterSyncButton } from '@/components/admin/MasterSyncButton';
+
 const Admin = () => {
   const navigate = useNavigate();
-  const [activeView, setActiveView] = useState<'overview' | 'incidents' | 'analytics' | 'announcements' | 'communication' | 'carousel' | 'admins'>('overview');
+  const [activeView, setActiveView] = useState<'overview' | 'incidents' | 'analytics' | 'announcements' | 'communication' | 'carousel' | 'admins' | 'escalation'>('overview');
   const navItems = [{
     view: 'overview',
     icon: LayoutDashboard,
@@ -29,6 +31,10 @@ const Admin = () => {
     view: 'incidents',
     icon: AlertCircle,
     label: 'Incidents'
+  }, {
+    view: 'escalation',
+    icon: Siren,
+    label: 'Escalation'
   }, {
     view: 'analytics',
     icon: BarChart3,
@@ -172,6 +178,7 @@ const Admin = () => {
         }}>
             {activeView === 'overview' && <AdminOverview />}
             {activeView === 'incidents' && <AdminIncidents />}
+            {activeView === 'escalation' && <CaseEscalation />}
             {activeView === 'analytics' && <IncidentAnalytics />}
             {activeView === 'announcements' && <AdminAnnouncements />}
             {activeView === 'communication' && <StaffCommunication />}
