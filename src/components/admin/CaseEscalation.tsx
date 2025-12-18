@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -28,7 +28,6 @@ import {
   XCircle,
   ExternalLink,
   MapPin,
-  User,
   Calendar,
   Siren,
   Scale,
@@ -39,39 +38,40 @@ import { format } from 'date-fns';
 
 type PoliceService = 'saps' | 'metro_police';
 
-interface EscalationData {
-  caseId: string;
-  policeService: PoliceService;
-  priority: 'low' | 'medium' | 'high' | 'critical';
-  contactOfficer: string;
-  contactPhone: string;
-  referenceNumber?: string;
-  additionalNotes: string;
-  escalatedAt: string;
-  status: 'pending' | 'sent' | 'acknowledged' | 'in_progress' | 'resolved';
+interface PoliceStation {
+  id: string;
+  campus: string;
+  station_name: string;
+  station_type: PoliceService;
+  address: string | null;
+  phone: string | null;
+  email: string | null;
+  is_primary: boolean;
 }
 
-const POLICE_SERVICES = [
-  { 
-    id: 'saps' as PoliceService, 
-    name: 'South African Police Service (SAPS)', 
-    icon: Shield,
-    description: 'National police force for serious crimes',
-    color: 'bg-blue-500'
-  },
-  { 
-    id: 'metro_police' as PoliceService, 
-    name: 'Metro Police', 
-    icon: Building2,
-    description: 'Municipal police for local incidents',
-    color: 'bg-green-500'
-  }
-];
+interface EscalationRecord {
+  id: string;
+  incident_id: string;
+  escalated_by: string;
+  agency_type: PoliceService;
+  police_station: string;
+  police_station_address: string | null;
+  police_station_phone: string | null;
+  cas_number: string | null;
+  priority: string;
+  status: string;
+  notes: string | null;
+  created_at: string;
+  incidents?: {
+    title: string;
+    category: string;
+    campus: string | null;
+  };
+}
 
 const PRIORITY_LEVELS = [
-  { value: 'low', label: 'Low', color: 'bg-slate-500' },
-  { value: 'medium', label: 'Medium', color: 'bg-yellow-500' },
-  { value: 'high', label: 'High', color: 'bg-orange-500' },
+  { value: 'normal', label: 'Normal', color: 'bg-slate-500' },
+  { value: 'urgent', label: 'Urgent', color: 'bg-orange-500' },
   { value: 'critical', label: 'Critical', color: 'bg-red-500' }
 ];
 
@@ -91,18 +91,79 @@ export const CaseEscalation: React.FC = () => {
   const [isEscalateDialogOpen, setIsEscalateDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
+  // Police stations and escalation history from DB
+  const [policeStations, setPoliceStations] = useState<PoliceStation[]>([]);
+  const [escalationHistory, setEscalationHistory] = useState<EscalationRecord[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(true);
+  
   // Escalation form state
   const [escalationForm, setEscalationForm] = useState({
     policeService: '' as PoliceService | '',
-    priority: 'medium' as 'low' | 'medium' | 'high' | 'critical',
-    contactOfficer: '',
-    contactPhone: '',
-    referenceNumber: '',
-    additionalNotes: ''
+    policeStationId: '',
+    priority: 'urgent' as 'normal' | 'urgent' | 'critical',
+    casNumber: '',
+    notes: ''
   });
 
-  // Mock escalation history - in future this would come from Supabase
-  const [escalationHistory, setEscalationHistory] = useState<EscalationData[]>([]);
+  // Fetch police stations and escalation history
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoadingHistory(true);
+      try {
+        // Fetch all police stations
+        const { data: stations } = await supabase
+          .from('campus_police_stations')
+          .select('*')
+          .order('is_primary', { ascending: false });
+        
+        if (stations) {
+          setPoliceStations(stations as PoliceStation[]);
+        }
+
+        // Fetch escalation history
+        const { data: escalations } = await supabase
+          .from('case_escalations')
+          .select(`
+            *,
+            incidents (title, category, campus)
+          `)
+          .order('created_at', { ascending: false })
+          .limit(50);
+        
+        if (escalations) {
+          setEscalationHistory(escalations as EscalationRecord[]);
+        }
+      } catch (error) {
+        console.error('Error fetching escalation data:', error);
+      } finally {
+        setLoadingHistory(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // Get stations for the selected case's campus
+  const availableStations = useMemo(() => {
+    if (!selectedCase?.campus) return policeStations;
+    return policeStations.filter(
+      s => s.campus === selectedCase.campus || s.campus === 'all'
+    );
+  }, [selectedCase, policeStations]);
+
+  // Filter stations by selected service type
+  const filteredStations = useMemo(() => {
+    if (!escalationForm.policeService) return availableStations;
+    return availableStations.filter(s => s.station_type === escalationForm.policeService);
+  }, [availableStations, escalationForm.policeService]);
+
+  // Auto-select primary station when service is selected
+  useEffect(() => {
+    if (escalationForm.policeService && filteredStations.length > 0) {
+      const primaryStation = filteredStations.find(s => s.is_primary) || filteredStations[0];
+      setEscalationForm(prev => ({ ...prev, policeStationId: primaryStation.id }));
+    }
+  }, [escalationForm.policeService, filteredStations]);
 
   // Filter cases that are eligible for escalation
   const escalatableCases = useMemo(() => {
@@ -117,61 +178,83 @@ export const CaseEscalation: React.FC = () => {
     });
   }, [cases, searchQuery, categoryFilter, statusFilter]);
 
+  // Check if case is already escalated
+  const isAlreadyEscalated = (caseId: string) => {
+    return escalationHistory.some(e => e.incident_id === caseId && e.status !== 'resolved' && e.status !== 'rejected');
+  };
+
   const handleOpenEscalate = (caseItem: typeof cases[0]) => {
     setSelectedCase(caseItem);
+    const isCritical = caseItem.category.includes('Murder') || caseItem.category.includes('Rape');
     setEscalationForm({
       policeService: '',
-      priority: caseItem.category.includes('Murder') || caseItem.category.includes('Rape') ? 'critical' : 'high',
-      contactOfficer: '',
-      contactPhone: '',
-      referenceNumber: '',
-      additionalNotes: ''
+      policeStationId: '',
+      priority: isCritical ? 'critical' : 'urgent',
+      casNumber: '',
+      notes: ''
     });
     setIsEscalateDialogOpen(true);
   };
 
   const handleSubmitEscalation = async () => {
-    if (!selectedCase || !escalationForm.policeService) {
-      toast.error('Please select a police service');
+    if (!selectedCase || !escalationForm.policeService || !escalationForm.policeStationId || !user) {
+      toast.error('Please select a police service and station');
+      return;
+    }
+
+    const selectedStation = policeStations.find(s => s.id === escalationForm.policeStationId);
+    if (!selectedStation) {
+      toast.error('Invalid police station selected');
       return;
     }
 
     setIsSubmitting(true);
     
     try {
-      // Create escalation record (future: this will call the SAPS API)
-      const escalation: EscalationData = {
-        caseId: selectedCase.id,
-        policeService: escalationForm.policeService,
-        priority: escalationForm.priority,
-        contactOfficer: escalationForm.contactOfficer,
-        contactPhone: escalationForm.contactPhone,
-        referenceNumber: escalationForm.referenceNumber || `ESC-${Date.now()}`,
-        additionalNotes: escalationForm.additionalNotes,
-        escalatedAt: new Date().toISOString(),
-        status: 'pending'
-      };
+      // Insert escalation record
+      const { data: escalation, error } = await supabase
+        .from('case_escalations')
+        .insert({
+          incident_id: selectedCase.id,
+          escalated_by: user.id,
+          agency_type: escalationForm.policeService,
+          police_station: selectedStation.station_name,
+          police_station_address: selectedStation.address,
+          police_station_phone: selectedStation.phone,
+          cas_number: escalationForm.casNumber || null,
+          priority: escalationForm.priority,
+          status: 'pending',
+          notes: escalationForm.notes || null
+        })
+        .select(`
+          *,
+          incidents (title, category, campus)
+        `)
+        .single();
+
+      if (error) throw error;
 
       // Log the escalation action
-      if (user) {
-        await supabase.from('admin_logs').insert({
-          admin_id: user.id,
-          incident_id: selectedCase.id,
-          action: 'case_escalated',
-          details: {
-            police_service: escalation.policeService,
-            priority: escalation.priority,
-            reference_number: escalation.referenceNumber
-          }
-        });
-      }
+      await supabase.from('admin_logs').insert({
+        admin_id: user.id,
+        incident_id: selectedCase.id,
+        action: 'case_escalated',
+        details: {
+          police_service: escalationForm.policeService,
+          police_station: selectedStation.station_name,
+          priority: escalationForm.priority,
+          escalation_id: escalation?.id
+        }
+      });
 
       // Add to local history
-      setEscalationHistory(prev => [escalation, ...prev]);
+      if (escalation) {
+        setEscalationHistory(prev => [escalation as EscalationRecord, ...prev]);
+      }
       
       toast.success(
-        `Case escalated to ${escalation.policeService === 'saps' ? 'SAPS' : 'Metro Police'}`,
-        { description: `Reference: ${escalation.referenceNumber}` }
+        `Case escalated to ${selectedStation.station_name}`,
+        { description: `Priority: ${escalationForm.priority.toUpperCase()}` }
       );
       
       setIsEscalateDialogOpen(false);
@@ -187,8 +270,8 @@ export const CaseEscalation: React.FC = () => {
   const getPriorityBadge = (priority: string) => {
     const level = PRIORITY_LEVELS.find(p => p.value === priority);
     return (
-      <Badge className={`${level?.color} text-white`}>
-        {level?.label}
+      <Badge className={`${level?.color || 'bg-slate-500'} text-white`}>
+        {level?.label || priority}
       </Badge>
     );
   };
@@ -196,10 +279,11 @@ export const CaseEscalation: React.FC = () => {
   const getStatusBadge = (status: string) => {
     const colors: Record<string, string> = {
       pending: 'bg-yellow-500',
-      sent: 'bg-blue-500',
+      submitted: 'bg-blue-500',
       acknowledged: 'bg-purple-500',
       in_progress: 'bg-orange-500',
-      resolved: 'bg-green-500'
+      resolved: 'bg-green-500',
+      rejected: 'bg-red-500'
     };
     return (
       <Badge className={`${colors[status] || 'bg-slate-500'} text-white capitalize`}>
@@ -230,7 +314,7 @@ export const CaseEscalation: React.FC = () => {
             Case Escalation Center
           </h2>
           <p className="text-muted-foreground mt-1">
-            Escalate serious incidents to SAPS or Metro Police
+            Escalate serious incidents to nearest SAPS or Metro Police station
           </p>
         </div>
         <Button variant="outline" onClick={refreshCases}>
@@ -241,29 +325,38 @@ export const CaseEscalation: React.FC = () => {
 
       {/* Police Service Info Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {POLICE_SERVICES.map((service) => (
-          <motion.div
-            key={service.id}
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            whileHover={{ scale: 1.02 }}
-          >
-            <Card className="border-2 border-dashed hover:border-primary/50 transition-colors">
-              <CardContent className="p-4 flex items-center gap-4">
-                <div className={`p-3 rounded-full ${service.color}`}>
-                  <service.icon className="h-6 w-6 text-white" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold">{service.name}</h3>
-                  <p className="text-sm text-muted-foreground">{service.description}</p>
-                </div>
-                <Badge variant="outline" className="text-xs">
-                  API Ready
-                </Badge>
-              </CardContent>
-            </Card>
-          </motion.div>
-        ))}
+        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
+          <Card className="border-2 border-dashed hover:border-primary/50 transition-colors">
+            <CardContent className="p-4 flex items-center gap-4">
+              <div className="p-3 rounded-full bg-blue-500">
+                <Shield className="h-6 w-6 text-white" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold">South African Police Service (SAPS)</h3>
+                <p className="text-sm text-muted-foreground">National police force - MySAPS API ready</p>
+              </div>
+              <Badge variant="outline" className="text-xs">
+                {policeStations.filter(s => s.station_type === 'saps').length} Stations
+              </Badge>
+            </CardContent>
+          </Card>
+        </motion.div>
+        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}>
+          <Card className="border-2 border-dashed hover:border-primary/50 transition-colors">
+            <CardContent className="p-4 flex items-center gap-4">
+              <div className="p-3 rounded-full bg-green-500">
+                <Building2 className="h-6 w-6 text-white" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold">Metro Police</h3>
+                <p className="text-sm text-muted-foreground">Municipal police for local incidents</p>
+              </div>
+              <Badge variant="outline" className="text-xs">
+                {policeStations.filter(s => s.station_type === 'metro_police').length} Stations
+              </Badge>
+            </CardContent>
+          </Card>
+        </motion.div>
       </div>
 
       {/* Main Content Tabs */}
@@ -275,7 +368,7 @@ export const CaseEscalation: React.FC = () => {
           </TabsTrigger>
           <TabsTrigger value="history" className="flex items-center gap-2">
             <Clock className="h-4 w-4" />
-            Escalation History
+            Escalation History ({escalationHistory.length})
           </TabsTrigger>
         </TabsList>
 
@@ -332,62 +425,67 @@ export const CaseEscalation: React.FC = () => {
                     </CardContent>
                   </Card>
                 ) : (
-                  escalatableCases.map((caseItem, index) => (
-                    <motion.div
-                      key={caseItem.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: 20 }}
-                      transition={{ delay: index * 0.05 }}
-                    >
-                      <Card className="hover:shadow-md transition-shadow">
-                        <CardContent className="p-4">
-                          <div className="flex flex-col md:flex-row md:items-center gap-4">
-                            <div className="flex-1 space-y-2">
-                              <div className="flex items-start gap-2">
-                                <AlertTriangle className="h-5 w-5 text-destructive mt-0.5 shrink-0" />
-                                <div>
-                                  <h4 className="font-semibold line-clamp-1">{caseItem.title}</h4>
-                                  <p className="text-sm text-muted-foreground line-clamp-2">
-                                    {caseItem.description}
-                                  </p>
+                  escalatableCases.map((caseItem, index) => {
+                    const alreadyEscalated = isAlreadyEscalated(caseItem.id);
+                    return (
+                      <motion.div
+                        key={caseItem.id}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 20 }}
+                        transition={{ delay: index * 0.05 }}
+                      >
+                        <Card className={`hover:shadow-md transition-shadow ${alreadyEscalated ? 'opacity-60' : ''}`}>
+                          <CardContent className="p-4">
+                            <div className="flex flex-col md:flex-row md:items-center gap-4">
+                              <div className="flex-1 space-y-2">
+                                <div className="flex items-start gap-2">
+                                  <AlertTriangle className="h-5 w-5 text-destructive mt-0.5 shrink-0" />
+                                  <div>
+                                    <h4 className="font-semibold line-clamp-1">{caseItem.title}</h4>
+                                    <p className="text-sm text-muted-foreground line-clamp-2">
+                                      {caseItem.description}
+                                    </p>
+                                  </div>
                                 </div>
-                              </div>
-                              <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                                <span className="flex items-center gap-1">
+                                <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                                   <Badge variant="destructive" className="text-xs">
                                     {caseItem.category}
                                   </Badge>
-                                </span>
-                                <span className="flex items-center gap-1">
-                                  <Calendar className="h-3 w-3" />
-                                  {format(new Date(caseItem.created_at), 'dd MMM yyyy')}
-                                </span>
-                                {caseItem.location_description && (
                                   <span className="flex items-center gap-1">
-                                    <MapPin className="h-3 w-3" />
-                                    {caseItem.location_description}
+                                    <Calendar className="h-3 w-3" />
+                                    {format(new Date(caseItem.created_at), 'dd MMM yyyy')}
                                   </span>
-                                )}
-                                <Badge variant="outline" className="capitalize">
-                                  {caseItem.status}
-                                </Badge>
+                                  {caseItem.campus && (
+                                    <span className="flex items-center gap-1">
+                                      <MapPin className="h-3 w-3" />
+                                      {caseItem.campus.replace(/_/g, ' ')}
+                                    </span>
+                                  )}
+                                  <Badge variant="outline" className="capitalize">
+                                    {caseItem.status}
+                                  </Badge>
+                                  {alreadyEscalated && (
+                                    <Badge variant="secondary">Already Escalated</Badge>
+                                  )}
+                                </div>
                               </div>
+                              <Button 
+                                onClick={() => handleOpenEscalate(caseItem)}
+                                className="shrink-0"
+                                variant={alreadyEscalated ? "outline" : "default"}
+                                disabled={alreadyEscalated}
+                              >
+                                <Send className="h-4 w-4 mr-2" />
+                                {alreadyEscalated ? 'Escalated' : 'Escalate'}
+                                {!alreadyEscalated && <ChevronRight className="h-4 w-4 ml-1" />}
+                              </Button>
                             </div>
-                            <Button 
-                              onClick={() => handleOpenEscalate(caseItem)}
-                              className="shrink-0"
-                              variant="default"
-                            >
-                              <Send className="h-4 w-4 mr-2" />
-                              Escalate
-                              <ChevronRight className="h-4 w-4 ml-1" />
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </motion.div>
-                  ))
+                          </CardContent>
+                        </Card>
+                      </motion.div>
+                    );
+                  })
                 )}
               </AnimatePresence>
             </div>
@@ -402,11 +500,15 @@ export const CaseEscalation: React.FC = () => {
                 Recent Escalations
               </CardTitle>
               <CardDescription>
-                Track the status of escalated cases
+                Track the status of cases escalated to police
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {escalationHistory.length === 0 ? (
+              {loadingHistory ? (
+                <div className="flex items-center justify-center py-8">
+                  <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : escalationHistory.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
                   <p>No escalations recorded yet</p>
@@ -415,27 +517,42 @@ export const CaseEscalation: React.FC = () => {
                 <div className="space-y-3">
                   {escalationHistory.map((escalation, index) => (
                     <motion.div
-                      key={`${escalation.caseId}-${index}`}
+                      key={escalation.id}
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
+                      transition={{ delay: index * 0.05 }}
                     >
                       <Card className="bg-muted/50">
                         <CardContent className="p-4">
-                          <div className="flex items-center justify-between">
+                          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
                             <div className="space-y-1">
-                              <p className="font-medium">
-                                {escalation.policeService === 'saps' ? 'SAPS' : 'Metro Police'}
+                              <p className="font-medium">{escalation.incidents?.title || 'Unknown Case'}</p>
+                              <p className="text-sm text-muted-foreground flex items-center gap-2">
+                                {escalation.agency_type === 'saps' ? (
+                                  <Shield className="h-4 w-4" />
+                                ) : (
+                                  <Building2 className="h-4 w-4" />
+                                )}
+                                {escalation.police_station}
                               </p>
-                              <p className="text-sm text-muted-foreground">
-                                Ref: {escalation.referenceNumber}
-                              </p>
+                              {escalation.police_station_phone && (
+                                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                  <Phone className="h-3 w-3" />
+                                  {escalation.police_station_phone}
+                                </p>
+                              )}
                               <p className="text-xs text-muted-foreground">
-                                {format(new Date(escalation.escalatedAt), 'dd MMM yyyy HH:mm')}
+                                {format(new Date(escalation.created_at), 'dd MMM yyyy HH:mm')}
                               </p>
                             </div>
                             <div className="flex flex-col items-end gap-2">
                               {getPriorityBadge(escalation.priority)}
                               {getStatusBadge(escalation.status)}
+                              {escalation.cas_number && (
+                                <Badge variant="outline" className="text-xs">
+                                  CAS: {escalation.cas_number}
+                                </Badge>
+                              )}
                             </div>
                           </div>
                         </CardContent>
@@ -461,6 +578,11 @@ export const CaseEscalation: React.FC = () => {
               {selectedCase && (
                 <span className="text-sm">
                   Escalating: <strong>{selectedCase.title}</strong>
+                  {selectedCase.campus && (
+                    <span className="ml-2 text-xs text-muted-foreground">
+                      ({selectedCase.campus.replace(/_/g, ' ')})
+                    </span>
+                  )}
                 </span>
               )}
             </DialogDescription>
@@ -471,42 +593,117 @@ export const CaseEscalation: React.FC = () => {
             <div className="space-y-3">
               <Label className="text-base font-semibold">Select Police Service *</Label>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {POLICE_SERVICES.map((service) => (
-                  <motion.button
-                    key={service.id}
-                    type="button"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => setEscalationForm(prev => ({ ...prev, policeService: service.id }))}
-                    className={`p-4 rounded-lg border-2 text-left transition-all ${
-                      escalationForm.policeService === service.id 
-                        ? 'border-primary bg-primary/10' 
-                        : 'border-border hover:border-primary/50'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className={`p-2 rounded-full ${service.color}`}>
-                        <service.icon className="h-5 w-5 text-white" />
-                      </div>
-                      <div>
-                        <p className="font-medium">{service.name}</p>
-                        <p className="text-xs text-muted-foreground">{service.description}</p>
-                      </div>
-                      {escalationForm.policeService === service.id && (
-                        <CheckCircle2 className="h-5 w-5 text-primary ml-auto" />
-                      )}
+                <motion.button
+                  type="button"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setEscalationForm(prev => ({ ...prev, policeService: 'saps', policeStationId: '' }))}
+                  className={`p-4 rounded-lg border-2 text-left transition-all ${
+                    escalationForm.policeService === 'saps' 
+                      ? 'border-primary bg-primary/10' 
+                      : 'border-border hover:border-primary/50'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-full bg-blue-500">
+                      <Shield className="h-5 w-5 text-white" />
                     </div>
-                  </motion.button>
-                ))}
+                    <div>
+                      <p className="font-medium">SAPS</p>
+                      <p className="text-xs text-muted-foreground">South African Police Service</p>
+                    </div>
+                    {escalationForm.policeService === 'saps' && (
+                      <CheckCircle2 className="h-5 w-5 text-primary ml-auto" />
+                    )}
+                  </div>
+                </motion.button>
+                <motion.button
+                  type="button"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setEscalationForm(prev => ({ ...prev, policeService: 'metro_police', policeStationId: '' }))}
+                  className={`p-4 rounded-lg border-2 text-left transition-all ${
+                    escalationForm.policeService === 'metro_police' 
+                      ? 'border-primary bg-primary/10' 
+                      : 'border-border hover:border-primary/50'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-full bg-green-500">
+                      <Building2 className="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                      <p className="font-medium">Metro Police</p>
+                      <p className="text-xs text-muted-foreground">Municipal Police</p>
+                    </div>
+                    {escalationForm.policeService === 'metro_police' && (
+                      <CheckCircle2 className="h-5 w-5 text-primary ml-auto" />
+                    )}
+                  </div>
+                </motion.button>
               </div>
             </div>
 
+            {/* Police Station Selection */}
+            {escalationForm.policeService && (
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="space-y-2"
+              >
+                <Label>Nearest Police Station *</Label>
+                <Select 
+                  value={escalationForm.policeStationId} 
+                  onValueChange={(value) => setEscalationForm(prev => ({ ...prev, policeStationId: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select station" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filteredStations.map(station => (
+                      <SelectItem key={station.id} value={station.id}>
+                        <div className="flex items-center gap-2">
+                          <span>{station.station_name}</span>
+                          {station.is_primary && (
+                            <Badge variant="secondary" className="text-xs">Primary</Badge>
+                          )}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {escalationForm.policeStationId && (
+                  <div className="text-sm text-muted-foreground mt-2 p-3 bg-muted rounded-lg">
+                    {(() => {
+                      const station = policeStations.find(s => s.id === escalationForm.policeStationId);
+                      return station ? (
+                        <div className="space-y-1">
+                          {station.address && (
+                            <p className="flex items-center gap-2">
+                              <MapPin className="h-4 w-4" />
+                              {station.address}
+                            </p>
+                          )}
+                          {station.phone && (
+                            <p className="flex items-center gap-2">
+                              <Phone className="h-4 w-4" />
+                              {station.phone}
+                            </p>
+                          )}
+                        </div>
+                      ) : null;
+                    })()}
+                  </div>
+                )}
+              </motion.div>
+            )}
+
             {/* Priority Level */}
             <div className="space-y-2">
-              <Label htmlFor="priority">Priority Level *</Label>
+              <Label>Priority Level *</Label>
               <Select 
                 value={escalationForm.priority} 
-                onValueChange={(value: 'low' | 'medium' | 'high' | 'critical') => 
+                onValueChange={(value: 'normal' | 'urgent' | 'critical') => 
                   setEscalationForm(prev => ({ ...prev, priority: value }))
                 }
               >
@@ -526,57 +723,29 @@ export const CaseEscalation: React.FC = () => {
               </Select>
             </div>
 
-            {/* Contact Information */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="contactOfficer" className="flex items-center gap-2">
-                  <User className="h-4 w-4" />
-                  Contact Officer
-                </Label>
-                <Input
-                  id="contactOfficer"
-                  placeholder="Officer name (optional)"
-                  value={escalationForm.contactOfficer}
-                  onChange={(e) => setEscalationForm(prev => ({ ...prev, contactOfficer: e.target.value }))}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="contactPhone" className="flex items-center gap-2">
-                  <Phone className="h-4 w-4" />
-                  Contact Phone
-                </Label>
-                <Input
-                  id="contactPhone"
-                  placeholder="Phone number (optional)"
-                  value={escalationForm.contactPhone}
-                  onChange={(e) => setEscalationForm(prev => ({ ...prev, contactPhone: e.target.value }))}
-                />
-              </div>
-            </div>
-
-            {/* Reference Number */}
+            {/* CAS Number */}
             <div className="space-y-2">
-              <Label htmlFor="referenceNumber" className="flex items-center gap-2">
+              <Label htmlFor="casNumber" className="flex items-center gap-2">
                 <FileText className="h-4 w-4" />
-                External Reference Number
+                CAS Number (Optional)
               </Label>
               <Input
-                id="referenceNumber"
-                placeholder="Police case reference (auto-generated if empty)"
-                value={escalationForm.referenceNumber}
-                onChange={(e) => setEscalationForm(prev => ({ ...prev, referenceNumber: e.target.value }))}
+                id="casNumber"
+                placeholder="Enter if you have a police case number"
+                value={escalationForm.casNumber}
+                onChange={(e) => setEscalationForm(prev => ({ ...prev, casNumber: e.target.value }))}
               />
             </div>
 
             {/* Additional Notes */}
             <div className="space-y-2">
-              <Label htmlFor="additionalNotes">Additional Notes</Label>
+              <Label htmlFor="notes">Additional Notes</Label>
               <Textarea
-                id="additionalNotes"
+                id="notes"
                 placeholder="Any additional information for the police..."
-                rows={4}
-                value={escalationForm.additionalNotes}
-                onChange={(e) => setEscalationForm(prev => ({ ...prev, additionalNotes: e.target.value }))}
+                rows={3}
+                value={escalationForm.notes}
+                onChange={(e) => setEscalationForm(prev => ({ ...prev, notes: e.target.value }))}
               />
             </div>
 
@@ -587,8 +756,8 @@ export const CaseEscalation: React.FC = () => {
                 <div>
                   <p className="font-medium text-sm">MySAPS API Integration</p>
                   <p className="text-xs text-muted-foreground">
-                    This escalation will be recorded locally. Once the MySAPS API is integrated, 
-                    cases will be automatically submitted to the police system.
+                    This escalation will be recorded in the system. Once the MySAPS API is integrated, 
+                    cases will be automatically submitted to SAPS systems.
                   </p>
                 </div>
               </CardContent>
@@ -606,7 +775,7 @@ export const CaseEscalation: React.FC = () => {
             </Button>
             <Button 
               onClick={handleSubmitEscalation}
-              disabled={!escalationForm.policeService || isSubmitting}
+              disabled={!escalationForm.policeService || !escalationForm.policeStationId || isSubmitting}
             >
               {isSubmitting ? (
                 <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
