@@ -5,9 +5,7 @@ import { Loader2 } from 'lucide-react';
 
 const Index = () => {
   const navigate = useNavigate();
-  const { user, userRole, loading } = useAuth();
-
-  const { profileCompleted } = useAuth();
+  const { user, userRole, loading, profileCompleted } = useAuth();
 
   useEffect(() => {
     if (loading) return;

@@ -14,5 +14,8 @@ export default defineConfig(({ mode }) => ({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+    // Prevent "Invalid hook call" issues caused by duplicated React instances
+    // (can happen in some Vite prebundle edge cases).
+    dedupe: ["react", "react-dom"],
   },
 }));
