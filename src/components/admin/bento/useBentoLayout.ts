@@ -26,18 +26,38 @@ export const useBentoLayout = (dashboardId: string) => {
   const [originalWidgets, setOriginalWidgets] = useState<WidgetConfig[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   // Generate unique ID for widgets
   const generateId = useCallback(() => {
     return `widget-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   }, []);
 
-  // Load layout from localStorage (primary) and optionally sync with server
+  // Load layout from Supabase first, fallback to localStorage
   const loadLayout = useCallback(async () => {
     setIsLoading(true);
     
     try {
-      // First try localStorage
+      // Try Supabase first if user is authenticated
+      if (user?.id) {
+        const { data: supabaseLayout, error } = await supabase
+          .from('bento_layouts')
+          .select('layout')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (!error && supabaseLayout?.layout) {
+          const layoutData = supabaseLayout.layout as unknown as LayoutData;
+          if (layoutData.version === LAYOUT_VERSION && layoutData.widgets?.length > 0) {
+            setWidgets(layoutData.widgets);
+            setOriginalWidgets(layoutData.widgets);
+            setIsLoading(false);
+            return;
+          }
+        }
+      }
+
+      // Fallback to localStorage
       const localKey = `${STORAGE_KEY_PREFIX}${dashboardId}`;
       const localData = localStorage.getItem(localKey);
       
@@ -51,7 +71,7 @@ export const useBentoLayout = (dashboardId: string) => {
         }
       }
 
-      // If no local data or outdated, use default layout
+      // If no data found, use default layout
       const defaultLayout = DEFAULT_LAYOUTS[dashboardId] || DEFAULT_LAYOUTS['admin-overview'];
       const widgetsWithIds = defaultLayout.map((type) => ({
         id: generateId(),
@@ -74,30 +94,72 @@ export const useBentoLayout = (dashboardId: string) => {
     } finally {
       setIsLoading(false);
     }
-  }, [dashboardId, generateId]);
+  }, [dashboardId, generateId, user?.id]);
 
-  // Save layout to localStorage
+  // Save layout to both Supabase and localStorage
   const saveLayout = useCallback(async () => {
     setIsSaving(true);
     
     try {
-      const localKey = `${STORAGE_KEY_PREFIX}${dashboardId}`;
       const layoutData: LayoutData = {
         widgets,
         version: LAYOUT_VERSION,
       };
-      
+
+      // Save to localStorage first (instant)
+      const localKey = `${STORAGE_KEY_PREFIX}${dashboardId}`;
       localStorage.setItem(localKey, JSON.stringify(layoutData));
+
+      // Save to Supabase if authenticated
+      if (user?.id) {
+        setIsSyncing(true);
+        
+        // Check if record exists first
+        const { data: existing } = await supabase
+          .from('bento_layouts')
+          .select('id')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        let error;
+        if (existing) {
+          // Update existing record
+          const result = await supabase
+            .from('bento_layouts')
+            .update({ layout: JSON.parse(JSON.stringify(layoutData)) })
+            .eq('user_id', user.id);
+          error = result.error;
+        } else {
+          // Insert new record
+          const result = await supabase
+            .from('bento_layouts')
+            .insert([{ 
+              user_id: user.id, 
+              layout: JSON.parse(JSON.stringify(layoutData))
+            }]);
+          error = result.error;
+        }
+
+        if (error) {
+          console.error('Error saving to Supabase:', error);
+          toast.warning('Layout saved locally. Cloud sync failed.');
+        } else {
+          toast.success('Layout saved and synced to cloud');
+        }
+        setIsSyncing(false);
+      } else {
+        toast.success('Layout saved locally');
+      }
+
       setOriginalWidgets(widgets);
-      
-      toast.success('Layout saved successfully');
     } catch (error) {
       console.error('Error saving layout:', error);
       toast.error('Failed to save layout');
     } finally {
       setIsSaving(false);
+      setIsSyncing(false);
     }
-  }, [dashboardId, widgets]);
+  }, [dashboardId, widgets, user?.id]);
 
   // Add a new widget
   const addWidget = useCallback((widgetType: string, size?: WidgetConfig['size']) => {
@@ -139,7 +201,7 @@ export const useBentoLayout = (dashboardId: string) => {
   // Check if there are unsaved changes
   const hasUnsavedChanges = JSON.stringify(widgets) !== JSON.stringify(originalWidgets);
 
-  // Load on mount
+  // Load on mount and when user changes
   useEffect(() => {
     loadLayout();
   }, [loadLayout]);
@@ -148,6 +210,7 @@ export const useBentoLayout = (dashboardId: string) => {
     widgets,
     isLoading,
     isSaving,
+    isSyncing,
     hasUnsavedChanges,
     addWidget,
     removeWidget,

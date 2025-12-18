@@ -29,7 +29,7 @@ const CAMPUSES = [
 ];
 
 const CATEGORIES = ['Campus', 'Residence', 'Campus Entrance'];
-const MAX_IMAGES_PER_CAMPUS = 15;
+const MAX_IMAGES_PER_CAMPUS = 30;
 
 interface CarouselImage {
   id: string;

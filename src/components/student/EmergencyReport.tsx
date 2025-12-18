@@ -200,7 +200,7 @@ export const EmergencyReport = () => {
         <Button
           size="lg"
           variant="destructive"
-          className="h-16 w-16 rounded-full shadow-2xl animate-pulse"
+          className="h-16 w-16 rounded-full shadow-2xl animate-emergency-blink ring-4 ring-destructive/30"
           onClick={() => setOpen(true)}
         >
           <AlertTriangle className="h-8 w-8" />
