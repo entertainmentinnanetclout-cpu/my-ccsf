@@ -5,83 +5,105 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-// Campus coordinates and details
+// Campus coordinates and details with accurate Google Maps embeds
 const campusData: Record<string, { 
   name: string; 
   address: string; 
   embedUrl: string; 
   directionsUrl: string;
   phone: string;
+  lat: number;
+  lng: number;
 }> = {
   pretoria_west_main: {
     name: 'Pretoria West (Main Campus)',
-    address: 'Staatsartillerie Rd, Pretoria West, Pretoria',
-    embedUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3593.1234567890!2d28.1608!3d-25.7358!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1e9561b9f6d5a1d1%3A0x8c2b0c9d3e4f5a6b!2sTshwane%20University%20of%20Technology%20-%20Pretoria%20Campus!5e0!3m2!1sen!2sza!4v1702300000000',
-    directionsUrl: 'https://www.google.com/maps/dir/?api=1&destination=-25.7358,28.1608',
+    address: 'Staatsartillerie Rd, Pretoria West, Pretoria, 0001',
+    embedUrl: 'https://maps.google.com/maps?q=Tshwane+University+of+Technology+Pretoria+West+Campus&t=&z=17&ie=UTF8&iwloc=&output=embed',
+    directionsUrl: 'https://www.google.com/maps/dir/?api=1&destination=Tshwane+University+of+Technology+Pretoria+West+Campus',
     phone: '012 382 5911',
+    lat: -25.7308,
+    lng: 28.162,
   },
   arcadia: {
     name: 'Arcadia Campus',
-    address: '175 Nelson Mandela Dr, Arcadia, Pretoria',
-    embedUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3593.2345678901!2d28.2128!3d-25.7456!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1e9561d9a7b8c9d1%3A0x1a2b3c4d5e6f7a8b!2sTUT%20Arcadia%20Campus!5e0!3m2!1sen!2sza!4v1702300000001',
-    directionsUrl: 'https://www.google.com/maps/dir/?api=1&destination=-25.7456,28.2128',
+    address: '175 Nelson Mandela Dr, Arcadia, Pretoria, 0083',
+    embedUrl: 'https://maps.google.com/maps?q=TUT+Arcadia+Campus+175+Nelson+Mandela+Drive+Pretoria&t=&z=17&ie=UTF8&iwloc=&output=embed',
+    directionsUrl: 'https://www.google.com/maps/dir/?api=1&destination=TUT+Arcadia+Campus+Pretoria',
     phone: '012 382 5200',
+    lat: -25.7425,
+    lng: 28.2175,
   },
   arts: {
     name: 'Arts Campus',
-    address: 'Pretoria, Gauteng',
-    embedUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3593.3456789012!2d28.1878!3d-25.7512!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1e9561e8b9c0d1e2%3A0x2b3c4d5e6f7a8b9c!2sTUT%20Arts%20Campus!5e0!3m2!1sen!2sza!4v1702300000002',
-    directionsUrl: 'https://www.google.com/maps/dir/?api=1&destination=-25.7512,28.1878',
+    address: 'Cnr Struben & Prinsloo St, Pretoria, 0002',
+    embedUrl: 'https://maps.google.com/maps?q=TUT+Arts+Campus+Pretoria&t=&z=17&ie=UTF8&iwloc=&output=embed',
+    directionsUrl: 'https://www.google.com/maps/dir/?api=1&destination=TUT+Arts+Campus+Pretoria',
     phone: '012 382 5300',
+    lat: -25.7465,
+    lng: 28.1878,
   },
   polokwane: {
     name: 'Polokwane Campus',
-    address: '110 Grobler St, Polokwane, Limpopo',
-    embedUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3678.1234567890!2d29.4585!3d-23.9045!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1ec6d6f8c7b8a9d0%3A0x3c4d5e6f7a8b9c0d!2sTUT%20Polokwane%20Campus!5e0!3m2!1sen!2sza!4v1702300000003',
-    directionsUrl: 'https://www.google.com/maps/dir/?api=1&destination=-23.9045,29.4585',
+    address: '110 Market St, Polokwane, Limpopo, 0700',
+    embedUrl: 'https://maps.google.com/maps?q=TUT+Polokwane+Campus+110+Market+Street&t=&z=17&ie=UTF8&iwloc=&output=embed',
+    directionsUrl: 'https://www.google.com/maps/dir/?api=1&destination=TUT+Polokwane+Campus',
     phone: '015 287 0700',
+    lat: -23.9025,
+    lng: 29.4549,
   },
   mbombela: {
     name: 'Mbombela Campus',
-    address: 'Mbombela, Mpumalanga',
-    embedUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3620.1234567890!2d31.0218!3d-25.4653!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1ee84a1b2c3d4e5f%3A0x4d5e6f7a8b9c0d1e!2sTUT%20Mbombela%20Campus!5e0!3m2!1sen!2sza!4v1702300000004',
-    directionsUrl: 'https://www.google.com/maps/dir/?api=1&destination=-25.4653,31.0218',
+    address: 'Kanyamazane Rd, Mbombela, Mpumalanga, 1200',
+    embedUrl: 'https://maps.google.com/maps?q=TUT+Mbombela+Campus+Mpumalanga&t=&z=17&ie=UTF8&iwloc=&output=embed',
+    directionsUrl: 'https://www.google.com/maps/dir/?api=1&destination=TUT+Mbombela+Campus',
     phone: '013 745 3500',
+    lat: -25.4653,
+    lng: 31.0218,
   },
   giyani: {
     name: 'Giyani Campus',
-    address: 'Giyani, Limpopo',
-    embedUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3650.1234567890!2d30.7195!3d-23.3167!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1ec4d2e3f4a5b6c7%3A0x5e6f7a8b9c0d1e2f!2sTUT%20Giyani%20Campus!5e0!3m2!1sen!2sza!4v1702300000005',
-    directionsUrl: 'https://www.google.com/maps/dir/?api=1&destination=-23.3167,30.7195',
+    address: 'Giyani Main Rd, Giyani, Limpopo, 0826',
+    embedUrl: 'https://maps.google.com/maps?q=TUT+Giyani+Campus+Limpopo&t=&z=17&ie=UTF8&iwloc=&output=embed',
+    directionsUrl: 'https://www.google.com/maps/dir/?api=1&destination=TUT+Giyani+Campus',
     phone: '015 811 3500',
+    lat: -23.3115,
+    lng: 30.7195,
   },
   garankuwa: {
     name: 'Ga-Rankuwa Campus',
-    address: 'Ga-Rankuwa, Pretoria',
-    embedUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3589.1234567890!2d28.0123!3d-25.6156!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1e9563a4b5c6d7e8%3A0x6f7a8b9c0d1e2f3a!2sTUT%20Ga-Rankuwa%20Campus!5e0!3m2!1sen!2sza!4v1702300000006',
-    directionsUrl: 'https://www.google.com/maps/dir/?api=1&destination=-25.6156,28.0123',
+    address: 'Zone 3, Ga-Rankuwa, Pretoria, 0208',
+    embedUrl: 'https://maps.google.com/maps?q=TUT+Ga-Rankuwa+Campus+Pretoria&t=&z=17&ie=UTF8&iwloc=&output=embed',
+    directionsUrl: 'https://www.google.com/maps/dir/?api=1&destination=TUT+Ga-Rankuwa+Campus',
     phone: '012 382 9400',
+    lat: -25.6125,
+    lng: 28.0165,
   },
   soshanguve_south: {
     name: 'Soshanguve South Campus',
-    address: 'Soshanguve South, Pretoria',
-    embedUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3585.1234567890!2d28.0978!3d-25.5234!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1e9564b5c6d7e8f9%3A0x7a8b9c0d1e2f3a4b!2sTUT%20Soshanguve%20South%20Campus!5e0!3m2!1sen!2sza!4v1702300000007',
-    directionsUrl: 'https://www.google.com/maps/dir/?api=1&destination=-25.5234,28.0978',
+    address: 'Block JJ, Soshanguve South, Pretoria, 0152',
+    embedUrl: 'https://maps.google.com/maps?q=TUT+Soshanguve+South+Campus+Pretoria&t=&z=17&ie=UTF8&iwloc=&output=embed',
+    directionsUrl: 'https://www.google.com/maps/dir/?api=1&destination=TUT+Soshanguve+South+Campus',
     phone: '012 382 9600',
+    lat: -25.5234,
+    lng: 28.0978,
   },
   soshanguve_north: {
     name: 'Soshanguve North Campus',
-    address: 'Soshanguve North, Pretoria',
-    embedUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3584.1234567890!2d28.1056!3d-25.4867!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1e9565c6d7e8f9a0%3A0x8b9c0d1e2f3a4b5c!2sTUT%20Soshanguve%20North%20Campus!5e0!3m2!1sen!2sza!4v1702300000008',
-    directionsUrl: 'https://www.google.com/maps/dir/?api=1&destination=-25.4867,28.1056',
+    address: 'Block HH, Soshanguve North, Pretoria, 0152',
+    embedUrl: 'https://maps.google.com/maps?q=TUT+Soshanguve+North+Campus+Pretoria&t=&z=17&ie=UTF8&iwloc=&output=embed',
+    directionsUrl: 'https://www.google.com/maps/dir/?api=1&destination=TUT+Soshanguve+North+Campus',
     phone: '012 382 9700',
+    lat: -25.4867,
+    lng: 28.0892,
   },
   emalahleni: {
     name: 'Emalahleni Campus',
-    address: 'Emalahleni, Mpumalanga',
-    embedUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3610.1234567890!2d29.2345!3d-25.8765!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1e957d8e9f0a1b2c%3A0x9c0d1e2f3a4b5c6d!2sTUT%20Emalahleni%20Campus!5e0!3m2!1sen!2sza!4v1702300000009',
-    directionsUrl: 'https://www.google.com/maps/dir/?api=1&destination=-25.8765,29.2345',
+    address: 'Corner Mandela & Arras St, Emalahleni, Mpumalanga, 1035',
+    embedUrl: 'https://maps.google.com/maps?q=TUT+Emalahleni+Campus+Mpumalanga&t=&z=17&ie=UTF8&iwloc=&output=embed',
+    directionsUrl: 'https://www.google.com/maps/dir/?api=1&destination=TUT+Emalahleni+Campus',
     phone: '013 653 3400',
+    lat: -25.8712,
+    lng: 29.2345,
   },
 };
 
