@@ -150,6 +150,18 @@ export default {
           "0%, 100%": { transform: "translateY(0)" },
           "50%": { transform: "translateY(-3px)" },
         },
+        "emergency-blink": {
+          "0%, 100%": { 
+            opacity: "1", 
+            transform: "scale(1)",
+            boxShadow: "0 0 0 0 hsl(var(--destructive) / 0.7)"
+          },
+          "50%": { 
+            opacity: "0.85", 
+            transform: "scale(1.05)",
+            boxShadow: "0 0 20px 10px hsl(var(--destructive) / 0.4)"
+          },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -165,6 +177,7 @@ export default {
         "counter-spin": "counter-spin 10s linear infinite",
         "gradient-x": "gradient-x 3s ease infinite",
         "bounce-subtle": "bounce-subtle 2s ease-in-out infinite",
+        "emergency-blink": "emergency-blink 0.6s ease-in-out infinite",
       },
     },
   },

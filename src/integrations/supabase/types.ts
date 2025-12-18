@@ -178,6 +178,30 @@ export type Database = {
           },
         ]
       }
+      bento_layouts: {
+        Row: {
+          created_at: string
+          id: string
+          layout: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          layout?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          layout?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       carousel_images: {
         Row: {
           campus: string
