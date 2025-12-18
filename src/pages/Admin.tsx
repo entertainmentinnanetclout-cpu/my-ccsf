@@ -18,6 +18,7 @@ import { NotificationBell } from '@/components/shared/NotificationBell';
 import { ThemeToggle } from '@/components/shared/ThemeToggle';
 import { MobileNavMenu } from '@/components/shared/MobileNavMenu';
 import { MasterSyncProvider } from '@/contexts/MasterSyncContext';
+import { CasesProvider } from '@/contexts/CasesContext';
 import { MasterSyncButton } from '@/components/admin/MasterSyncButton';
 
 const Admin = () => {
@@ -56,7 +57,8 @@ const Admin = () => {
     icon: Users,
     label: 'Admins'
   }];
-  return <MasterSyncProvider>
+  return <CasesProvider>
+    <MasterSyncProvider>
       <div className="min-h-screen bg-gradient-admin admin-theme" data-testid="ready-admin">
         {/* Header */}
         <motion.header initial={{
@@ -192,6 +194,7 @@ const Admin = () => {
           </footer>
         </main>
       </div>
-    </MasterSyncProvider>;
+    </MasterSyncProvider>
+  </CasesProvider>;
 };
 export default Admin;
