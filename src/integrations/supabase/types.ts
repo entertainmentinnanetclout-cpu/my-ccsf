@@ -202,6 +202,48 @@ export type Database = {
         }
         Relationships: []
       }
+      campus_police_stations: {
+        Row: {
+          address: string | null
+          campus: string
+          created_at: string
+          email: string | null
+          id: string
+          is_primary: boolean | null
+          lat: number | null
+          lng: number | null
+          phone: string | null
+          station_name: string
+          station_type: string
+        }
+        Insert: {
+          address?: string | null
+          campus: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_primary?: boolean | null
+          lat?: number | null
+          lng?: number | null
+          phone?: string | null
+          station_name: string
+          station_type: string
+        }
+        Update: {
+          address?: string | null
+          campus?: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_primary?: boolean | null
+          lat?: number | null
+          lng?: number | null
+          phone?: string | null
+          station_name?: string
+          station_type?: string
+        }
+        Relationships: []
+      }
       carousel_images: {
         Row: {
           campus: string
@@ -240,6 +282,84 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      case_escalations: {
+        Row: {
+          acknowledged_at: string | null
+          agency_type: string
+          api_reference_id: string | null
+          api_response: Json | null
+          cas_number: string | null
+          created_at: string
+          escalated_by: string
+          id: string
+          incident_id: string
+          notes: string | null
+          police_station: string
+          police_station_address: string | null
+          police_station_phone: string | null
+          priority: string
+          resolved_at: string | null
+          status: string
+          submitted_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          agency_type: string
+          api_reference_id?: string | null
+          api_response?: Json | null
+          cas_number?: string | null
+          created_at?: string
+          escalated_by: string
+          id?: string
+          incident_id: string
+          notes?: string | null
+          police_station: string
+          police_station_address?: string | null
+          police_station_phone?: string | null
+          priority?: string
+          resolved_at?: string | null
+          status?: string
+          submitted_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          agency_type?: string
+          api_reference_id?: string | null
+          api_response?: Json | null
+          cas_number?: string | null
+          created_at?: string
+          escalated_by?: string
+          id?: string
+          incident_id?: string
+          notes?: string | null
+          police_station?: string
+          police_station_address?: string | null
+          police_station_phone?: string | null
+          priority?: string
+          resolved_at?: string | null
+          status?: string
+          submitted_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "case_escalations_escalated_by_fkey"
+            columns: ["escalated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_escalations_incident_id_fkey"
+            columns: ["incident_id"]
+            isOneToOne: false
+            referencedRelation: "incidents"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       case_updates: {
         Row: {
