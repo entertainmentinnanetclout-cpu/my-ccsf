@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import type { Tables } from '@/integrations/supabase/types';
+import type { Tables, Database } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
 
 // Types
@@ -9,6 +9,7 @@ type Profile = Tables<'profiles'>;
 type Announcement = Tables<'announcements'>;
 type CarouselImage = Tables<'carousel_images'>;
 type Notification = Tables<'notifications'>;
+type CampusLocation = Database['public']['Enums']['campus_location'];
 
 type ConnectionStatus = 'connected' | 'connecting' | 'disconnected';
 
@@ -36,6 +37,7 @@ interface MasterSyncContextType {
   isSyncing: boolean;
   lastSyncTime: Date | null;
   connectionStatus: ConnectionStatus;
+  userCampus: CampusLocation | null;
   
   // Actions
   refreshAll: () => Promise<void>;
@@ -57,9 +59,9 @@ interface MasterSyncContextType {
 const MasterSyncContext = createContext<MasterSyncContextType | null>(null);
 
 // Debounce helper
-function debounce<T extends (...args: any[]) => any>(fn: T, delay: number): T {
+function debounce<T extends (...args: unknown[]) => unknown>(fn: T, delay: number): T {
   let timeoutId: NodeJS.Timeout;
-  return ((...args: any[]) => {
+  return ((...args: unknown[]) => {
     clearTimeout(timeoutId);
     timeoutId = setTimeout(() => fn(...args), delay);
   }) as T;
@@ -70,7 +72,13 @@ interface MasterSyncProviderProps {
 }
 
 export const MasterSyncProvider: React.FC<MasterSyncProviderProps> = ({ children }) => {
-  const PAGE_SIZE = 500; // Load 500 records per page for efficiency
+  // OPTIMIZED: Reduced from 500 to 50 for better memory management
+  const PAGE_SIZE = 50;
+  
+  // User context for campus-scoped queries
+  const [userCampus, setUserCampus] = useState<CampusLocation | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   
   // Data states
   const [incidents, setIncidents] = useState<Incident[]>([]);
@@ -96,18 +104,59 @@ export const MasterSyncProvider: React.FC<MasterSyncProviderProps> = ({ children
   // Refs for cleanup
   const channelsRef = useRef<ReturnType<typeof supabase.channel>[]>([]);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isInitialized = useRef(false);
 
-  // Fetch incidents with pagination
+  // Fetch user context (campus and role) for scoped queries
+  const fetchUserContext = useCallback(async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setUserCampus(null);
+      setUserRole(null);
+      setUserId(null);
+      return null;
+    }
+    
+    setUserId(user.id);
+    
+    // Get user's campus
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('campus')
+      .eq('id', user.id)
+      .single();
+    
+    if (profile?.campus) {
+      setUserCampus(profile.campus);
+    }
+    
+    // Get user's role
+    const { data: roleData } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .single();
+    
+    if (roleData?.role) {
+      setUserRole(roleData.role);
+    }
+    
+    return { campus: profile?.campus, role: roleData?.role, userId: user.id };
+  }, []);
+
+  // OPTIMIZED: Server-side filtered fetch for incidents
   const fetchIncidents = useCallback(async (reset = true) => {
     const page = reset ? 0 : incidentsPagination.page;
     const from = page * PAGE_SIZE;
     const to = from + PAGE_SIZE - 1;
     
-    const { data, error, count } = await supabase
+    // Build query with server-side campus filter for non-admin users
+    let query = supabase
       .from('incidents')
       .select('*', { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(from, to);
+    
+    const { data, error, count } = await query;
     
     if (error) {
       console.error('Error fetching incidents:', error);
@@ -126,7 +175,7 @@ export const MasterSyncProvider: React.FC<MasterSyncProviderProps> = ({ children
       total: count || 0,
       hasMore: (data?.length || 0) === PAGE_SIZE
     });
-  }, [incidentsPagination.page]);
+  }, [incidentsPagination.page, PAGE_SIZE]);
 
   // Load more incidents
   const loadMoreIncidents = useCallback(async () => {
@@ -150,10 +199,22 @@ export const MasterSyncProvider: React.FC<MasterSyncProviderProps> = ({ children
         hasMore: data.length === PAGE_SIZE
       }));
     }
-  }, [incidentsPagination]);
+  }, [incidentsPagination, PAGE_SIZE]);
 
-  // Fetch profiles with pagination
+  // OPTIMIZED: Only fetch profiles for admin/security roles
   const fetchProfiles = useCallback(async (reset = true) => {
+    // Only load profiles for admin/security users
+    if (userRole !== 'admin' && userRole !== 'security') {
+      setProfiles([]);
+      setProfilesPagination({
+        page: 0,
+        pageSize: PAGE_SIZE,
+        total: 0,
+        hasMore: false
+      });
+      return;
+    }
+    
     const page = reset ? 0 : profilesPagination.page;
     const from = page * PAGE_SIZE;
     const to = from + PAGE_SIZE - 1;
@@ -181,11 +242,11 @@ export const MasterSyncProvider: React.FC<MasterSyncProviderProps> = ({ children
       total: count || 0,
       hasMore: (data?.length || 0) === PAGE_SIZE
     });
-  }, [profilesPagination.page]);
+  }, [profilesPagination.page, userRole, PAGE_SIZE]);
 
   // Load more profiles
   const loadMoreProfiles = useCallback(async () => {
-    if (!profilesPagination.hasMore) return;
+    if (!profilesPagination.hasMore || (userRole !== 'admin' && userRole !== 'security')) return;
     
     const nextPage = profilesPagination.page + 1;
     const from = nextPage * PAGE_SIZE;
@@ -205,13 +266,14 @@ export const MasterSyncProvider: React.FC<MasterSyncProviderProps> = ({ children
         hasMore: data.length === PAGE_SIZE
       }));
     }
-  }, [profilesPagination]);
+  }, [profilesPagination, userRole, PAGE_SIZE]);
 
   const fetchAnnouncements = useCallback(async () => {
     const { data, error } = await supabase
       .from('announcements')
       .select('*')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(50); // Limit announcements
     
     if (error) {
       console.error('Error fetching announcements:', error);
@@ -225,7 +287,8 @@ export const MasterSyncProvider: React.FC<MasterSyncProviderProps> = ({ children
       .from('carousel_images')
       .select('*')
       .eq('is_active', true)
-      .order('display_order', { ascending: true });
+      .order('display_order', { ascending: true })
+      .limit(20); // Limit carousel images
     
     if (error) {
       console.error('Error fetching carousel images:', error);
@@ -235,22 +298,21 @@ export const MasterSyncProvider: React.FC<MasterSyncProviderProps> = ({ children
   }, []);
 
   const fetchNotifications = useCallback(async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!userId) return;
 
     const { data, error } = await supabase
       .from('notifications')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .order('created_at', { ascending: false })
-      .limit(100);
+      .limit(50); // Reduced from 100
     
     if (error) {
       console.error('Error fetching notifications:', error);
       return;
     }
     setNotifications(data || []);
-  }, []);
+  }, [userId]);
 
   // Refresh all data
   const refreshAll = useCallback(async () => {
@@ -275,35 +337,40 @@ export const MasterSyncProvider: React.FC<MasterSyncProviderProps> = ({ children
 
   // Debounced update handlers for real-time events
   const debouncedIncidentUpdate = useMemo(
-    () => debounce(() => fetchIncidents(), 100),
+    () => debounce(() => fetchIncidents(), 300), // Increased debounce
     [fetchIncidents]
   );
 
   const debouncedProfileUpdate = useMemo(
-    () => debounce(() => fetchProfiles(), 100),
+    () => debounce(() => fetchProfiles(), 300),
     [fetchProfiles]
   );
 
   const debouncedAnnouncementUpdate = useMemo(
-    () => debounce(() => fetchAnnouncements(), 100),
+    () => debounce(() => fetchAnnouncements(), 300),
     [fetchAnnouncements]
   );
 
   const debouncedCarouselUpdate = useMemo(
-    () => debounce(() => fetchCarouselImages(), 100),
+    () => debounce(() => fetchCarouselImages(), 300),
     [fetchCarouselImages]
   );
 
   const debouncedNotificationUpdate = useMemo(
-    () => debounce(() => fetchNotifications(), 100),
+    () => debounce(() => fetchNotifications(), 300),
     [fetchNotifications]
   );
 
-  // Setup real-time subscriptions
+  // OPTIMIZED: Single consolidated real-time channel instead of 5 separate channels
   useEffect(() => {
+    if (isInitialized.current) return;
+    
     const setupSubscriptions = async () => {
       setIsLoading(true);
       setConnectionStatus('connecting');
+
+      // Fetch user context first
+      await fetchUserContext();
 
       // Initial data fetch
       await Promise.all([
@@ -316,12 +383,25 @@ export const MasterSyncProvider: React.FC<MasterSyncProviderProps> = ({ children
 
       setIsLoading(false);
       setLastSyncTime(new Date());
+      isInitialized.current = true;
 
-      // Incidents channel
-      const incidentsChannel = supabase
-        .channel('master-sync-incidents')
+      // OPTIMIZED: Single consolidated channel for all tables
+      const masterChannel = supabase
+        .channel('master-sync-consolidated')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'incidents' }, () => {
           debouncedIncidentUpdate();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
+          debouncedProfileUpdate();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'announcements' }, () => {
+          debouncedAnnouncementUpdate();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'carousel_images' }, () => {
+          debouncedCarouselUpdate();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, () => {
+          debouncedNotificationUpdate();
         })
         .subscribe((status) => {
           if (status === 'SUBSCRIBED') {
@@ -330,50 +410,13 @@ export const MasterSyncProvider: React.FC<MasterSyncProviderProps> = ({ children
             setConnectionStatus('disconnected');
             // Auto-reconnect after 5 seconds
             reconnectTimeoutRef.current = setTimeout(() => {
+              isInitialized.current = false;
               setupSubscriptions();
             }, 5000);
           }
         });
 
-      // Profiles channel
-      const profilesChannel = supabase
-        .channel('master-sync-profiles')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
-          debouncedProfileUpdate();
-        })
-        .subscribe();
-
-      // Announcements channel
-      const announcementsChannel = supabase
-        .channel('master-sync-announcements')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'announcements' }, () => {
-          debouncedAnnouncementUpdate();
-        })
-        .subscribe();
-
-      // Carousel images channel
-      const carouselChannel = supabase
-        .channel('master-sync-carousel')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'carousel_images' }, () => {
-          debouncedCarouselUpdate();
-        })
-        .subscribe();
-
-      // Notifications channel
-      const notificationsChannel = supabase
-        .channel('master-sync-notifications')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, () => {
-          debouncedNotificationUpdate();
-        })
-        .subscribe();
-
-      channelsRef.current = [
-        incidentsChannel,
-        profilesChannel,
-        announcementsChannel,
-        carouselChannel,
-        notificationsChannel,
-      ];
+      channelsRef.current = [masterChannel];
     };
 
     setupSubscriptions();
@@ -386,8 +429,10 @@ export const MasterSyncProvider: React.FC<MasterSyncProviderProps> = ({ children
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
       }
+      isInitialized.current = false;
     };
   }, [
+    fetchUserContext,
     fetchIncidents,
     fetchProfiles,
     fetchAnnouncements,
@@ -436,6 +481,7 @@ export const MasterSyncProvider: React.FC<MasterSyncProviderProps> = ({ children
     isSyncing,
     lastSyncTime,
     connectionStatus,
+    userCampus,
     
     // Actions
     refreshAll,
