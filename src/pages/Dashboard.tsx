@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { motion } from 'framer-motion';
 import { Shield, Plus, LogOut, Menu, Map, MessageCircle, Home, MapPin, FileText } from 'lucide-react';
-import tutLogo from '@/assets/tut-logo.png';
+import ccsfLogo from '@/assets/ccsf-logo.png';
 import { ReportIncident } from '@/components/student/ReportIncident';
 import { EmergencyReport } from '@/components/student/EmergencyReport';
 import { CampusMap } from '@/components/student/CampusMap';
@@ -15,45 +15,30 @@ import { MyCaseReports } from '@/components/student/MyCaseReports';
 import { NotificationBell } from '@/components/shared/NotificationBell';
 import { ThemeToggle } from '@/components/shared/ThemeToggle';
 import { MobileNavMenu } from '@/components/shared/MobileNavMenu';
-import { supabase } from '@/integrations/supabase/client';
+import { useCurrentUserProfileQuery } from '@/hooks/queries';
 
 const Dashboard = () => {
   const { user, signOut } = useAuth();
   const [activeView, setActiveView] = useState<'home' | 'report' | 'mycases' | 'map' | 'messages'>('home');
   const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const [userCampus, setUserCampus] = useState<string>('Campus');
-  const [userCampusId, setUserCampusId] = useState<string | null>(null);
 
-  useEffect(() => {
-    const checkProfile = async () => {
-      if (user) {
-        const { data } = await supabase
-          .from('profiles')
-          .select('campus')
-          .eq('id', user.id)
-          .single();
+  const { data: profile } = useCurrentUserProfileQuery();
 
-        if (data?.campus) {
-          setUserCampusId(data.campus);
-          const campusDisplayNames: Record<string, string> = {
-            'pretoria_west_main': 'Pretoria West Campus',
-            'arcadia': 'Arcadia Campus',
-            'arts': 'Arts Campus',
-            'giyani': 'Giyani Campus',
-            'mbombela': 'Mbombela Campus',
-            'polokwane': 'Polokwane Campus',
-            'garankuwa': 'Ga-Rankuwa Campus',
-            'soshanguve_south': 'Soshanguve South Campus',
-            'soshanguve_north': 'Soshanguve North Campus',
-            'emalahleni': 'Emalahleni Campus',
-          };
-          setUserCampus(campusDisplayNames[data.campus] || 'Campus');
-        }
-      }
-    };
+  const campusDisplayNames: Record<string, string> = {
+    'pretoria_west_main': 'Pretoria West Campus',
+    'arcadia': 'Arcadia Campus',
+    'arts': 'Arts Campus',
+    'giyani': 'Giyani Campus',
+    'mbombela': 'Mbombela Campus',
+    'polokwane': 'Polokwane Campus',
+    'garankuwa': 'Ga-Rankuwa Campus',
+    'soshanguve_south': 'Soshanguve South Campus',
+    'soshanguve_north': 'Soshanguve North Campus',
+    'emalahleni': 'Emalahleni Campus',
+  };
 
-    checkProfile();
-  }, [user]);
+  const userCampusId = profile?.campus || null;
+  const userCampus = profile?.campus ? campusDisplayNames[profile.campus] || 'Campus' : 'Campus';
   const navItems = [
     { view: 'home', icon: Home, label: 'Home' },
     { view: 'mycases', icon: FileText, label: 'My Cases' },
@@ -82,9 +67,9 @@ const Dashboard = () => {
                   whileHover={{ scale: 1.1, rotate: 5 }}
                   transition={{ type: "spring", stiffness: 300, damping: 20 }}
                 >
-                  <img
-                    src={tutLogo}
-                    alt="TUT Logo"
+                <img
+                    src={ccsfLogo}
+                    alt="CCSF Logo"
                     className="h-9 sm:h-11 w-auto object-contain logo-glow"
                   />
                   <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-success rounded-full border-2 border-white animate-pulse" />

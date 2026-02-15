@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { motion } from 'framer-motion';
 import { Shield, AlertCircle, Loader2, MapPin, ArrowLeft } from 'lucide-react';
-import tutLogo from '@/assets/tut-logo.png';
+import ccsfLogo from '@/assets/ccsf-logo.png';
 import { z } from 'zod';
 
 // Campus options with display names and DB values
@@ -201,8 +201,8 @@ const Auth = () => {
           transition={{ delay: 0.2 }}
         >
           <motion.img
-            src={tutLogo}
-            alt="TUT Logo"
+            src={ccsfLogo}
+            alt="CCSF Logo"
             className="h-16 mx-auto mb-4 logo-glow"
             initial={{ scale: 0.9 }}
             animate={{ scale: 1 }}

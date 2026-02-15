@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { motion } from 'framer-motion';
 import { Shield, LayoutDashboard, AlertCircle, Megaphone, MessageSquare, BarChart3, Images, Users, Siren } from 'lucide-react';
-import tutLogo from '@/assets/tut-logo.png';
+import ccsfLogo from '@/assets/ccsf-logo.png';
 import { AdminOverview } from '@/components/admin/AdminOverview';
 import { AdminIncidents } from '@/components/admin/AdminIncidents';
 import { AdminAnnouncements } from '@/components/admin/AdminAnnouncements';
@@ -74,7 +74,7 @@ const Admin = () => {
           <div className="container mx-auto px-4 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <motion.img src={tutLogo} alt="TUT Logo" className="h-10 logo-glow" whileHover={{
+                <motion.img src={ccsfLogo} alt="CCSF Logo" className="h-10 logo-glow" whileHover={{
                 scale: 1.1,
                 rotate: -5
               }} transition={{

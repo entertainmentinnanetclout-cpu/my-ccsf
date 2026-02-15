@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { motion } from 'framer-motion';
 import { Shield, User, Loader2, Phone, Heart, AlertCircle, MapPin, Home, AlertTriangle, CheckCircle2 } from 'lucide-react';
-import tutLogo from '@/assets/tut-logo.png';
+import ccsfLogo from '@/assets/ccsf-logo.png';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -209,8 +209,8 @@ const Profile = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <motion.img
-                src={tutLogo}
-                alt="TUT Logo"
+                src={ccsfLogo}
+                alt="CCSF Logo"
                 className="h-10 logo-glow"
               />
               <div>
