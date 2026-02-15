@@ -355,52 +355,78 @@ const SplashScreen = ({ onComplete, minDuration = 4500 }: SplashScreenProps) => 
           }}
         />
 
-        {/* 3D rotating logo */}
+        {/* Shield pulse animation - replaces simple 3D rotate */}
         <motion.div
           className="relative"
-          initial={{ rotateY: 0, scale: 0.5, opacity: 0 }}
-          animate={{ rotateY: 360, scale: 1, opacity: 1 }}
-          transition={{
-            rotateY: { duration: 4, repeat: Infinity, ease: 'linear' },
-            scale: { duration: 0.6, ease: 'easeOut' },
-            opacity: { duration: 0.6 },
-          }}
-          style={{ transformStyle: 'preserve-3d' }}
+          initial={{ scale: 0.3, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
         >
-          {/* Logo container with glow */}
-          <div className="relative">
+          {/* Outer pulse rings */}
+          {[0, 1, 2].map((i) => (
             <motion.div
+              key={i}
               className="absolute inset-0 rounded-full"
               style={{
-                background: 'radial-gradient(circle, rgba(220, 38, 38, 0.4) 0%, transparent 70%)',
-                filter: 'blur(20px)',
+                border: '1px solid rgba(220, 38, 38, 0.3)',
+                borderRadius: '50%',
               }}
+              initial={{ scale: 1, opacity: 0.6 }}
               animate={{
-                scale: [1, 1.3, 1],
+                scale: [1, 1.8 + i * 0.4],
+                opacity: [0.5, 0],
               }}
               transition={{
                 duration: 2,
                 repeat: Infinity,
-                ease: 'easeInOut',
+                delay: i * 0.6,
+                ease: 'easeOut',
               }}
             />
-            <motion.img
-              src={ccsfLogo}
-              alt="CCSF Logo"
-              className="w-36 h-36 object-contain relative z-10"
-              style={{
-                filter: 'drop-shadow(0 0 40px rgba(220, 38, 38, 0.7))',
-              }}
-              animate={{
-                scale: [1, 1.05, 1],
-              }}
-              transition={{
-                duration: 2,
-                repeat: Infinity,
-                ease: 'easeInOut',
-              }}
-            />
-          </div>
+          ))}
+
+          {/* Shield glow backdrop */}
+          <motion.div
+            className="absolute inset-0 rounded-full"
+            style={{
+              background: 'radial-gradient(circle, rgba(220, 38, 38, 0.4) 0%, transparent 70%)',
+              filter: 'blur(25px)',
+            }}
+            animate={{
+              scale: [1, 1.4, 1],
+              opacity: [0.5, 0.8, 0.5],
+            }}
+            transition={{
+              duration: 2.5,
+              repeat: Infinity,
+              ease: 'easeInOut',
+            }}
+          />
+
+          {/* Shield heartbeat pulse */}
+          <motion.img
+            src={ccsfLogo}
+            alt="CCSF Logo"
+            className="w-40 h-40 object-contain relative z-10"
+            style={{
+              filter: 'drop-shadow(0 0 30px rgba(220, 38, 38, 0.6)) drop-shadow(0 0 60px rgba(220, 38, 38, 0.3))',
+            }}
+            animate={{
+              scale: [1, 1.08, 1, 1.05, 1],
+              filter: [
+                'drop-shadow(0 0 30px rgba(220, 38, 38, 0.6)) drop-shadow(0 0 60px rgba(220, 38, 38, 0.3))',
+                'drop-shadow(0 0 50px rgba(220, 38, 38, 0.9)) drop-shadow(0 0 80px rgba(220, 38, 38, 0.5))',
+                'drop-shadow(0 0 30px rgba(220, 38, 38, 0.6)) drop-shadow(0 0 60px rgba(220, 38, 38, 0.3))',
+                'drop-shadow(0 0 40px rgba(220, 38, 38, 0.7)) drop-shadow(0 0 70px rgba(220, 38, 38, 0.4))',
+                'drop-shadow(0 0 30px rgba(220, 38, 38, 0.6)) drop-shadow(0 0 60px rgba(220, 38, 38, 0.3))',
+              ],
+            }}
+            transition={{
+              duration: 2,
+              repeat: Infinity,
+              ease: 'easeInOut',
+            }}
+          />
         </motion.div>
       </div>
 
