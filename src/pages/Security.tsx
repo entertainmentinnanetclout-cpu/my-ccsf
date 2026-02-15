@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { motion } from 'framer-motion';
 import { Shield, LayoutDashboard, AlertCircle, Megaphone, MessageSquare, MapPin, Users, BarChart3, Settings } from 'lucide-react';
-import ccsfLogo from '@/assets/ccsf-logo.png';
+import tutLogo from '@/assets/tut-logo.png';
 import { CampusDashboard } from '@/components/admin/CampusDashboard';
 import { AdminIncidents } from '@/components/admin/AdminIncidents';
 import { AdminAnnouncements } from '@/components/admin/AdminAnnouncements';
@@ -117,7 +117,7 @@ const Security = () => {
             <div className="flex items-center justify-between gap-4">
               {/* Left: Logo and Title */}
               <div className="flex items-center gap-3 min-w-0 flex-shrink-0">
-                <motion.img src={ccsfLogo} alt="CCSF Logo" className="h-10 w-auto object-contain flex-shrink-0 logo-glow" whileHover={{
+                <motion.img src={tutLogo} alt="TUT Logo" className="h-10 w-auto object-contain flex-shrink-0 logo-glow" whileHover={{
                   scale: 1.1,
                   rotate: -5
                 }} transition={{

@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bell, Check, X, AlertCircle, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -8,24 +9,93 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatDistanceToNow } from 'date-fns';
-import {
-  useNotificationsQuery,
-  useUnreadNotificationsCount,
-  useMarkNotificationReadMutation,
-  useMarkAllNotificationsReadMutation,
-} from '@/hooks/queries';
-import { useState } from 'react';
+
+type Notification = {
+  id: string;
+  title: string;
+  message: string;
+  type: string;
+  is_read: boolean;
+  created_at: string;
+  related_incident_id: string | null;
+};
 
 export const NotificationBell: React.FC = () => {
   const { user } = useAuth();
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
 
-  const { data: notifications = [] } = useNotificationsQuery(user?.id ?? null);
-  const { data: unreadCount = 0 } = useUnreadNotificationsCount(user?.id ?? null);
-  const markRead = useMarkNotificationReadMutation();
-  const markAllRead = useMarkAllNotificationsReadMutation();
+  useEffect(() => {
+    if (!user) return;
+
+    fetchNotifications();
+
+    // Real-time subscription for new notifications
+    const channel = supabase
+      .channel('user-notifications')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          setNotifications(prev => [payload.new as Notification, ...prev]);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
+
+  const fetchNotifications = async () => {
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(20);
+
+    if (!error && data) {
+      setNotifications(data);
+    }
+  };
+
+  const markAsRead = async (id: string) => {
+    await supabase
+      .from('notifications')
+      .update({ is_read: true })
+      .eq('id', id);
+
+    setNotifications(prev =>
+      prev.map(n => n.id === id ? { ...n, is_read: true } : n)
+    );
+  };
+
+  const markAllAsRead = async () => {
+    if (!user) return;
+
+    await supabase
+      .from('notifications')
+      .update({ is_read: true })
+      .eq('user_id', user.id)
+      .eq('is_read', false);
+
+    setNotifications(prev =>
+      prev.map(n => ({ ...n, is_read: true }))
+    );
+  };
+
+  const unreadCount = notifications.filter(n => !n.is_read).length;
 
   const getIcon = (type: string) => {
     switch (type) {
@@ -68,7 +138,7 @@ export const NotificationBell: React.FC = () => {
         <div className="flex items-center justify-between p-3 border-b">
           <h3 className="font-semibold">Notifications</h3>
           {unreadCount > 0 && (
-            <Button variant="ghost" size="sm" onClick={() => user && markAllRead.mutate(user.id)}>
+            <Button variant="ghost" size="sm" onClick={markAllAsRead}>
               Mark all read
             </Button>
           )}
@@ -86,7 +156,7 @@ export const NotificationBell: React.FC = () => {
                   key={notification.id}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  onClick={() => !notification.is_read && markRead.mutate(notification.id)}
+                  onClick={() => !notification.is_read && markAsRead(notification.id)}
                   className={`p-3 cursor-pointer hover:bg-muted/50 transition-colors ${
                     !notification.is_read ? 'bg-primary/5' : ''
                   }`}

@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { motion } from 'framer-motion';
 import { Shield, Loader2, MapPin, User, Phone, BookOpen, Home as HomeIcon, CheckCircle2 } from 'lucide-react';
-import ccsfLogo from '@/assets/ccsf-logo.png';
+import tutLogo from '@/assets/tut-logo.png';
 
 const campusOptions = [
   { value: 'pretoria_west_main', label: 'Pretoria West (Main Campus)' },
@@ -196,8 +196,8 @@ const ProfileCompletion = () => {
           transition={{ delay: 0.2 }}
         >
           <motion.img
-            src={ccsfLogo}
-            alt="CCSF Logo"
+            src={tutLogo}
+            alt="TUT Logo"
             className="h-14 mx-auto mb-4 logo-glow"
           />
           <div className="flex items-center justify-center gap-2 mb-2">

@@ -4,13 +4,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { Shield, Home, Gavel, Calendar, Clock, User, FileText, AlertCircle, Loader2 } from 'lucide-react';
-import ccsfLogo from '@/assets/ccsf-logo.png';
+import tutLogo from '@/assets/tut-logo.png';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useQuery } from '@tanstack/react-query';
 
 interface CaseUpdate {
   id: string;
@@ -26,46 +25,60 @@ interface CaseUpdate {
   };
 }
 
-async function fetchUserCaseUpdates(userId: string): Promise<CaseUpdate[]> {
-  const { data: updates, error } = await supabase
-    .from('case_updates')
-    .select('id, incident_id, title, description, update_type, scheduled_date, created_at')
-    .order('created_at', { ascending: false });
-
-  if (error || !updates) return [];
-
-  const incidentIds = [...new Set(updates.map(u => u.incident_id))];
-  if (incidentIds.length === 0) return [];
-
-  const { data: incidents } = await supabase
-    .from('incidents')
-    .select('id, title, status, reporter_id')
-    .in('id', incidentIds);
-
-  const incidentsMap = new Map(incidents?.map(i => [i.id, i]) || []);
-
-  return updates
-    .filter(update => {
-      const incident = incidentsMap.get(update.incident_id);
-      return incident?.reporter_id === userId;
-    })
-    .map(update => ({
-      ...update,
-      incident: incidentsMap.get(update.incident_id) as { title: string; status: string } | undefined,
-    }));
-}
-
 const Judiciary = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [caseUpdates, setCaseUpdates] = useState<CaseUpdate[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const { data: caseUpdates = [], isLoading } = useQuery({
-    queryKey: ['case-updates', 'judiciary', user?.id],
-    queryFn: () => fetchUserCaseUpdates(user!.id),
-    enabled: !!user,
-    staleTime: 30 * 1000,
-    gcTime: 5 * 60 * 1000,
-  });
+  useEffect(() => {
+    if (user) {
+      fetchCaseUpdates();
+    }
+  }, [user]);
+
+  const fetchCaseUpdates = async () => {
+    setLoading(true);
+    
+    // Fetch case updates for incidents the user reported
+    const { data: updates, error } = await supabase
+      .from('case_updates')
+      .select(`
+        id,
+        incident_id,
+        title,
+        description,
+        update_type,
+        scheduled_date,
+        created_at
+      `)
+      .order('created_at', { ascending: false });
+
+    if (!error && updates) {
+      // Fetch related incidents
+      const incidentIds = [...new Set(updates.map(u => u.incident_id))];
+      const { data: incidents } = await supabase
+        .from('incidents')
+        .select('id, title, status, reporter_id')
+        .in('id', incidentIds);
+
+      const incidentsMap = new Map(incidents?.map(i => [i.id, i]) || []);
+      
+      // Filter to only show updates for incidents the user reported
+      const userUpdates = updates
+        .filter(update => {
+          const incident = incidentsMap.get(update.incident_id);
+          return incident?.reporter_id === user?.id;
+        })
+        .map(update => ({
+          ...update,
+          incident: incidentsMap.get(update.incident_id) as { title: string; status: string } | undefined
+        }));
+
+      setCaseUpdates(userUpdates);
+    }
+    setLoading(false);
+  };
 
   const getUpdateTypeColor = (type: string) => {
     switch (type) {
@@ -103,8 +116,8 @@ const Judiciary = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <motion.img
-                src={ccsfLogo}
-                alt="CCSF Logo"
+                src={tutLogo}
+                alt="TUT Logo"
                 className="h-10 logo-glow"
               />
               <div>
@@ -130,7 +143,7 @@ const Judiciary = () => {
             <p className="text-muted-foreground mb-4">Please sign in to view your case updates and hearings.</p>
             <Button onClick={() => navigate('/auth')}>Sign In</Button>
           </Card>
-        ) : isLoading ? (
+        ) : loading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>

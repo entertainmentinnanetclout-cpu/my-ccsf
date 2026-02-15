@@ -1,18 +1,19 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { motion } from 'framer-motion';
 import { Shield, Home, Search, AlertCircle, BarChart3, FileText, Loader2, MapPin, Clock, User } from 'lucide-react';
-import ccsfLogo from '@/assets/ccsf-logo.png';
+import tutLogo from '@/assets/tut-logo.png';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import type { Database } from '@/integrations/supabase/types';
-import { useIncidentsQuery, useUpdateIncidentMutation } from '@/hooks/queries';
 
+type Incident = Database['public']['Tables']['incidents']['Row'];
 type IncidentStatus = Database['public']['Enums']['incident_status'];
 
 const Office = () => {
@@ -22,21 +23,64 @@ const Office = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [incidents, setIncidents] = useState<Incident[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    total: 0,
+    pending: 0,
+    investigating: 0,
+    resolved: 0,
+  });
 
-  const { data, isLoading } = useIncidentsQuery();
-  const updateMutation = useUpdateIncidentMutation();
+  useEffect(() => {
+    fetchIncidents();
+    
+    // Real-time subscription
+    const channel = supabase
+      .channel('office-incidents')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'incidents' }, () => {
+        fetchIncidents();
+      })
+      .subscribe();
 
-  const incidents = data?.incidents || [];
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
-  const stats = {
-    total: incidents.length,
-    pending: incidents.filter(i => i.status === 'pending').length,
-    investigating: incidents.filter(i => i.status === 'assigned').length,
-    resolved: incidents.filter(i => i.status === 'resolved').length,
+  const fetchIncidents = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('incidents')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      toast({ title: 'Error fetching incidents', description: error.message, variant: 'destructive' });
+    } else if (data) {
+      setIncidents(data);
+      setStats({
+        total: data.length,
+        pending: data.filter(i => i.status === 'pending').length,
+        investigating: data.filter(i => i.status === 'assigned').length,
+        resolved: data.filter(i => i.status === 'resolved').length,
+      });
+    }
+    setLoading(false);
   };
 
-  const updateIncidentStatus = (id: string, status: IncidentStatus) => {
-    updateMutation.mutate({ id, updates: { status, updated_at: new Date().toISOString() } });
+  const updateIncidentStatus = async (id: string, status: IncidentStatus) => {
+    const { error } = await supabase
+      .from('incidents')
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq('id', id);
+
+    if (error) {
+      toast({ title: 'Error updating status', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Status updated successfully' });
+      fetchIncidents();
+    }
   };
 
   const filteredIncidents = incidents.filter(incident => {
@@ -81,8 +125,8 @@ const Office = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <motion.img
-                src={ccsfLogo}
-                alt="CCSF Logo"
+                src={tutLogo}
+                alt="TUT Logo"
                 className="h-10 logo-glow"
                 whileHover={{ scale: 1.1, rotate: -5 }}
                 transition={{ type: "spring", stiffness: 300, damping: 20 }}
@@ -212,7 +256,7 @@ const Office = () => {
               transition={{ delay: 0.3, duration: 0.4 }}
               className="space-y-4"
             >
-              {isLoading ? (
+              {loading ? (
                 <div className="flex items-center justify-center py-12">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>

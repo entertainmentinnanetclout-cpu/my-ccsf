@@ -1,9 +1,9 @@
 // Service Worker for My CCSF PWA
 // Handles push notifications and offline caching
 
-const CACHE_NAME = 'my-ccsf-v2';
-const STATIC_CACHE = 'my-ccsf-static-v2';
-const DYNAMIC_CACHE = 'my-ccsf-dynamic-v2';
+const CACHE_NAME = 'my-ccsf-v1';
+const STATIC_CACHE = 'my-ccsf-static-v1';
+const DYNAMIC_CACHE = 'my-ccsf-dynamic-v1';
 
 // Static assets to cache on install
 const STATIC_ASSETS = [
@@ -11,14 +11,11 @@ const STATIC_ASSETS = [
   '/index.html',
   '/manifest.json',
   '/favicon.svg',
-  '/app-icon.png',
-  '/app-icon-192.png',
-  '/app-icon-512.png',
 ];
 
 // Install event - cache static assets
 self.addEventListener('install', (event) => {
-  console.log('[SW] Installing Service Worker v2...');
+  console.log('[SW] Installing Service Worker...');
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => {
@@ -31,7 +28,7 @@ self.addEventListener('install', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[SW] Service Worker v2 activated');
+  console.log('[SW] Service Worker activated');
   event.waitUntil(
     caches.keys()
       .then((cacheNames) => {
@@ -68,6 +65,7 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(request)
         .then((response) => {
+          // Clone and cache the response
           const responseClone = response.clone();
           caches.open(DYNAMIC_CACHE).then((cache) => {
             cache.put(request, responseClone);
@@ -75,6 +73,7 @@ self.addEventListener('fetch', (event) => {
           return response;
         })
         .catch(() => {
+          // If network fails, try cache
           return caches.match(request)
             .then((cached) => cached || caches.match('/index.html'));
         })
@@ -87,6 +86,7 @@ self.addEventListener('fetch', (event) => {
     caches.match(request)
       .then((cached) => {
         if (cached) {
+          // Return cached version and update cache in background
           fetch(request).then((response) => {
             if (response.ok) {
               caches.open(DYNAMIC_CACHE).then((cache) => {
@@ -97,8 +97,10 @@ self.addEventListener('fetch', (event) => {
           return cached;
         }
 
+        // Not in cache, fetch from network
         return fetch(request)
           .then((response) => {
+            // Cache successful responses
             if (response.ok && response.type === 'basic') {
               const responseClone = response.clone();
               caches.open(DYNAMIC_CACHE).then((cache) => {
@@ -108,6 +110,7 @@ self.addEventListener('fetch', (event) => {
             return response;
           })
           .catch(() => {
+            // Return offline fallback for images
             if (request.destination === 'image') {
               return new Response(
                 '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="#f3f4f6" width="100" height="100"/><text x="50" y="55" text-anchor="middle" fill="#9ca3af" font-size="12">Offline</text></svg>',
@@ -135,8 +138,8 @@ self.addEventListener('push', (event) => {
 
   const options = {
     body: data.body,
-    icon: '/app-icon-192.png',
-    badge: '/app-icon-192.png',
+    icon: '/favicon.svg',
+    badge: '/favicon.svg',
     vibrate: [100, 50, 100],
     data: data.data || {},
     actions: [
@@ -166,12 +169,14 @@ self.addEventListener('notificationclick', (event) => {
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true })
       .then((clientList) => {
+        // Focus existing window if available
         for (const client of clientList) {
           if (client.url.includes(self.location.origin) && 'focus' in client) {
             client.navigate(urlToOpen);
             return client.focus();
           }
         }
+        // Open new window
         if (clients.openWindow) {
           return clients.openWindow(urlToOpen);
         }
@@ -189,6 +194,7 @@ self.addEventListener('sync', (event) => {
 });
 
 async function syncPendingIncidents() {
+  // Get pending incidents from IndexedDB and sync them
   console.log('[SW] Syncing pending incidents...');
 }
 
