@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, Lock, Eye, AlertTriangle, Volume2, VolumeX } from 'lucide-react';
-import tutLogo from '@/assets/tut-logo.png';
+import ccsfLogo from '@/assets/ccsf-logo.png';
 
 interface SplashScreenProps {
   onComplete: () => void;
@@ -385,9 +385,9 @@ const SplashScreen = ({ onComplete, minDuration = 4500 }: SplashScreenProps) => 
               }}
             />
             <motion.img
-              src={tutLogo}
-              alt="TUT Logo"
-              className="w-28 h-28 object-contain relative z-10"
+              src={ccsfLogo}
+              alt="CCSF Logo"
+              className="w-36 h-36 object-contain relative z-10"
               style={{
                 filter: 'drop-shadow(0 0 40px rgba(220, 38, 38, 0.7))',
               }}
