@@ -56,6 +56,10 @@ const Admin = () => {
     view: 'admins',
     icon: Users,
     label: 'Admins'
+  }, {
+    view: 'office',
+    icon: Building2,
+    label: 'Campus Office'
   }];
   return <CasesProvider>
     <MasterSyncProvider>
