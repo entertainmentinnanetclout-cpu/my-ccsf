@@ -99,7 +99,7 @@ export const StaffCommunication = () => {
   const [previewMedia, setPreviewMedia] = useState<{ url: string; type: string } | null>(null);
   const [roomMembers, setRoomMembers] = useState<UserProfile[]>([]);
   const [tabFilter, setTabFilter] = useState<'all' | 'groups' | 'private'>('all');
-  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Fetch all staff profiles for search/selection
   useEffect(() => {

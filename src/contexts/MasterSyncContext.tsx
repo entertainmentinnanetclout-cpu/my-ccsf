@@ -60,7 +60,7 @@ const MasterSyncContext = createContext<MasterSyncContextType | null>(null);
 
 // Debounce helper
 function debounce<T extends (...args: unknown[]) => unknown>(fn: T, delay: number): T {
-  let timeoutId: NodeJS.Timeout;
+  let timeoutId: ReturnType<typeof setTimeout>;
   return ((...args: unknown[]) => {
     clearTimeout(timeoutId);
     timeoutId = setTimeout(() => fn(...args), delay);
@@ -103,7 +103,7 @@ export const MasterSyncProvider: React.FC<MasterSyncProviderProps> = ({ children
   
   // Refs for cleanup
   const channelsRef = useRef<ReturnType<typeof supabase.channel>[]>([]);
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isInitialized = useRef(false);
 
   // Fetch user context (campus and role) for scoped queries

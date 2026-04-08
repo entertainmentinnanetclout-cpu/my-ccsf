@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { motion } from 'framer-motion';
-import { Shield, LayoutDashboard, AlertCircle, Megaphone, MessageSquare, BarChart3, Images, Users, Siren } from 'lucide-react';
+import { Shield, LayoutDashboard, AlertCircle, Megaphone, MessageSquare, BarChart3, Images, Users, Siren, Building2 } from 'lucide-react';
 import tutLogo from '@/assets/tut-logo.png';
 import { AdminOverview } from '@/components/admin/AdminOverview';
 import { AdminIncidents } from '@/components/admin/AdminIncidents';
@@ -20,10 +20,14 @@ import { MobileNavMenu } from '@/components/shared/MobileNavMenu';
 import { MasterSyncProvider } from '@/contexts/MasterSyncContext';
 import { CasesProvider } from '@/contexts/CasesContext';
 import { MasterSyncButton } from '@/components/admin/MasterSyncButton';
+import { lazy, Suspense } from 'react';
+
+const OfficeEmbed = lazy(() => import('@/pages/Office').then(m => ({ default: m.default })));
+
 
 const Admin = () => {
   const navigate = useNavigate();
-  const [activeView, setActiveView] = useState<'overview' | 'incidents' | 'analytics' | 'announcements' | 'communication' | 'carousel' | 'admins' | 'escalation'>('overview');
+  const [activeView, setActiveView] = useState<'overview' | 'incidents' | 'analytics' | 'announcements' | 'communication' | 'carousel' | 'admins' | 'escalation' | 'office'>('overview');
   const navItems = [{
     view: 'overview',
     icon: LayoutDashboard,
@@ -56,6 +60,10 @@ const Admin = () => {
     view: 'admins',
     icon: Users,
     label: 'Admins'
+  }, {
+    view: 'office',
+    icon: Building2,
+    label: 'Campus Office'
   }];
   return <CasesProvider>
     <MasterSyncProvider>
@@ -186,6 +194,7 @@ const Admin = () => {
             {activeView === 'communication' && <StaffCommunication />}
             {activeView === 'carousel' && <CarouselManager />}
             {activeView === 'admins' && <CampusAdminManager />}
+            {activeView === 'office' && <Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}><OfficeEmbed /></Suspense>}
           </motion.div>
 
           {/* Footer */}
