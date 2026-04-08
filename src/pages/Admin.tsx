@@ -23,7 +23,7 @@ import { MasterSyncButton } from '@/components/admin/MasterSyncButton';
 
 const Admin = () => {
   const navigate = useNavigate();
-  const [activeView, setActiveView] = useState<'overview' | 'incidents' | 'analytics' | 'announcements' | 'communication' | 'carousel' | 'admins' | 'escalation'>('overview');
+  const [activeView, setActiveView] = useState<'overview' | 'incidents' | 'analytics' | 'announcements' | 'communication' | 'carousel' | 'admins' | 'escalation' | 'office'>('overview');
   const navItems = [{
     view: 'overview',
     icon: LayoutDashboard,
