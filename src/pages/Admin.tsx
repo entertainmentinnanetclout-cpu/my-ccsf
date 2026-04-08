@@ -20,6 +20,10 @@ import { MobileNavMenu } from '@/components/shared/MobileNavMenu';
 import { MasterSyncProvider } from '@/contexts/MasterSyncContext';
 import { CasesProvider } from '@/contexts/CasesContext';
 import { MasterSyncButton } from '@/components/admin/MasterSyncButton';
+import { lazy, Suspense } from 'react';
+
+const OfficeEmbed = lazy(() => import('@/pages/Office').then(m => ({ default: m.default })));
+
 
 const Admin = () => {
   const navigate = useNavigate();
