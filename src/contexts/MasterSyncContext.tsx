@@ -60,7 +60,7 @@ const MasterSyncContext = createContext<MasterSyncContextType | null>(null);
 
 // Debounce helper
 function debounce<T extends (...args: unknown[]) => unknown>(fn: T, delay: number): T {
-  let timeoutId: NodeJS.Timeout;
+  let timeoutId: ReturnType<typeof setTimeout>;
   return ((...args: unknown[]) => {
     clearTimeout(timeoutId);
     timeoutId = setTimeout(() => fn(...args), delay);
