@@ -67,6 +67,7 @@ export const CampusAdminManager = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [resettingEmail, setResettingEmail] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [dialogTab, setDialogTab] = useState<'assign' | 'create'>('create');
