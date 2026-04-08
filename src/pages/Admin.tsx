@@ -20,8 +20,7 @@ import { MobileNavMenu } from '@/components/shared/MobileNavMenu';
 import { MasterSyncProvider } from '@/contexts/MasterSyncContext';
 import { CasesProvider } from '@/contexts/CasesContext';
 import { MasterSyncButton } from '@/components/admin/MasterSyncButton';
-import Office from '@/pages/Office';
-
+import { OfficeView } from '@/components/admin/OfficeView';
 
 const Admin = () => {
   const navigate = useNavigate();
