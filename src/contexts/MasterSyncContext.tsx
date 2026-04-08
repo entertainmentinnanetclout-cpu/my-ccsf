@@ -103,7 +103,7 @@ export const MasterSyncProvider: React.FC<MasterSyncProviderProps> = ({ children
   
   // Refs for cleanup
   const channelsRef = useRef<ReturnType<typeof supabase.channel>[]>([]);
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isInitialized = useRef(false);
 
   // Fetch user context (campus and role) for scoped queries

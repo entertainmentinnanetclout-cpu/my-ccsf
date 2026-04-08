@@ -109,7 +109,7 @@ function toRad(deg: number): number {
 }
 
 export const useLocationTracking = () => {
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const watchIdRef = useRef<number | null>(null);
   const [isTracking, setIsTracking] = useState(false);
   const [currentIncidentId, setCurrentIncidentId] = useState<string | null>(null);
