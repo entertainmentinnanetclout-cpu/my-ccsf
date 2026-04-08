@@ -191,7 +191,7 @@ const Admin = () => {
             {activeView === 'communication' && <StaffCommunication />}
             {activeView === 'carousel' && <CarouselManager />}
             {activeView === 'admins' && <CampusAdminManager />}
-            {activeView === 'office' && <Office />}
+            {activeView === 'office' && <OfficeView />}
           </motion.div>
 
           {/* Footer */}
