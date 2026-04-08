@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { UserPlus, Trash2, Shield, Search, Crown, Eye, EyeOff, Loader2, Pencil } from 'lucide-react';
+import { UserPlus, Trash2, Shield, Search, Crown, Eye, EyeOff, Loader2, Pencil, KeyRound } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { Database } from '@/integrations/supabase/types';
 type CampusLocation = Database['public']['Enums']['campus_location'];
