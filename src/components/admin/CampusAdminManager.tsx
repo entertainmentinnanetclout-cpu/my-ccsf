@@ -400,6 +400,26 @@ export const CampusAdminManager = () => {
                           </div>
                         </div>
                         <div className="flex gap-1">
+                          <Button variant="ghost" size="icon" onClick={async () => {
+                            const email = admin.profile?.email;
+                            if (!email) return;
+                            setResettingEmail(email);
+                            try {
+                              const response = await supabase.functions.invoke('reset-staff-password', {
+                                body: { email }
+                              });
+                              if (response.error || response.data?.error) {
+                                throw new Error(response.data?.error || response.error?.message);
+                              }
+                              toast({ title: 'Password reset sent', description: `Recovery email sent to ${email}` });
+                            } catch (err: any) {
+                              toast({ title: 'Error', description: err.message, variant: 'destructive' });
+                            } finally {
+                              setResettingEmail(null);
+                            }
+                          }} className="text-muted-foreground hover:text-primary" title="Reset Password" disabled={resettingEmail === admin.profile?.email}>
+                            {resettingEmail === admin.profile?.email ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
+                          </Button>
                           <Button variant="ghost" size="icon" onClick={() => handleEdit(admin)} className="text-muted-foreground hover:text-primary">
                             <Pencil className="h-4 w-4" />
                           </Button>

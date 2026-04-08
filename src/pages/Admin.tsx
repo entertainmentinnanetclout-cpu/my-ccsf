@@ -194,7 +194,7 @@ const Admin = () => {
             {activeView === 'communication' && <StaffCommunication />}
             {activeView === 'carousel' && <CarouselManager />}
             {activeView === 'admins' && <CampusAdminManager />}
-            {activeView === 'office' && <OfficeEmbed />}
+            {activeView === 'office' && <Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}><OfficeEmbed /></Suspense>}
           </motion.div>
 
           {/* Footer */}
