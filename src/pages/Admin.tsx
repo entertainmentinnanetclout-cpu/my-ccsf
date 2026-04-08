@@ -20,9 +20,7 @@ import { MobileNavMenu } from '@/components/shared/MobileNavMenu';
 import { MasterSyncProvider } from '@/contexts/MasterSyncContext';
 import { CasesProvider } from '@/contexts/CasesContext';
 import { MasterSyncButton } from '@/components/admin/MasterSyncButton';
-import { lazy, Suspense } from 'react';
-
-const OfficeEmbed = lazy(() => import('@/pages/Office').then(m => ({ default: m.default })));
+import Office from '@/pages/Office';
 
 
 const Admin = () => {
@@ -194,7 +192,7 @@ const Admin = () => {
             {activeView === 'communication' && <StaffCommunication />}
             {activeView === 'carousel' && <CarouselManager />}
             {activeView === 'admins' && <CampusAdminManager />}
-            {activeView === 'office' && <Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}><OfficeEmbed /></Suspense>}
+            {activeView === 'office' && <Office />}
           </motion.div>
 
           {/* Footer */}
