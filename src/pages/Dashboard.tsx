@@ -127,7 +127,7 @@ const Dashboard = () => {
       </div>
 
       {/* Main Content */}
-      <main className="container mx-auto px-3 sm:px-4 pb-6">
+      <main className="container mx-auto px-3 sm:px-4 pb-20 md:pb-6">
         {/* Navigation - Desktop Tabs + Mobile Menu */}
         <motion.div
           initial={{ opacity: 0, y: 25 }}
@@ -197,6 +197,13 @@ const Dashboard = () => {
           </motion.div>
         </footer>
       </main>
+      
+      {/* Mobile Bottom Navigation */}
+      <MobileBottomNav
+        items={navItems}
+        activeView={activeView}
+        onViewChange={(view) => setActiveView(view as typeof activeView)}
+      />
     </div>
   );
 };
