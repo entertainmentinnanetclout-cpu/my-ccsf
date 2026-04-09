@@ -16,7 +16,7 @@ import { CampusAdminManager } from '@/components/admin/CampusAdminManager';
 import { CaseEscalation } from '@/components/admin/CaseEscalation';
 import { NotificationBell } from '@/components/shared/NotificationBell';
 import { ThemeToggle } from '@/components/shared/ThemeToggle';
-import { MobileNavMenu } from '@/components/shared/MobileNavMenu';
+import { MobileBottomNav } from '@/components/shared/MobileBottomNav';
 import { MasterSyncProvider } from '@/contexts/MasterSyncContext';
 import { CasesProvider } from '@/contexts/CasesContext';
 import { MasterSyncButton } from '@/components/admin/MasterSyncButton';
