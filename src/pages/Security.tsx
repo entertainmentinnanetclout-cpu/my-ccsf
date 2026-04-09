@@ -20,7 +20,7 @@ import { MasterSyncButton } from '@/components/admin/MasterSyncButton';
 import { VirtualStudentList } from '@/components/shared/VirtualStudentList';
 import { NotificationBell } from '@/components/shared/NotificationBell';
 import { ThemeToggle } from '@/components/shared/ThemeToggle';
-import { MobileNavMenu } from '@/components/shared/MobileNavMenu';
+import { MobileBottomNav } from '@/components/shared/MobileBottomNav';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 type CampusLocation = Database['public']['Enums']['campus_location'];
@@ -176,7 +176,7 @@ const Security = () => {
         </div>
 
         {/* Main Content */}
-        <main className="container mx-auto px-4 py-6">
+        <main className="container mx-auto px-4 py-6 pb-20 md:pb-6">
           {/* Navigation - Desktop Tabs + Mobile Menu */}
           <motion.div initial={{
             opacity: 0,
@@ -188,10 +188,6 @@ const Security = () => {
             delay: 0.2,
             duration: 0.4
           }} className="mb-6">
-            {/* Mobile Navigation Menu */}
-            <div className="flex justify-center md:hidden mb-4">
-              <MobileNavMenu items={navItems} activeView={activeView} onViewChange={view => setActiveView(view as typeof activeView)} title="Campus Admin" />
-            </div>
 
             {/* Desktop Navigation Tabs */}
             <Card className="hidden md:block p-3 shadow-large">
@@ -249,6 +245,11 @@ const Security = () => {
             <p className="text-sm font-bold text-primary-foreground">Powered By Campus Protection Service</p>
           </footer>
         </main>
+        <MobileBottomNav
+          items={navItems}
+          activeView={activeView}
+          onViewChange={(view) => setActiveView(view as typeof activeView)}
+        />
       </div>
       </CasesProvider>
     </MasterSyncProvider>;
