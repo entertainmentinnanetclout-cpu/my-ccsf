@@ -1,43 +1,58 @@
-## Important Security Note
+## Plan: Office Admin Role, Carousel Fix, Mobile Bottom Nav
 
-**Displaying passwords on a dashboard is not possible and would be a critical security vulnerability.** Supabase (and all modern systems) store passwords as one-way hashes -- they cannot be retrieved or displayed. This is by design.
+### 1. Assign [pretoriaadmin@ccsf.ac.za](mailto:pretoriaadmin@ccsf.ac.za) as Pretoria Office Admin
 
-Instead, I will implement a **password reset management system** where the super admin can trigger password resets for staff accounts, so officers who forget their passwords can get a reset link sent to their email
+The user exists as `pretoriaadmin@ccsf.ac.za` (ID: `918810a6-3a28-447d-81a1-8f3384f090f5`) with only a `student` role and no campus set.
 
-## Plan
+**Migration will:**
 
-### 1. Assign `phutiadmin@ccsf.ac.za` as Super Admin
+- Remove the `student` role
+- Add `security` role (campus admin)
+- Insert into `admin_access` with campus `pretoria_west_main`
+- Update profile campus to `pretoria_west_main`
 
-- Use the Supabase insert tool to:
-  - Look up the user by email in `profiles`
-  - Delete any `student` role from `user_roles` for that user
-  - Insert `admin` role into `user_roles` for that user
+### 2. Fix Carousel Images Not Showing
 
-### 2. Add Staff Password Reset Management to Admin Dashboard
+Some carousel images in the database use local asset paths like `/src/assets/campus-building.jpg` which don't resolve in production. These need to be either:
 
-- Add a new "Staff Management" or enhance the existing "Admins" tab in Admin.tsx
-- In `CampusAdminManager.tsx`, add a "Reset Password" button next to each staff member
-- When clicked, call `supabase.auth.admin` or use an edge function to send a password reset email to that staff member's email address
-- Create a small edge function `reset-staff-password` that uses the Supabase service role key to call `auth.admin.generateLink()` for password reset, since client-side cannot trigger resets for other users
+- Removed (they're placeholder entries for campuses that don't have real uploaded images yet), OR
+- Updated to use placeholder images that actually load
 
-### 3. Add Campus Office Navigation to Super Admin Dashboard
+**Fix:** Update the `CampusCarousel` component to filter out images with broken local paths (those starting with `/src/assets/`), and update the `onError` handler to gracefully hide broken images. Also update the database records to mark those placeholder entries as inactive.
 
-- Add a new nav item "Campus Office" to Admin.tsx nav items array (using `FileText` or `Building` icon)
-- When selected, render the `Office` component (or an embedded version) within the admin dashboard
-- This gives super admins direct access to the campus office view without navigating away
+make sure its fetching images from super admin setup
+
+### 3. Mobile Responsive with Fixed Bottom Navigation
+
+Replace the current `MobileNavMenu` (bottom sheet popup) with a persistent fixed bottom navigation bar on mobile for both the Student Dashboard and Admin pages.
+
+**Create `src/components/shared/MobileBottomNav.tsx`:**
+
+- Fixed position at bottom of screen (`fixed bottom-0`)
+- Shows 5 nav items with icons and labels
+- Active state highlighting
+- Safe area padding for notched phones (`pb-safe`)
+- Glass morphism background
+
+**Update `src/pages/Dashboard.tsx`:**
+
+- Replace `MobileNavMenu` with the new `MobileBottomNav`
+- Add `pb-20` padding to main content to prevent bottom nav overlap
+- Ensure header stays above content with proper z-index
+
+**Update `src/pages/Admin.tsx`:**
+
+- Same bottom nav treatment for admin dashboard on mobile
 
 ### Technical Details
 
+**Files to create:**
+
+- `src/components/shared/MobileBottomNav.tsx`
+- Migration SQL for role assignment
+
 **Files to modify:**
 
-- `src/pages/Admin.tsx` -- Add "Campus Office" nav item and render Office content
-- `src/components/admin/CampusAdminManager.tsx` -- Add "Reset Password" button per staff member
-- Create `supabase/functions/reset-staff-password/index.ts` -- Edge function to trigger password reset emails using service role key
-- Run SQL data operations to fix `phutiadmin@ccsf.ac.za` roles
-
-**Edge function approach for password reset:**
-
-- Accepts `{ email: string }` in request body
-- Validates caller is a super admin (via JWT)
-- Uses `supabase.auth.admin.generateLink({ type: 'recovery', email })` to create reset link
-- Sends the reset email automatically via Supabase Auth
+- `src/pages/Dashboard.tsx` - bottom nav + content padding
+- `src/pages/Admin.tsx` - bottom nav + content padding
+- `src/components/student/CampusCarousel.tsx` - filter broken image URLs
