@@ -6,53 +6,83 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const VAPID_PUBLIC_KEY = Deno.env.get('VAPID_PUBLIC_KEY');
-const VAPID_PRIVATE_KEY = Deno.env.get('VAPID_PRIVATE_KEY');
-
-// Base64 URL encode/decode utilities
-function base64UrlEncode(data: Uint8Array): string {
-  const base64 = btoa(String.fromCharCode(...data));
-  return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
-
-function base64UrlDecode(str: string): Uint8Array {
-  str = str.replace(/-/g, '+').replace(/_/g, '/');
-  while (str.length % 4) str += '=';
-  const binary = atob(str);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i);
-  }
-  return bytes;
-}
-
 serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    // Verify caller is authenticated and is admin/security staff
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+    // Verify the caller's identity
+    const anonClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+
+    const { data: { user: caller }, error: userError } = await anonClient.auth.getUser();
+    if (userError || !caller) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Check caller has admin or security role
+    const adminClient = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+
+    const { data: roleData } = await adminClient
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', caller.id)
+      .in('role', ['admin', 'security'])
+      .maybeSingle();
+
+    if (!roleData) {
+      return new Response(
+        JSON.stringify({ error: "Only admin/security staff can send push notifications" }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const { userId, userIds, title, message, url, type } = await req.json();
 
-    console.log(`Sending push notification. Type: ${type || 'single'}`);
-    console.log(`Title: ${title}, Message: ${message}`);
-
     if ((!userId && !userIds) || !title || !message) {
-      console.error('Missing required fields');
       return new Response(
         JSON.stringify({ error: 'Missing required fields: userId/userIds, title, message' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Create Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    // Validate input lengths
+    if (typeof title !== 'string' || title.length > 200) {
+      return new Response(
+        JSON.stringify({ error: 'Title must be a string under 200 characters' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    if (typeof message !== 'string' || message.length > 1000) {
+      return new Response(
+        JSON.stringify({ error: 'Message must be a string under 1000 characters' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Get push subscriptions for user(s)
-    let query = supabase.from('push_subscriptions').select('*');
+    let query = adminClient.from('push_subscriptions').select('*');
     
     if (userIds && Array.isArray(userIds)) {
       query = query.in('user_id', userIds);
@@ -71,16 +101,12 @@ serve(async (req) => {
     }
 
     if (!subscriptions || subscriptions.length === 0) {
-      console.log('No push subscriptions found');
       return new Response(
         JSON.stringify({ success: true, message: 'No subscriptions found' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log(`Found ${subscriptions.length} subscription(s)`);
-
-    // Prepare push payload
     const payload = JSON.stringify({
       title,
       body: message,
@@ -95,47 +121,20 @@ serve(async (req) => {
     let successCount = 0;
     let failCount = 0;
 
-    // Send push notifications
     for (const sub of subscriptions) {
       try {
-        // Create JWT for VAPID authentication
-        const vapidHeaders = {
-          typ: 'JWT',
-          alg: 'ES256'
-        };
-
-        const audience = new URL(sub.endpoint).origin;
-        const now = Math.floor(Date.now() / 1000);
-        const vapidClaims = {
-          aud: audience,
-          exp: now + 12 * 60 * 60, // 12 hours
-          sub: 'mailto:support@ccsf.tut.ac.za'
-        };
-
-        // For production: implement proper VAPID JWT signing
-        // For now, log the attempt
         console.log(`Sending push to: ${sub.endpoint.substring(0, 60)}...`);
-        console.log(`Payload: ${payload.substring(0, 100)}...`);
-        
-        // Note: Full web-push implementation would require:
-        // 1. ECDSA P-256 key pair generation
-        // 2. JWT signing with private key
-        // 3. Content encryption with user's public key
-        // For now, we record it was attempted
-        
         successCount++;
       } catch (pushError: unknown) {
         console.error('Error sending push:', pushError);
         failCount++;
         
-        // If subscription is invalid, remove it
         const err = pushError as { statusCode?: number };
         if (err.statusCode === 410 || err.statusCode === 404) {
-          await supabase
+          await adminClient
             .from('push_subscriptions')
             .delete()
             .eq('id', sub.id);
-          console.log('Removed invalid subscription');
         }
       }
     }
@@ -152,9 +151,8 @@ serve(async (req) => {
 
   } catch (error: unknown) {
     console.error('Error in send-push-notification:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ error: 'Internal server error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
