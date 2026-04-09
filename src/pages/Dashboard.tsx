@@ -124,25 +124,6 @@ const Dashboard = () => {
           </div>
         </motion.header>
 
-        {showMobileMenu && (
-          <motion.div
-            initial={{ opacity: 0, y: -10, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -10, scale: 0.95 }}
-            className="absolute top-full right-2 sm:right-4 z-50 mt-2 w-52 p-3 bg-card/95 backdrop-blur-xl rounded-2xl shadow-elevated border border-border/50 sm:hidden"
-          >
-            <div className="flex items-center gap-2 px-3 py-2.5 mb-2 bg-gradient-to-r from-primary/10 to-primary/5 rounded-xl border border-primary/20">
-              <MapPin className="h-4 w-4 text-primary" />
-              <span className="text-sm font-semibold">{userCampus}</span>
-            </div>
-            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-              <Button onClick={signOut} variant="destructive" className="w-full shadow-md">
-                <LogOut className="h-4 w-4 mr-2" />
-                Sign Out
-              </Button>
-            </motion.div>
-          </motion.div>
-        )}
       </div>
 
       {/* Main Content */}
@@ -154,15 +135,6 @@ const Dashboard = () => {
           transition={{ delay: 0.4, duration: 0.4 }}
           className="mb-4 sm:mb-6"
         >
-          {/* Mobile Navigation Menu */}
-          <div className="flex justify-center md:hidden mb-4">
-            <MobileNavMenu
-              items={navItems}
-              activeView={activeView}
-              onViewChange={(view) => setActiveView(view as typeof activeView)}
-              title="Student Portal"
-            />
-          </div>
 
           {/* Desktop Navigation Tabs */}
           <Card className="hidden md:block p-2 sm:p-3 shadow-elevated bg-card/95 backdrop-blur-sm border-border/50">
