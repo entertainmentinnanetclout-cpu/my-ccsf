@@ -4,8 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from 'next-themes';
-import { Loader2 } from 'lucide-react';
-import React, { Suspense, lazy } from 'react';
+import React from 'react';
 
 const queryClient = new QueryClient();
 
@@ -13,17 +12,16 @@ import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import Layout from './components/shared/Layout';
 import PWAInstallPrompt from './components/shared/PWAInstallPrompt';
-
-const Index = lazy(() => import('./pages/Index'));
-const NotFound = lazy(() => import('./pages/NotFound'));
-const Auth = lazy(() => import('./pages/Auth'));
-const Dashboard = lazy(() => import('./pages/Dashboard'));
-const Admin = lazy(() => import('./pages/Admin'));
-const Office = lazy(() => import('./pages/Office'));
-const Profile = lazy(() => import('./pages/Profile'));
-const ProfileCompletion = lazy(() => import('./pages/ProfileCompletion'));
-const Judiciary = lazy(() => import('./pages/Judiciary'));
-const Security = lazy(() => import('./pages/Security'));
+import Index from './pages/Index';
+import NotFound from './pages/NotFound';
+import Auth from './pages/Auth';
+import Dashboard from './pages/Dashboard';
+import Admin from './pages/Admin';
+import Office from './pages/Office';
+import Profile from './pages/Profile';
+import ProfileCompletion from './pages/ProfileCompletion';
+import Judiciary from './pages/Judiciary';
+import Security from './pages/Security';
 
 // PRODUCTION MODE: Authentication required for all protected routes
 const DEV_MODE = false;
