@@ -69,12 +69,14 @@ export const CampusCarousel = ({ campus }: CampusCarouselProps) => {
     setIsLoading(false);
   };
 
-  // Use database images only - no fallbacks
-  const carouselItems = dbImages.map(img => ({ 
-    image: img.image_url, 
-    title: img.title, 
-    type: img.category 
-  }));
+  // Use database images only - filter out broken local paths
+  const carouselItems = dbImages
+    .filter(img => !img.image_url.startsWith('/src/') && !img.image_url.startsWith('src/'))
+    .map(img => ({ 
+      image: img.image_url, 
+      title: img.title, 
+      type: img.category 
+    }));
 
   useEffect(() => {
     if (isHovered || carouselItems.length === 0) return;
@@ -133,8 +135,13 @@ export const CampusCarousel = ({ campus }: CampusCarouselProps) => {
             src={carouselItems[currentIndex].image}
             alt={carouselItems[currentIndex].title}
             className="w-full h-full object-cover object-center"
+            loading="lazy"
             onError={(e) => {
-              (e.target as HTMLImageElement).src = 'https://placehold.co/800x400?text=Image+Not+Found';
+              const target = e.target as HTMLImageElement;
+              if (!target.dataset.fallback) {
+                target.dataset.fallback = 'true';
+                target.src = 'https://placehold.co/800x400/1a1a2e/ffffff?text=Campus+Image';
+              }
             }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20" />

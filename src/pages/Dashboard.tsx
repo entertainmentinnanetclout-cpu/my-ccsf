@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { motion } from 'framer-motion';
-import { Shield, Plus, LogOut, Menu, Map, MessageCircle, Home, MapPin, FileText } from 'lucide-react';
+import { Shield, Plus, LogOut, Map, MessageCircle, Home, MapPin, FileText } from 'lucide-react';
 import tutLogo from '@/assets/tut-logo.png';
 import { ReportIncident } from '@/components/student/ReportIncident';
 import { EmergencyReport } from '@/components/student/EmergencyReport';
@@ -14,13 +14,12 @@ import { StudentChat } from '@/components/student/StudentChat';
 import { MyCaseReports } from '@/components/student/MyCaseReports';
 import { NotificationBell } from '@/components/shared/NotificationBell';
 import { ThemeToggle } from '@/components/shared/ThemeToggle';
-import { MobileNavMenu } from '@/components/shared/MobileNavMenu';
+import { MobileBottomNav } from '@/components/shared/MobileBottomNav';
 import { supabase } from '@/integrations/supabase/client';
 
 const Dashboard = () => {
   const { user, signOut } = useAuth();
   const [activeView, setActiveView] = useState<'home' | 'report' | 'mycases' | 'map' | 'messages'>('home');
-  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [userCampus, setUserCampus] = useState<string>('Campus');
   const [userCampusId, setUserCampusId] = useState<string | null>(null);
 
@@ -120,44 +119,15 @@ const Dashboard = () => {
                     <LogOut className="h-5 w-5 text-white" />
                   </Button>
                 </motion.div>
-                <motion.div whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.95 }}>
-                  <Button
-                    variant="default"
-                    size="icon"
-                    onClick={() => setShowMobileMenu(!showMobileMenu)}
-                    className="sm:hidden bg-white/20 hover:bg-white/30 border border-white/20"
-                  >
-                    <Menu className="h-5 w-5 text-white" />
-                  </Button>
-                </motion.div>
               </div>
             </div>
           </div>
         </motion.header>
 
-        {showMobileMenu && (
-          <motion.div
-            initial={{ opacity: 0, y: -10, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -10, scale: 0.95 }}
-            className="absolute top-full right-2 sm:right-4 z-50 mt-2 w-52 p-3 bg-card/95 backdrop-blur-xl rounded-2xl shadow-elevated border border-border/50 sm:hidden"
-          >
-            <div className="flex items-center gap-2 px-3 py-2.5 mb-2 bg-gradient-to-r from-primary/10 to-primary/5 rounded-xl border border-primary/20">
-              <MapPin className="h-4 w-4 text-primary" />
-              <span className="text-sm font-semibold">{userCampus}</span>
-            </div>
-            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-              <Button onClick={signOut} variant="destructive" className="w-full shadow-md">
-                <LogOut className="h-4 w-4 mr-2" />
-                Sign Out
-              </Button>
-            </motion.div>
-          </motion.div>
-        )}
       </div>
 
       {/* Main Content */}
-      <main className="container mx-auto px-3 sm:px-4 pb-6">
+      <main className="container mx-auto px-3 sm:px-4 pb-20 md:pb-6">
         {/* Navigation - Desktop Tabs + Mobile Menu */}
         <motion.div
           initial={{ opacity: 0, y: 25 }}
@@ -165,15 +135,6 @@ const Dashboard = () => {
           transition={{ delay: 0.4, duration: 0.4 }}
           className="mb-4 sm:mb-6"
         >
-          {/* Mobile Navigation Menu */}
-          <div className="flex justify-center md:hidden mb-4">
-            <MobileNavMenu
-              items={navItems}
-              activeView={activeView}
-              onViewChange={(view) => setActiveView(view as typeof activeView)}
-              title="Student Portal"
-            />
-          </div>
 
           {/* Desktop Navigation Tabs */}
           <Card className="hidden md:block p-2 sm:p-3 shadow-elevated bg-card/95 backdrop-blur-sm border-border/50">
@@ -236,6 +197,13 @@ const Dashboard = () => {
           </motion.div>
         </footer>
       </main>
+      
+      {/* Mobile Bottom Navigation */}
+      <MobileBottomNav
+        items={navItems}
+        activeView={activeView}
+        onViewChange={(view) => setActiveView(view as typeof activeView)}
+      />
     </div>
   );
 };
