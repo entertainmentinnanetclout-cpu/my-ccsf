@@ -127,7 +127,7 @@ const Admin = () => {
         </div>
 
         {/* Main Content */}
-        <main className="container mx-auto px-4 py-6">
+        <main className="container mx-auto px-4 py-6 pb-20 md:pb-6">
           {/* Navigation - Desktop Tabs + Mobile Menu */}
           <motion.div initial={{
           opacity: 0,
@@ -139,10 +139,6 @@ const Admin = () => {
           delay: 0.2,
           duration: 0.4
         }} className="mb-6">
-            {/* Mobile Navigation Menu */}
-            <div className="flex justify-center md:hidden mb-4">
-              <MobileNavMenu items={navItems} activeView={activeView} onViewChange={view => setActiveView(view as typeof activeView)} title="Super Admin" />
-            </div>
 
             {/* Desktop Navigation Tabs */}
             <Card className="hidden md:block p-3 shadow-large">
@@ -199,6 +195,11 @@ const Admin = () => {
             <p className="font-bold text-primary-foreground">Powered By Campus Protection Service</p>
           </footer>
         </main>
+        <MobileBottomNav
+          items={navItems}
+          activeView={activeView}
+          onViewChange={(view) => setActiveView(view as typeof activeView)}
+        />
       </div>
     </MasterSyncProvider>
   </CasesProvider>;
