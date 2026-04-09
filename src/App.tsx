@@ -96,7 +96,7 @@ const App = () => (
                   <Route path="*" element={<NotFound />} />
                 </Route>
               </Routes>
-            </Suspense>
+            </>
             <PWAInstallPrompt />
           </AuthProvider>
         </BrowserRouter>
