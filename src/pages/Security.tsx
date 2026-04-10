@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { motion } from 'framer-motion';
-import { Shield, LayoutDashboard, AlertCircle, Megaphone, MessageSquare, MapPin, Users, BarChart3, Settings } from 'lucide-react';
+import { Shield, LayoutDashboard, AlertCircle, Megaphone, MessageSquare, MapPin, Users, BarChart3, Settings, Wifi } from 'lucide-react';
 import tutLogo from '@/assets/tut-logo.png';
 import { CampusDashboard } from '@/components/admin/CampusDashboard';
 import { AdminIncidents } from '@/components/admin/AdminIncidents';
@@ -14,6 +14,7 @@ import { StaffCommunication } from '@/components/admin/StaffCommunication';
 import { RealTimeIncidents } from '@/components/admin/RealTimeIncidents';
 import { CampusAnalytics } from '@/components/admin/CampusAnalytics';
 import { OfficerSettings } from '@/components/admin/OfficerSettings';
+import { WifiAccessPointManager } from '@/components/admin/WifiAccessPointManager';
 import { MasterSyncProvider, useMasterSync } from '@/contexts/MasterSyncContext';
 import { CasesProvider } from '@/contexts/CasesContext';
 import { MasterSyncButton } from '@/components/admin/MasterSyncButton';
@@ -41,7 +42,7 @@ const Security = () => {
     userProfile,
     signOut
   } = useAuth();
-  const [activeView, setActiveView] = useState<'overview' | 'incidents' | 'announcements' | 'communication' | 'students' | 'analytics' | 'settings'>('overview');
+  const [activeView, setActiveView] = useState<'overview' | 'incidents' | 'announcements' | 'communication' | 'students' | 'analytics' | 'wifi' | 'settings'>('overview');
   const [campusStudentCount, setCampusStudentCount] = useState(0);
   const [campusIncidentCount, setCampusIncidentCount] = useState(0);
   const navItems = [{
@@ -68,6 +69,10 @@ const Security = () => {
     view: 'communication',
     icon: MessageSquare,
     label: 'Comms'
+  }, {
+    view: 'wifi',
+    icon: Wifi,
+    label: 'WiFi APs'
   }, {
     view: 'settings',
     icon: Settings,
@@ -237,6 +242,7 @@ const Security = () => {
             {activeView === 'students' && <CampusStudentsList campus={userProfile?.campus} />}
             {activeView === 'announcements' && <AdminAnnouncements />}
             {activeView === 'communication' && <StaffCommunication />}
+            {activeView === 'wifi' && <WifiAccessPointManager campusFilter={userProfile?.campus || undefined} />}
             {activeView === 'settings' && <OfficerSettings />}
           </motion.div>
 

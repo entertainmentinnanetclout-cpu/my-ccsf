@@ -964,6 +964,51 @@ export type Database = {
         }
         Relationships: []
       }
+      wifi_access_points: {
+        Row: {
+          band: string
+          campus: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          location: string
+          name: string
+          ssid: string
+          updated_at: string
+          x_position: number
+          y_position: number
+        }
+        Insert: {
+          band?: string
+          campus: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          location: string
+          name: string
+          ssid?: string
+          updated_at?: string
+          x_position?: number
+          y_position?: number
+        }
+        Update: {
+          band?: string
+          campus?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          location?: string
+          name?: string
+          ssid?: string
+          updated_at?: string
+          x_position?: number
+          y_position?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
