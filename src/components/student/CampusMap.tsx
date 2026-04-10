@@ -146,6 +146,7 @@ interface SpeedTestResult {
 export const CampusMap = () => {
   const { user } = useAuth();
   const [userCampus, setUserCampus] = useState<string>('pretoria_west_main');
+  const [wifiAccessPoints, setWifiAccessPoints] = useState(defaultWifiAccessPoints);
   const [speedTest, setSpeedTest] = useState<SpeedTestResult>({
     downloadSpeed: 0,
     latency: 0,
@@ -164,6 +165,23 @@ export const CampusMap = () => {
         
         if (data?.campus) {
           setUserCampus(data.campus);
+          // Fetch WiFi access points from DB
+          const { data: dbAPs } = await supabase
+            .from('wifi_access_points')
+            .select('*')
+            .eq('campus', data.campus)
+            .eq('is_active', true);
+          if (dbAPs && dbAPs.length > 0) {
+            setWifiAccessPoints(dbAPs.map(ap => ({
+              id: ap.id,
+              name: ap.name,
+              location: ap.location,
+              x_position: ap.x_position,
+              y_position: ap.y_position,
+              band: ap.band,
+              ssid: ap.ssid,
+            })));
+          }
         }
       }
     };
@@ -435,7 +453,7 @@ export const CampusMap = () => {
                 <motion.div
                   key={ap.id}
                   className="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer group"
-                  style={{ left: `${ap.x}%`, top: `${ap.y}%` }}
+                  style={{ left: `${ap.x_position}%`, top: `${ap.y_position}%` }}
                   whileHover={{ scale: 1.2 }}
                 >
                   {/* WiFi signal rings */}
