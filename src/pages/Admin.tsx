@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { motion } from 'framer-motion';
-import { Shield, LayoutDashboard, AlertCircle, Megaphone, MessageSquare, BarChart3, Images, Users, Siren, Building2 } from 'lucide-react';
+import { Shield, LayoutDashboard, AlertCircle, Megaphone, MessageSquare, BarChart3, Images, Users, Siren, Building2, Wifi } from 'lucide-react';
 import tutLogo from '@/assets/tut-logo.png';
 import { AdminOverview } from '@/components/admin/AdminOverview';
 import { AdminIncidents } from '@/components/admin/AdminIncidents';
@@ -21,10 +21,11 @@ import { MasterSyncProvider } from '@/contexts/MasterSyncContext';
 import { CasesProvider } from '@/contexts/CasesContext';
 import { MasterSyncButton } from '@/components/admin/MasterSyncButton';
 import { OfficeView } from '@/components/admin/OfficeView';
+import { WifiAccessPointManager } from '@/components/admin/WifiAccessPointManager';
 
 const Admin = () => {
   const navigate = useNavigate();
-  const [activeView, setActiveView] = useState<'overview' | 'incidents' | 'analytics' | 'announcements' | 'communication' | 'carousel' | 'admins' | 'escalation' | 'office'>('overview');
+  const [activeView, setActiveView] = useState<'overview' | 'incidents' | 'analytics' | 'announcements' | 'communication' | 'carousel' | 'admins' | 'escalation' | 'office' | 'wifi'>('overview');
   const navItems = [{
     view: 'overview',
     icon: LayoutDashboard,
@@ -57,6 +58,10 @@ const Admin = () => {
     view: 'admins',
     icon: Users,
     label: 'Admins'
+  }, {
+    view: 'wifi',
+    icon: Wifi,
+    label: 'WiFi APs'
   }, {
     view: 'office',
     icon: Building2,
@@ -187,6 +192,7 @@ const Admin = () => {
             {activeView === 'communication' && <StaffCommunication />}
             {activeView === 'carousel' && <CarouselManager />}
             {activeView === 'admins' && <CampusAdminManager />}
+            {activeView === 'wifi' && <WifiAccessPointManager />}
             {activeView === 'office' && <OfficeView />}
           </motion.div>
 
