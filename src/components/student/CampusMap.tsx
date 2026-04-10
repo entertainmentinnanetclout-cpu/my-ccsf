@@ -110,17 +110,17 @@ const campusData: Record<string, {
   },
 };
 
-const wifiAccessPoints = [
-  { id: 1, name: 'Library WiFi', location: 'Library Building', x: 45, y: 30, band: '5GHz', ssid: 'TUT-WiFi' },
-  { id: 2, name: 'Student Center WiFi', location: 'Student Center', x: 70, y: 20, band: '2.4GHz/5GHz', ssid: 'TUT-WiFi' },
-  { id: 3, name: 'Admin Block WiFi', location: 'Admin Building', x: 55, y: 45, band: '5GHz', ssid: 'TUT-WiFi' },
-  { id: 4, name: 'Main Gate WiFi', location: 'Main Entrance', x: 15, y: 15, band: '2.4GHz', ssid: 'TUT-WiFi' },
-  { id: 5, name: 'Sports Complex WiFi', location: 'Sports Complex', x: 80, y: 65, band: '2.4GHz', ssid: 'TUT-WiFi' },
-  { id: 6, name: 'Residence A WiFi', location: 'Residence Block A', x: 30, y: 75, band: '2.4GHz/5GHz', ssid: 'TUT-Res-WiFi' },
-  { id: 7, name: 'Residence B WiFi', location: 'Residence Block B', x: 50, y: 75, band: '5GHz', ssid: 'TUT-Res-WiFi' },
-  { id: 8, name: 'Engineering WiFi', location: 'Engineering Block', x: 65, y: 85, band: '5GHz', ssid: 'TUT-WiFi' },
-  { id: 9, name: 'Cafeteria WiFi', location: 'Cafeteria', x: 40, y: 55, band: '2.4GHz', ssid: 'TUT-WiFi' },
-  { id: 10, name: 'Lecture Hall WiFi', location: 'Lecture Hall Complex', x: 25, y: 40, band: '5GHz', ssid: 'TUT-WiFi' },
+const defaultWifiAccessPoints = [
+  { id: '1', name: 'Library WiFi', location: 'Library Building', x_position: 45, y_position: 30, band: '5GHz', ssid: 'TUT-WiFi' },
+  { id: '2', name: 'Student Center WiFi', location: 'Student Center', x_position: 70, y_position: 20, band: '2.4GHz/5GHz', ssid: 'TUT-WiFi' },
+  { id: '3', name: 'Admin Block WiFi', location: 'Admin Building', x_position: 55, y_position: 45, band: '5GHz', ssid: 'TUT-WiFi' },
+  { id: '4', name: 'Main Gate WiFi', location: 'Main Entrance', x_position: 15, y_position: 15, band: '2.4GHz', ssid: 'TUT-WiFi' },
+  { id: '5', name: 'Sports Complex WiFi', location: 'Sports Complex', x_position: 80, y_position: 65, band: '2.4GHz', ssid: 'TUT-WiFi' },
+  { id: '6', name: 'Residence A WiFi', location: 'Residence Block A', x_position: 30, y_position: 75, band: '2.4GHz/5GHz', ssid: 'TUT-Res-WiFi' },
+  { id: '7', name: 'Residence B WiFi', location: 'Residence Block B', x_position: 50, y_position: 75, band: '5GHz', ssid: 'TUT-Res-WiFi' },
+  { id: '8', name: 'Engineering WiFi', location: 'Engineering Block', x_position: 65, y_position: 85, band: '5GHz', ssid: 'TUT-WiFi' },
+  { id: '9', name: 'Cafeteria WiFi', location: 'Cafeteria', x_position: 40, y_position: 55, band: '2.4GHz', ssid: 'TUT-WiFi' },
+  { id: '10', name: 'Lecture Hall WiFi', location: 'Lecture Hall Complex', x_position: 25, y_position: 40, band: '5GHz', ssid: 'TUT-WiFi' },
 ];
 
 const landmarks = [
