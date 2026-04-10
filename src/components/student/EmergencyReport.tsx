@@ -169,7 +169,7 @@ export const EmergencyReport = () => {
       {/* Live tracking indicator */}
       {isTracking && (
         <motion.div
-          className="fixed bottom-24 right-6 z-40"
+          className="fixed bottom-36 md:bottom-24 right-4 sm:right-6 z-40"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
@@ -192,7 +192,7 @@ export const EmergencyReport = () => {
       )}
 
       <motion.div
-        className="fixed bottom-6 right-6 z-40"
+        className="fixed bottom-20 md:bottom-6 right-4 sm:right-6 z-40"
         initial={{ scale: 0 }}
         animate={{ scale: 1 }}
         transition={{ type: 'spring', stiffness: 260, damping: 20 }}
