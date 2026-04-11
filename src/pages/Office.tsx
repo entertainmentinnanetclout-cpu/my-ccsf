@@ -107,7 +107,7 @@ const Office = () => {
       case 'pending': return 'bg-warning/20 text-warning-foreground border-warning';
       case 'assigned': return 'bg-primary/20 text-primary border-primary';
       case 'rejected': return 'bg-destructive/20 text-destructive border-destructive';
-      case 'resolved': return 'bg-green-500/20 text-green-600 border-green-500';
+      case 'resolved': return 'bg-success/20 text-success border-success';
       default: return 'bg-muted text-muted-foreground border-muted';
     }
   };
@@ -195,7 +195,7 @@ const Office = () => {
             </Card>
             <Card className="p-6 shadow-large">
               <h3 className="text-sm text-muted-foreground">Resolved</h3>
-              <p className="text-3xl font-bold text-green-600">{stats.resolved}</p>
+              <p className="text-3xl font-bold text-success">{stats.resolved}</p>
             </Card>
           </motion.div>
         ) : (

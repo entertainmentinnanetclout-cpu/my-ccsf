@@ -27,16 +27,16 @@ export const AlertsPanel = () => {
               transition={{ delay: index * 0.1 }}
               className={`p-3 rounded-lg border ${
                 alert.type === 'warning' 
-                  ? 'bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-800' 
+                  ? 'bg-warning/5 border-warning/20 dark:bg-warning/10 dark:border-warning/30' 
                   : alert.type === 'success'
-                  ? 'bg-green-50 border-green-200 dark:bg-green-950/30 dark:border-green-800'
-                  : 'bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:border-blue-800'
+                  ? 'bg-success/5 border-success/20 dark:bg-success/10 dark:border-success/30'
+                  : 'bg-primary/5 border-primary/20 dark:bg-primary/10 dark:border-primary/30'
               }`}
             >
               <div className="flex items-start gap-2">
-                {alert.type === 'warning' && <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5" />}
-                {alert.type === 'success' && <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />}
-                {alert.type === 'info' && <Clock className="h-4 w-4 text-blue-500 mt-0.5" />}
+                {alert.type === 'warning' && <AlertTriangle className="h-4 w-4 text-warning mt-0.5" />}
+                {alert.type === 'success' && <CheckCircle className="h-4 w-4 text-success mt-0.5" />}
+                {alert.type === 'info' && <Clock className="h-4 w-4 text-primary mt-0.5" />}
                 <div className="flex-1">
                   <p className="text-sm font-medium">{alert.message}</p>
                   <p className="text-xs text-muted-foreground mt-1">{alert.time}</p>

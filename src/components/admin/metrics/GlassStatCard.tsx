@@ -50,11 +50,11 @@ const colorVariants = {
     text: 'text-danger',
   },
   info: {
-    bg: 'from-blue-500/20 via-blue-500/10 to-blue-500/5',
-    border: 'border-blue-500/30',
-    icon: 'bg-blue-500 text-white',
-    glow: 'shadow-[0_0_30px_-5px_rgba(59,130,246,0.4)]',
-    text: 'text-blue-500',
+    bg: 'from-primary/20 via-primary/10 to-primary/5',
+    border: 'border-primary/30',
+    icon: 'bg-primary text-primary-foreground',
+    glow: 'shadow-[0_0_30px_-5px_hsl(var(--primary)/0.4)]',
+    text: 'text-primary',
   },
 };
 

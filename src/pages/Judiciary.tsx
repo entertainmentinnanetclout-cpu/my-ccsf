@@ -83,7 +83,7 @@ const Judiciary = () => {
   const getUpdateTypeColor = (type: string) => {
     switch (type) {
       case 'hearing': return 'bg-primary/20 text-primary border-primary';
-      case 'resolution': return 'bg-green-500/20 text-green-600 border-green-500';
+      case 'resolution': return 'bg-success/20 text-success border-success';
       case 'escalation': return 'bg-destructive/20 text-destructive border-destructive';
       case 'note': return 'bg-muted text-muted-foreground border-muted';
       default: return 'bg-muted text-muted-foreground border-muted';

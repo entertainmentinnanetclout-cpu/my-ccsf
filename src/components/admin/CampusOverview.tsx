@@ -232,8 +232,8 @@ export const CampusOverview = () => {
                 </div>
 
                 <div className="p-3 space-y-2">
-                  <h3 
-                    className="font-bold text-sm text-destructive truncate animate-pulse" 
+                    <h3 
+                    className="font-bold text-sm text-foreground truncate" 
                     title={campus.fullName}
                   >
                     {campus.name}
@@ -244,12 +244,12 @@ export const CampusOverview = () => {
                       <p className="font-bold text-foreground">{metrics.total}</p>
                       <p className="text-muted-foreground text-[10px]">Total</p>
                     </div>
-                    <div className="text-center p-1 rounded bg-green-500/10">
-                      <p className="font-bold text-green-600">{metrics.resolved}</p>
+                    <div className="text-center p-1 rounded bg-success/10">
+                      <p className="font-bold text-success">{metrics.resolved}</p>
                       <p className="text-muted-foreground text-[10px]">Resolved</p>
                     </div>
-                    <div className="text-center p-1 rounded bg-amber-500/10">
-                      <p className="font-bold text-amber-600">{metrics.pending}</p>
+                    <div className="text-center p-1 rounded bg-warning/10">
+                      <p className="font-bold text-warning">{metrics.pending}</p>
                       <p className="text-muted-foreground text-[10px]">Pending</p>
                     </div>
                   </div>
@@ -266,9 +266,9 @@ export const CampusOverview = () => {
                   hasEmergencies 
                     ? 'bg-destructive animate-pulse' 
                     : hasPending 
-                      ? 'bg-amber-500' 
+                      ? 'bg-warning' 
                       : metrics.total > 0 
-                        ? 'bg-green-500' 
+                        ? 'bg-success' 
                         : 'bg-muted'
                 }`} />
               </motion.button>
@@ -350,13 +350,13 @@ export const CampusOverview = () => {
                   icon={CheckCircle} 
                   label="Resolved" 
                   value={selectedMetrics.resolved} 
-                  color="bg-green-500/10 text-green-600"
+                  color="bg-success/10 text-success"
                 />
                 <MetricCard 
                   icon={XCircle} 
                   label="Rejected" 
                   value={selectedMetrics.rejected} 
-                  color="bg-red-500/10 text-red-600"
+                  color="bg-destructive/10 text-destructive"
                 />
               </div>
 

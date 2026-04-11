@@ -70,9 +70,9 @@ interface EscalationRecord {
 }
 
 const PRIORITY_LEVELS = [
-  { value: 'normal', label: 'Normal', color: 'bg-slate-500' },
-  { value: 'urgent', label: 'Urgent', color: 'bg-orange-500' },
-  { value: 'critical', label: 'Critical', color: 'bg-red-500' }
+  { value: 'normal', label: 'Normal', color: 'bg-muted' },
+  { value: 'urgent', label: 'Urgent', color: 'bg-warning' },
+  { value: 'critical', label: 'Critical', color: 'bg-destructive' }
 ];
 
 const ESCALATABLE_CATEGORIES = [
@@ -270,7 +270,7 @@ export const CaseEscalation: React.FC = () => {
   const getPriorityBadge = (priority: string) => {
     const level = PRIORITY_LEVELS.find(p => p.value === priority);
     return (
-      <Badge className={`${level?.color || 'bg-slate-500'} text-white`}>
+      <Badge className={`${level?.color || 'bg-muted'} text-white`}>
         {level?.label || priority}
       </Badge>
     );
@@ -278,15 +278,15 @@ export const CaseEscalation: React.FC = () => {
 
   const getStatusBadge = (status: string) => {
     const colors: Record<string, string> = {
-      pending: 'bg-yellow-500',
-      submitted: 'bg-blue-500',
-      acknowledged: 'bg-purple-500',
-      in_progress: 'bg-orange-500',
-      resolved: 'bg-green-500',
-      rejected: 'bg-red-500'
+      pending: 'bg-warning',
+      submitted: 'bg-primary',
+      acknowledged: 'bg-accent',
+      in_progress: 'bg-warning',
+      resolved: 'bg-success',
+      rejected: 'bg-destructive'
     };
     return (
-      <Badge className={`${colors[status] || 'bg-slate-500'} text-white capitalize`}>
+      <Badge className={`${colors[status] || 'bg-muted'} text-white capitalize`}>
         {status.replace('_', ' ')}
       </Badge>
     );
@@ -328,7 +328,7 @@ export const CaseEscalation: React.FC = () => {
         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
           <Card className="border-2 border-dashed hover:border-primary/50 transition-colors">
             <CardContent className="p-4 flex items-center gap-4">
-              <div className="p-3 rounded-full bg-blue-500">
+              <div className="p-3 rounded-full bg-primary">
                 <Shield className="h-6 w-6 text-white" />
               </div>
               <div className="flex-1">
@@ -344,7 +344,7 @@ export const CaseEscalation: React.FC = () => {
         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}>
           <Card className="border-2 border-dashed hover:border-primary/50 transition-colors">
             <CardContent className="p-4 flex items-center gap-4">
-              <div className="p-3 rounded-full bg-green-500">
+              <div className="p-3 rounded-full bg-success">
                 <Building2 className="h-6 w-6 text-white" />
               </div>
               <div className="flex-1">
@@ -605,7 +605,7 @@ export const CaseEscalation: React.FC = () => {
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-full bg-blue-500">
+                    <div className="p-2 rounded-full bg-primary">
                       <Shield className="h-5 w-5 text-white" />
                     </div>
                     <div>
@@ -629,7 +629,7 @@ export const CaseEscalation: React.FC = () => {
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-full bg-green-500">
+                    <div className="p-2 rounded-full bg-success">
                       <Building2 className="h-5 w-5 text-white" />
                     </div>
                     <div>

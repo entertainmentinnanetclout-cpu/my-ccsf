@@ -24,7 +24,7 @@ export const CCTVStatus = () => {
             CCTV Status
           </span>
           <div className="flex items-center gap-4 text-sm">
-            <span className="flex items-center gap-1 text-green-600">
+            <span className="flex items-center gap-1 text-success">
               <Wifi className="h-4 w-4" /> {onlineCount} Online
             </span>
             <span className="flex items-center gap-1 text-destructive">
@@ -43,8 +43,8 @@ export const CCTVStatus = () => {
               transition={{ delay: index * 0.05 }}
               className={`p-3 rounded-lg border ${
                 camera.status === 'online'
-                  ? 'bg-green-50 border-green-200 dark:bg-green-950/30 dark:border-green-800'
-                  : 'bg-red-50 border-red-200 dark:bg-red-950/30 dark:border-red-800'
+                  ? 'bg-success/5 border-success/20 dark:bg-success/10 dark:border-success/30'
+                  : 'bg-destructive/5 border-destructive/20 dark:bg-destructive/10 dark:border-destructive/30'
               }`}
             >
               <div className="flex items-start justify-between">
@@ -53,7 +53,7 @@ export const CCTVStatus = () => {
                   <p className="text-xs text-muted-foreground">{camera.location}</p>
                 </div>
                 {camera.status === 'online' ? (
-                  <Video className="h-4 w-4 text-green-600" />
+                  <Video className="h-4 w-4 text-success" />
                 ) : (
                   <VideoOff className="h-4 w-4 text-destructive" />
                 )}

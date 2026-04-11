@@ -19,7 +19,7 @@ import type { Tables } from '@/integrations/supabase/types';
 
 type Incident = Tables<'incidents'>;
 
-const COLORS = ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+const COLORS = ['hsl(var(--success))', 'hsl(var(--primary))', 'hsl(var(--warning))', 'hsl(var(--destructive))', '#8b5cf6', '#ec4899'];
 const EMERGENCY_CATEGORIES = [
   'Rape', 'Sexual assault', 'Gbv', 'Murder', 'Attempted murder',
   'Armed robbery', 'Assault GBH', 'Public violence'
@@ -39,9 +39,9 @@ const campusDisplayNames: Record<string, string> = {
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  pending: 'bg-amber-500',
-  assigned: 'bg-blue-500',
-  resolved: 'bg-green-500',
+  pending: 'bg-warning',
+  assigned: 'bg-primary',
+  resolved: 'bg-success',
   rejected: 'bg-destructive'
 };
 
@@ -84,7 +84,7 @@ const InsightCard = ({ icon: Icon, title, value, subtitle, trend, trendValue, co
             </div>
             {trend && trendValue && (
               <div className={`flex items-center gap-1 text-xs font-medium ${
-                trend === 'up' ? 'text-red-500' : trend === 'down' ? 'text-green-500' : 'text-muted-foreground'
+                trend === 'up' ? 'text-destructive' : trend === 'down' ? 'text-success' : 'text-muted-foreground'
               }`}>
                 {trend === 'up' ? <ArrowUpRight className="h-3 w-3" /> : trend === 'down' ? <ArrowDownRight className="h-3 w-3" /> : null}
                 {trendValue}
@@ -204,10 +204,10 @@ export const CampusDashboard = () => {
 
   // Status distribution
   const statusData = useMemo(() => [
-    { name: 'Resolved', value: stats.resolved, color: '#22c55e' },
-    { name: 'Assigned', value: stats.assigned, color: '#3b82f6' },
-    { name: 'Pending', value: stats.pending, color: '#f59e0b' },
-    { name: 'Rejected', value: stats.rejected, color: '#ef4444' },
+    { name: 'Resolved', value: stats.resolved, color: 'hsl(var(--success))' },
+    { name: 'Assigned', value: stats.assigned, color: 'hsl(var(--primary))' },
+    { name: 'Pending', value: stats.pending, color: 'hsl(var(--warning))' },
+    { name: 'Rejected', value: stats.rejected, color: 'hsl(var(--destructive))' },
   ].filter(s => s.value > 0), [stats]);
 
   // Hourly pattern
@@ -347,7 +347,7 @@ export const CampusDashboard = () => {
           title="Pending Review"
           value={stats.pending}
           subtitle="Needs attention"
-          color="border-l-amber-500/50"
+          color="border-l-warning/50"
           delay={0.05}
           onClick={() => handleMetricClick('pending')}
           isActive={selectedMetric === 'pending'}
@@ -357,7 +357,7 @@ export const CampusDashboard = () => {
           title="Resolved"
           value={stats.resolved}
           subtitle={`${performanceMetrics.resolutionRate.toFixed(0)}% resolution rate`}
-          color="border-l-green-500/50"
+          color="border-l-success/50"
           delay={0.1}
           onClick={() => handleMetricClick('resolved')}
           isActive={selectedMetric === 'resolved'}
@@ -367,7 +367,7 @@ export const CampusDashboard = () => {
           title="Emergencies"
           value={stats.emergencies}
           subtitle="High priority cases"
-          color="border-l-red-500/50"
+          color="border-l-destructive/50"
           delay={0.15}
           onClick={() => handleMetricClick('emergencies')}
           isActive={selectedMetric === 'emergencies'}
@@ -377,7 +377,7 @@ export const CampusDashboard = () => {
           title="Avg Response"
           value={`${performanceMetrics.avgResponseTime.toFixed(1)}h`}
           subtitle="Time to resolution"
-          color="border-l-blue-500/50"
+          color="border-l-primary/50"
           delay={0.2}
         />
         <InsightCard
@@ -385,7 +385,7 @@ export const CampusDashboard = () => {
           title="Students"
           value={stats.students}
           subtitle="Registered on campus"
-          color="border-l-purple-500/50"
+          color="border-l-accent/50"
           delay={0.25}
           onClick={() => handleMetricClick('students')}
           isActive={selectedMetric === 'students'}
@@ -397,7 +397,7 @@ export const CampusDashboard = () => {
           subtitle={`${stats.lastWeek} last week`}
           trend={stats.thisWeek > stats.lastWeek ? 'up' : 'down'}
           trendValue={stats.thisWeek > stats.lastWeek ? 'Increased' : 'Decreased'}
-          color="border-l-cyan-500/50"
+          color="border-l-primary/50"
           delay={0.3}
         />
         <InsightCard
@@ -405,7 +405,7 @@ export const CampusDashboard = () => {
           title="Assigned"
           value={stats.assigned}
           subtitle="Currently investigating"
-          color="border-l-indigo-500/50"
+          color="border-l-primary/50"
           delay={0.35}
           onClick={() => handleMetricClick('assigned')}
           isActive={selectedMetric === 'assigned'}
@@ -456,7 +456,7 @@ export const CampusDashboard = () => {
                               />
                               <Bar dataKey="value" radius={[0, 4, 4, 0]}>
                                 {categoryData.map((entry, index) => (
-                                  <Cell key={`cell-${index}`} fill={entry.isEmergency ? '#ef4444' : COLORS[index % COLORS.length]} />
+                          <Cell key={`cell-${index}`} fill={entry.isEmergency ? 'hsl(var(--destructive))' : COLORS[index % COLORS.length]} />
                                 ))}
                               </Bar>
                             </BarChart>
@@ -631,8 +631,8 @@ export const CampusDashboard = () => {
                           <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
                         </linearGradient>
                         <linearGradient id="colorResolved" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3}/>
-                          <stop offset="95%" stopColor="#22c55e" stopOpacity={0}/>
+                          <stop offset="5%" stopColor="hsl(var(--success))" stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor="hsl(var(--success))" stopOpacity={0}/>
                         </linearGradient>
                       </defs>
                       <XAxis dataKey="day" tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
@@ -645,8 +645,8 @@ export const CampusDashboard = () => {
                         }} 
                       />
                       <Area type="monotone" dataKey="total" stroke="hsl(var(--primary))" fillOpacity={1} fill="url(#colorTotal)" name="Total" />
-                      <Area type="monotone" dataKey="resolved" stroke="#22c55e" fillOpacity={1} fill="url(#colorResolved)" name="Resolved" />
-                      <Line type="monotone" dataKey="emergency" stroke="#ef4444" strokeWidth={2} dot={{ fill: '#ef4444' }} name="Emergency" />
+                      <Area type="monotone" dataKey="resolved" stroke="hsl(var(--success))" fillOpacity={1} fill="url(#colorResolved)" name="Resolved" />
+                      <Line type="monotone" dataKey="emergency" stroke="hsl(var(--destructive))" strokeWidth={2} dot={{ fill: 'hsl(var(--destructive))' }} name="Emergency" />
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
@@ -724,7 +724,7 @@ export const CampusDashboard = () => {
                       />
                       <Bar dataKey="value" radius={[0, 4, 4, 0]}>
                         {categoryData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.isEmergency ? '#ef4444' : COLORS[index % COLORS.length]} />
+                          <Cell key={`cell-${index}`} fill={entry.isEmergency ? 'hsl(var(--destructive))' : COLORS[index % COLORS.length]} />
                         ))}
                       </Bar>
                     </BarChart>
