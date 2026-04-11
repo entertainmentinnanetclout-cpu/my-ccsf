@@ -17,22 +17,22 @@ export const MasterSyncButton = () => {
   const getConnectionIcon = () => {
     switch (connectionStatus) {
       case 'connected':
-        return <Wifi className="h-3 w-3 text-green-400" />;
+        return <Wifi className="h-3 w-3 text-success" />;
       case 'connecting':
-        return <Wifi className="h-3 w-3 text-yellow-400 animate-pulse" />;
+        return <Wifi className="h-3 w-3 text-warning animate-pulse" />;
       case 'disconnected':
-        return <WifiOff className="h-3 w-3 text-red-400" />;
+        return <WifiOff className="h-3 w-3 text-destructive" />;
     }
   };
 
   const getConnectionColor = () => {
     switch (connectionStatus) {
       case 'connected':
-        return 'bg-green-500/20 text-green-400 border-green-500/30';
+        return 'bg-success/20 text-success border-success/30';
       case 'connecting':
-        return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
+        return 'bg-warning/20 text-warning border-warning/30';
       case 'disconnected':
-        return 'bg-red-500/20 text-red-400 border-red-500/30';
+        return 'bg-destructive/20 text-destructive border-destructive/30';
     }
   };
 
