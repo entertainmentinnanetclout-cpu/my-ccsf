@@ -15,9 +15,9 @@ interface VirtualIncidentListProps {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  pending: 'bg-amber-500',
-  assigned: 'bg-blue-500',
-  resolved: 'bg-green-500',
+  pending: 'bg-warning',
+  assigned: 'bg-primary',
+  resolved: 'bg-success',
   rejected: 'bg-destructive'
 };
 

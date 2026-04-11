@@ -24,19 +24,19 @@ const actions = [
   {
     icon: MessageSquare,
     label: 'Message',
-    color: 'text-blue-500',
+    color: 'text-primary',
     action: () => toast.info('Navigate to Staff Communication'),
   },
   {
     icon: FileText,
     label: 'Report',
-    color: 'text-emerald-500',
+    color: 'text-success',
     action: () => toast.info('Generate Report'),
   },
   {
     icon: Download,
     label: 'Export',
-    color: 'text-orange-500',
+    color: 'text-warning',
     action: () => toast.info('Export Data'),
   },
 ];

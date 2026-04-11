@@ -136,9 +136,9 @@ const SplashScreen = ({ onComplete, minDuration = 4500 }: SplashScreenProps) => 
           className="absolute inset-0"
           style={{
             background: `
-              radial-gradient(ellipse 80% 50% at 50% 0%, rgba(220, 38, 38, 0.25) 0%, transparent 60%),
-              radial-gradient(ellipse 60% 40% at 100% 100%, rgba(153, 27, 27, 0.3) 0%, transparent 50%),
-              radial-gradient(ellipse 50% 30% at 0% 100%, rgba(185, 28, 28, 0.2) 0%, transparent 50%),
+              radial-gradient(ellipse 80% 50% at 50% 0%, rgba(0, 47, 108, 0.25) 0%, transparent 60%),
+              radial-gradient(ellipse 60% 40% at 100% 100%, rgba(0, 35, 80, 0.3) 0%, transparent 50%),
+              radial-gradient(ellipse 50% 30% at 0% 100%, rgba(0, 40, 90, 0.2) 0%, transparent 50%),
               linear-gradient(180deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.8) 100%)
             `,
           }}
@@ -156,8 +156,8 @@ const SplashScreen = ({ onComplete, minDuration = 4500 }: SplashScreenProps) => 
         <motion.div
           className="absolute left-0 right-0 h-[2px] pointer-events-none"
           style={{
-            background: 'linear-gradient(90deg, transparent, rgba(220, 38, 38, 0.5), transparent)',
-            boxShadow: '0 0 20px rgba(220, 38, 38, 0.3)',
+            background: 'linear-gradient(90deg, transparent, rgba(0, 47, 108, 0.5), transparent)',
+            boxShadow: '0 0 20px rgba(0, 47, 108, 0.3)',
           }}
           animate={{
             top: ['0%', '100%', '0%'],
@@ -197,11 +197,11 @@ const SplashScreen = ({ onComplete, minDuration = 4500 }: SplashScreenProps) => 
           transition={{ delay: 0.3 }}
         >
           <div className="w-24 h-24">
-            <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-red-500 to-transparent" />
-            <div className="absolute top-0 left-0 w-[2px] h-full bg-gradient-to-b from-red-500 to-transparent" />
+            <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-primary to-transparent" />
+            <div className="absolute top-0 left-0 w-[2px] h-full bg-gradient-to-b from-primary to-transparent" />
           </div>
           <div className="mt-2 ml-1">
-            <p className="text-[10px] font-mono text-red-400/80">CCSF_SECURE_v2.4</p>
+            <p className="text-[10px] font-mono text-primary/80">CCSF_SECURE_v2.4</p>
             <p className="text-[8px] font-mono text-neutral-500">SYSTEM ONLINE</p>
           </div>
         </motion.div>
@@ -214,8 +214,8 @@ const SplashScreen = ({ onComplete, minDuration = 4500 }: SplashScreenProps) => 
           transition={{ delay: 0.3 }}
         >
           <div className="w-24 h-24">
-            <div className="absolute top-0 right-0 w-full h-[2px] bg-gradient-to-l from-red-500 to-transparent" />
-            <div className="absolute top-0 right-0 w-[2px] h-full bg-gradient-to-b from-red-500 to-transparent" />
+            <div className="absolute top-0 right-0 w-full h-[2px] bg-gradient-to-l from-primary to-transparent" />
+            <div className="absolute top-0 right-0 w-[2px] h-full bg-gradient-to-b from-primary to-transparent" />
           </div>
           <div className="mt-2 mr-1 text-right">
             <motion.p 
@@ -239,8 +239,8 @@ const SplashScreen = ({ onComplete, minDuration = 4500 }: SplashScreenProps) => 
           transition={{ delay: 0.4 }}
         >
           <div className="w-24 h-24">
-            <div className="absolute bottom-0 left-0 w-full h-[2px] bg-gradient-to-r from-red-500 to-transparent" />
-            <div className="absolute bottom-0 left-0 w-[2px] h-full bg-gradient-to-t from-red-500 to-transparent" />
+            <div className="absolute bottom-0 left-0 w-full h-[2px] bg-gradient-to-r from-primary to-transparent" />
+            <div className="absolute bottom-0 left-0 w-[2px] h-full bg-gradient-to-t from-primary to-transparent" />
           </div>
         </motion.div>
 
@@ -251,8 +251,8 @@ const SplashScreen = ({ onComplete, minDuration = 4500 }: SplashScreenProps) => 
           transition={{ delay: 0.4 }}
         >
           <div className="w-24 h-24">
-            <div className="absolute bottom-0 right-0 w-full h-[2px] bg-gradient-to-l from-red-500 to-transparent" />
-            <div className="absolute bottom-0 right-0 w-[2px] h-full bg-gradient-to-t from-red-500 to-transparent" />
+            <div className="absolute bottom-0 right-0 w-full h-[2px] bg-gradient-to-l from-primary to-transparent" />
+            <div className="absolute bottom-0 right-0 w-[2px] h-full bg-gradient-to-t from-primary to-transparent" />
           </div>
         </motion.div>
       </div>
@@ -286,8 +286,8 @@ const SplashScreen = ({ onComplete, minDuration = 4500 }: SplashScreenProps) => 
         className="absolute inset-0 pointer-events-none opacity-[0.02]"
         style={{
           backgroundImage: `
-            linear-gradient(rgba(220, 38, 38, 0.5) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(220, 38, 38, 0.5) 1px, transparent 1px)
+            linear-gradient(rgba(0, 47, 108, 0.5) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(0, 47, 108, 0.5) 1px, transparent 1px)
           `,
           backgroundSize: '50px 50px',
         }}
@@ -315,7 +315,7 @@ const SplashScreen = ({ onComplete, minDuration = 4500 }: SplashScreenProps) => 
               ease: 'easeOut',
             }}
           >
-            <Icon className="h-7 w-7 text-red-500/60 drop-shadow-lg" />
+            <Icon className="h-7 w-7 text-primary/60 drop-shadow-lg" />
           </motion.div>
         ))}
 
@@ -324,7 +324,7 @@ const SplashScreen = ({ onComplete, minDuration = 4500 }: SplashScreenProps) => 
           className="absolute inset-0 -m-8"
           style={{
             borderRadius: '50%',
-            border: '2px solid rgba(220, 38, 38, 0.3)',
+            border: '2px solid rgba(0, 47, 108, 0.3)',
           }}
           animate={{
             scale: [1, 1.2, 1],
@@ -341,7 +341,7 @@ const SplashScreen = ({ onComplete, minDuration = 4500 }: SplashScreenProps) => 
           className="absolute inset-0 -m-12"
           style={{
             borderRadius: '50%',
-            border: '1px solid rgba(220, 38, 38, 0.2)',
+            border: '1px solid rgba(0, 47, 108, 0.2)',
           }}
           animate={{
             scale: [1.2, 1, 1.2],
@@ -368,7 +368,7 @@ const SplashScreen = ({ onComplete, minDuration = 4500 }: SplashScreenProps) => 
               key={i}
               className="absolute inset-0 rounded-full"
               style={{
-                border: '1px solid rgba(220, 38, 38, 0.3)',
+                border: '1px solid rgba(0, 47, 108, 0.3)',
                 borderRadius: '50%',
               }}
               initial={{ scale: 1, opacity: 0.6 }}
@@ -389,7 +389,7 @@ const SplashScreen = ({ onComplete, minDuration = 4500 }: SplashScreenProps) => 
           <motion.div
             className="absolute inset-0 rounded-full"
             style={{
-              background: 'radial-gradient(circle, rgba(220, 38, 38, 0.4) 0%, transparent 70%)',
+              background: 'radial-gradient(circle, rgba(0, 47, 108, 0.4) 0%, transparent 70%)',
               filter: 'blur(25px)',
             }}
             animate={{
@@ -409,16 +409,16 @@ const SplashScreen = ({ onComplete, minDuration = 4500 }: SplashScreenProps) => 
             alt="CCSF Logo"
             className="w-40 h-40 object-contain relative z-10"
             style={{
-              filter: 'drop-shadow(0 0 30px rgba(220, 38, 38, 0.6)) drop-shadow(0 0 60px rgba(220, 38, 38, 0.3))',
+              filter: 'drop-shadow(0 0 30px rgba(0, 47, 108, 0.6)) drop-shadow(0 0 60px rgba(0, 47, 108, 0.3))',
             }}
             animate={{
               scale: [1, 1.08, 1, 1.05, 1],
               filter: [
-                'drop-shadow(0 0 30px rgba(220, 38, 38, 0.6)) drop-shadow(0 0 60px rgba(220, 38, 38, 0.3))',
-                'drop-shadow(0 0 50px rgba(220, 38, 38, 0.9)) drop-shadow(0 0 80px rgba(220, 38, 38, 0.5))',
-                'drop-shadow(0 0 30px rgba(220, 38, 38, 0.6)) drop-shadow(0 0 60px rgba(220, 38, 38, 0.3))',
-                'drop-shadow(0 0 40px rgba(220, 38, 38, 0.7)) drop-shadow(0 0 70px rgba(220, 38, 38, 0.4))',
-                'drop-shadow(0 0 30px rgba(220, 38, 38, 0.6)) drop-shadow(0 0 60px rgba(220, 38, 38, 0.3))',
+                'drop-shadow(0 0 30px rgba(0, 47, 108, 0.6)) drop-shadow(0 0 60px rgba(0, 47, 108, 0.3))',
+                'drop-shadow(0 0 50px rgba(0, 47, 108, 0.9)) drop-shadow(0 0 80px rgba(0, 47, 108, 0.5))',
+                'drop-shadow(0 0 30px rgba(0, 47, 108, 0.6)) drop-shadow(0 0 60px rgba(0, 47, 108, 0.3))',
+                'drop-shadow(0 0 40px rgba(0, 47, 108, 0.7)) drop-shadow(0 0 70px rgba(0, 47, 108, 0.4))',
+                'drop-shadow(0 0 30px rgba(0, 47, 108, 0.6)) drop-shadow(0 0 60px rgba(0, 47, 108, 0.3))',
               ],
             }}
             transition={{
@@ -442,7 +442,7 @@ const SplashScreen = ({ onComplete, minDuration = 4500 }: SplashScreenProps) => 
         >
           {/* Glitch effect layers */}
           <motion.h1
-            className="text-5xl md:text-6xl font-bold tracking-tight absolute inset-0 text-red-500/20"
+            className="text-5xl md:text-6xl font-bold tracking-tight absolute inset-0 text-primary/20"
             animate={{
               x: [-2, 2, -2],
               opacity: [0.5, 0.3, 0.5],
@@ -489,11 +489,11 @@ const SplashScreen = ({ onComplete, minDuration = 4500 }: SplashScreenProps) => 
           animate={{ opacity: 1 }}
           transition={{ delay: 0.7 }}
         >
-          <div className="h-[1px] w-12 bg-gradient-to-r from-transparent to-red-500/50" />
+          <div className="h-[1px] w-12 bg-gradient-to-r from-transparent to-primary/50" />
           <p className="text-neutral-400 text-sm tracking-[0.2em] uppercase font-light">
             Campus Community Safety Forum
           </p>
-          <div className="h-[1px] w-12 bg-gradient-to-l from-transparent to-red-500/50" />
+          <div className="h-[1px] w-12 bg-gradient-to-l from-transparent to-primary/50" />
         </motion.div>
 
         <motion.p
@@ -523,8 +523,8 @@ const SplashScreen = ({ onComplete, minDuration = 4500 }: SplashScreenProps) => 
           <motion.div
             className="h-full rounded-full relative overflow-hidden"
             style={{
-              background: 'linear-gradient(90deg, #991b1b 0%, #dc2626 50%, #ef4444 100%)',
-              boxShadow: '0 0 20px rgba(220, 38, 38, 0.5)',
+              background: 'linear-gradient(90deg, #001a3d 0%, #002F6C 50%, #1A4FA3 100%)',
+              boxShadow: '0 0 20px rgba(0, 47, 108, 0.5)',
             }}
             initial={{ width: 0 }}
             animate={{ width: `${progress}%` }}
@@ -556,7 +556,7 @@ const SplashScreen = ({ onComplete, minDuration = 4500 }: SplashScreenProps) => 
           >
             Initializing security protocols...
           </motion.p>
-          <p className="text-red-400 text-xs font-mono font-bold">{Math.round(progress)}%</p>
+          <p className="text-primary text-xs font-mono font-bold">{Math.round(progress)}%</p>
         </div>
       </motion.div>
 

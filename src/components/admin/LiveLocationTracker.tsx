@@ -106,10 +106,10 @@ export const LiveLocationTracker = ({
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="flex items-center gap-2 p-2 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg"
+          className="flex items-center gap-2 p-2 bg-destructive/5 dark:bg-destructive/10 border border-destructive/20 dark:border-destructive/30 rounded-lg"
         >
-          <Radio className="h-4 w-4 text-red-600 animate-pulse" />
-          <span className="text-sm font-medium text-red-700 dark:text-red-300">
+          <Radio className="h-4 w-4 text-destructive animate-pulse" />
+          <span className="text-sm font-medium text-destructive dark:text-destructive">
             Live Location Tracking Active
           </span>
           <Badge variant="destructive" className="ml-auto text-xs">
@@ -155,8 +155,8 @@ export const LiveLocationTracker = ({
         )}
 
         {displayAddress ? (
-          <div className="p-3 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-md">
-            <p className="text-sm text-green-800 dark:text-green-300 flex items-start gap-2">
+          <div className="p-3 bg-success/5 dark:bg-success/10 border border-success/20 dark:border-success/30 rounded-md">
+            <p className="text-sm text-success dark:text-success flex items-start gap-2">
               <MapPin className="h-4 w-4 mt-0.5 shrink-0" />
               <span>{displayAddress}</span>
             </p>

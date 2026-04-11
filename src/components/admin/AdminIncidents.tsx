@@ -76,20 +76,20 @@ export const AdminIncidents = () => {
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
-      pending: 'border-l-amber-500 bg-amber-500/5',
-      assigned: 'border-l-blue-500 bg-blue-500/5',
-      resolved: 'border-l-emerald-500 bg-emerald-500/5',
-      rejected: 'border-l-red-500 bg-red-500/5'
+      pending: 'border-l-warning bg-warning/5',
+      assigned: 'border-l-primary bg-primary/5',
+      resolved: 'border-l-success bg-success/5',
+      rejected: 'border-l-destructive bg-destructive/5'
     };
     return colors[status] || '';
   };
 
   const getStatusBadge = (status: string) => {
     const styles: Record<string, string> = {
-      pending: 'bg-amber-500/10 text-amber-600 border-amber-500/30',
-      assigned: 'bg-blue-500/10 text-blue-600 border-blue-500/30',
-      resolved: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30',
-      rejected: 'bg-red-500/10 text-red-600 border-red-500/30'
+      pending: 'bg-warning/10 text-warning border-warning/30',
+      assigned: 'bg-primary/10 text-primary border-primary/30',
+      resolved: 'bg-success/10 text-success border-success/30',
+      rejected: 'bg-destructive/10 text-destructive border-destructive/30'
     };
     return (
       <Badge variant="outline" className={styles[status]}>
@@ -115,22 +115,22 @@ export const AdminIncidents = () => {
             <p className="text-2xl font-bold">{counts.total}</p>
           </CardContent>
         </Card>
-        <Card className="bg-amber-500/10 border-amber-500/30">
+        <Card className="bg-warning/10 border-warning/30">
           <CardContent className="p-4">
-            <p className="text-sm text-amber-600">Pending</p>
-            <p className="text-2xl font-bold text-amber-600">{counts.pending}</p>
+            <p className="text-sm text-warning">Pending</p>
+            <p className="text-2xl font-bold text-warning">{counts.pending}</p>
           </CardContent>
         </Card>
-        <Card className="bg-blue-500/10 border-blue-500/30">
+        <Card className="bg-primary/10 border-primary/30">
           <CardContent className="p-4">
-            <p className="text-sm text-blue-600">Assigned</p>
-            <p className="text-2xl font-bold text-blue-600">{counts.assigned}</p>
+            <p className="text-sm text-primary">Assigned</p>
+            <p className="text-2xl font-bold text-primary">{counts.assigned}</p>
           </CardContent>
         </Card>
-        <Card className="bg-emerald-500/10 border-emerald-500/30">
+        <Card className="bg-success/10 border-success/30">
           <CardContent className="p-4">
-            <p className="text-sm text-emerald-600">Resolved</p>
-            <p className="text-2xl font-bold text-emerald-600">{counts.resolved}</p>
+            <p className="text-sm text-success">Resolved</p>
+            <p className="text-2xl font-bold text-success">{counts.resolved}</p>
           </CardContent>
         </Card>
       </div>
@@ -189,13 +189,13 @@ export const AdminIncidents = () => {
                 >
                   <Card 
                     onClick={() => setSelectedIncidentId(incident.id)} 
-                    className={`cursor-pointer hover:shadow-lg transition-all border-l-4 ${getStatusColor(incident.status)} ${isEmergency ? 'ring-1 ring-red-500/30' : ''}`}
+                    className={`cursor-pointer hover:shadow-lg transition-all border-l-4 ${getStatusColor(incident.status)} ${isEmergency ? 'ring-1 ring-destructive/30' : ''}`}
                   >
                     <CardHeader className="pb-2">
                       <CardTitle className="flex items-center justify-between text-base">
                         <div className="flex items-center gap-2">
                           {isEmergency && (
-                            <AlertTriangle className="h-4 w-4 text-red-500 animate-pulse" />
+                            <AlertTriangle className="h-4 w-4 text-destructive animate-pulse" />
                           )}
                           <span className="line-clamp-1">{incident.title}</span>
                         </div>

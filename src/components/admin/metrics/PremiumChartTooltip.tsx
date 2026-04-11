@@ -61,7 +61,7 @@ export const StatusBadge = ({
 }) => {
   const colors = {
     pending: 'bg-warning/10 text-warning border-warning/30',
-    assigned: 'bg-blue-500/10 text-blue-500 border-blue-500/30',
+    assigned: 'bg-primary/10 text-primary border-primary/30',
     resolved: 'bg-success/10 text-success border-success/30',
     rejected: 'bg-danger/10 text-danger border-danger/30',
   };

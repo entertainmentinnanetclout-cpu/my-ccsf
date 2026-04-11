@@ -11,7 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { AnimatedCounter } from './AnimatedCounter';
 
-const COLORS = ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
+const COLORS = ['hsl(var(--success))', 'hsl(var(--primary))', 'hsl(var(--warning))', 'hsl(var(--destructive))', '#8b5cf6', '#ec4899', '#14b8a6', 'hsl(var(--accent))'];
 
 const EMERGENCY_CATEGORIES = [
   'Rape', 'Sexual assault', 'Gbv', 'Murder', 'Attempted murder',
@@ -136,17 +136,17 @@ export const CampusAnalytics = () => {
 
   // Status distribution
   const statusData = useMemo(() => [
-    { name: 'Resolved', value: stats.resolved, color: '#22c55e' },
-    { name: 'Assigned', value: stats.assigned, color: '#3b82f6' },
-    { name: 'Pending', value: stats.pending, color: '#f59e0b' },
-    { name: 'Rejected', value: stats.rejected, color: '#ef4444' }
+    { name: 'Resolved', value: stats.resolved, color: 'hsl(var(--success))' },
+    { name: 'Assigned', value: stats.assigned, color: 'hsl(var(--primary))' },
+    { name: 'Pending', value: stats.pending, color: 'hsl(var(--warning))' },
+    { name: 'Rejected', value: stats.rejected, color: 'hsl(var(--destructive))' }
   ].filter(s => s.value > 0), [stats]);
 
   // Response time distribution
   const responseTimeData = useMemo(() => [
-    { name: '<24h', value: performanceMetrics.fastResponses, color: '#22c55e' },
-    { name: '24-72h', value: performanceMetrics.mediumResponses, color: '#f59e0b' },
-    { name: '>72h', value: performanceMetrics.slowResponses, color: '#ef4444' },
+    { name: '<24h', value: performanceMetrics.fastResponses, color: 'hsl(var(--success))' },
+    { name: '24-72h', value: performanceMetrics.mediumResponses, color: 'hsl(var(--warning))' },
+    { name: '>72h', value: performanceMetrics.slowResponses, color: 'hsl(var(--destructive))' },
   ].filter(s => s.value > 0), [performanceMetrics]);
 
   // Hourly heatmap
@@ -159,7 +159,7 @@ export const CampusAnalytics = () => {
     return hours.map(h => ({ 
       hour: `${h.hour.toString().padStart(2, '0')}:00`, 
       incidents: h.count,
-      fill: h.count > 5 ? '#ef4444' : h.count > 2 ? '#f59e0b' : 'hsl(var(--primary))'
+      fill: h.count > 5 ? 'hsl(var(--destructive))' : h.count > 2 ? 'hsl(var(--warning))' : 'hsl(var(--primary))'
     }));
   }, [incidents]);
 
@@ -235,45 +235,45 @@ export const CampusAnalytics = () => {
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
-          <Card className="border-amber-500/30 bg-amber-500/5">
+          <Card className="border-warning/30 bg-warning/5">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-amber-600 uppercase tracking-wide">Pending</p>
-                  <p className="text-2xl font-bold text-amber-600"><AnimatedCounter to={stats.pending} /></p>
+                  <p className="text-xs text-warning uppercase tracking-wide">Pending</p>
+                  <p className="text-2xl font-bold text-warning"><AnimatedCounter to={stats.pending} /></p>
                   <p className="text-xs text-muted-foreground">Needs review</p>
                 </div>
-                <Clock className="h-8 w-8 text-amber-500/50" />
+                <Clock className="h-8 w-8 text-warning/50" />
               </div>
             </CardContent>
           </Card>
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-          <Card className="border-emerald-500/30 bg-emerald-500/5">
+          <Card className="border-success/30 bg-success/5">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-emerald-600 uppercase tracking-wide">Resolution</p>
-                  <p className="text-2xl font-bold text-emerald-600">{performanceMetrics.resolutionRate.toFixed(0)}%</p>
+                  <p className="text-xs text-success uppercase tracking-wide">Resolution</p>
+                  <p className="text-2xl font-bold text-success">{performanceMetrics.resolutionRate.toFixed(0)}%</p>
                   <p className="text-xs text-muted-foreground">{stats.resolved} resolved</p>
                 </div>
-                <CheckCircle className="h-8 w-8 text-emerald-500/50" />
+                <CheckCircle className="h-8 w-8 text-success/50" />
               </div>
             </CardContent>
           </Card>
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
-          <Card className="border-red-500/30 bg-red-500/5">
+          <Card className="border-destructive/30 bg-destructive/5">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-red-600 uppercase tracking-wide">Emergencies</p>
-                  <p className="text-2xl font-bold text-red-600"><AnimatedCounter to={stats.emergencies} /></p>
+                  <p className="text-xs text-destructive uppercase tracking-wide">Emergencies</p>
+                  <p className="text-2xl font-bold text-destructive"><AnimatedCounter to={stats.emergencies} /></p>
                   <p className="text-xs text-muted-foreground">High priority</p>
                 </div>
-                <AlertTriangle className="h-8 w-8 text-red-500/50" />
+                <AlertTriangle className="h-8 w-8 text-destructive/50" />
               </div>
             </CardContent>
           </Card>
@@ -295,17 +295,17 @@ export const CampusAnalytics = () => {
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
-          <Card className={stats.weeklyTrend > 0 ? 'border-red-500/30 bg-red-500/5' : 'border-green-500/30 bg-green-500/5'}>
+          <Card className={stats.weeklyTrend > 0 ? 'border-destructive/30 bg-destructive/5' : 'border-success/30 bg-success/5'}>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs text-muted-foreground uppercase tracking-wide">Weekly Trend</p>
-                  <p className={`text-2xl font-bold ${stats.weeklyTrend > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                  <p className={`text-2xl font-bold ${stats.weeklyTrend > 0 ? 'text-destructive' : 'text-success'}`}>
                     {stats.weeklyTrend > 0 ? '+' : ''}{stats.weeklyTrend}
                   </p>
                   <p className="text-xs text-muted-foreground">vs last week</p>
                 </div>
-                <TrendingUp className={`h-8 w-8 ${stats.weeklyTrend > 0 ? 'text-red-500/50' : 'text-green-500/50'}`} />
+                <TrendingUp className={`h-8 w-8 ${stats.weeklyTrend > 0 ? 'text-destructive/50' : 'text-success/50'}`} />
               </div>
             </CardContent>
           </Card>
@@ -344,8 +344,8 @@ export const CampusAnalytics = () => {
                   />
                   <Legend />
                   <Area type="monotone" dataKey="total" stroke="hsl(var(--primary))" fill="url(#colorTotal2)" name="Total Cases" />
-                  <Line type="monotone" dataKey="resolved" stroke="#22c55e" strokeWidth={2} dot={{ fill: '#22c55e', r: 3 }} name="Resolved" />
-                  <Line type="monotone" dataKey="emergency" stroke="#ef4444" strokeWidth={2} dot={{ fill: '#ef4444', r: 3 }} name="Emergencies" />
+                  <Line type="monotone" dataKey="resolved" stroke="hsl(var(--success))" strokeWidth={2} dot={{ fill: 'hsl(var(--success))', r: 3 }} name="Resolved" />
+                  <Line type="monotone" dataKey="emergency" stroke="hsl(var(--destructive))" strokeWidth={2} dot={{ fill: 'hsl(var(--destructive))', r: 3 }} name="Emergencies" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -436,7 +436,7 @@ export const CampusAnalytics = () => {
                   />
                   <Bar dataKey="value" radius={[0, 4, 4, 0]}>
                     {categoryData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.isEmergency ? '#ef4444' : COLORS[index % COLORS.length]} />
+                      <Cell key={`cell-${index}`} fill={entry.isEmergency ? 'hsl(var(--destructive))' : COLORS[index % COLORS.length]} />
                     ))}
                   </Bar>
                 </BarChart>

@@ -26,7 +26,7 @@ const mockSummaryData = {
   ],
 };
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#AF19FF'];
+const COLORS = ['hsl(var(--primary))', 'hsl(var(--success))', 'hsl(var(--warning))', 'hsl(var(--destructive))', '#8b5cf6'];
 
 export const TrafficSummary = () => {
   const [activeTab, setActiveTab] = useState('Summary');
@@ -75,7 +75,7 @@ export const TrafficSummary = () => {
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <CardTitle className="text-sm font-medium">Pending</CardTitle>
-                    <Clock className="h-4 w-4 text-amber-500" />
+                    <Clock className="h-4 w-4 text-warning" />
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold"><AnimatedCounter to={mockSummaryData.totals.pending} /></div>
@@ -84,7 +84,7 @@ export const TrafficSummary = () => {
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <CardTitle className="text-sm font-medium">Assigned</CardTitle>
-                    <AlertCircle className="h-4 w-4 text-blue-500" />
+                    <AlertCircle className="h-4 w-4 text-primary" />
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold"><AnimatedCounter to={mockSummaryData.totals.assigned} /></div>
@@ -93,7 +93,7 @@ export const TrafficSummary = () => {
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <CardTitle className="text-sm font-medium">Resolved</CardTitle>
-                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <CheckCircle className="h-4 w-4 text-success" />
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold"><AnimatedCounter to={mockSummaryData.totals.resolved} /></div>

@@ -34,10 +34,10 @@ interface CaseUpdate {
 }
 
 const statusConfig: Record<string, { color: string; icon: React.ReactNode; label: string; bgColor: string }> = {
-  pending: { color: 'bg-yellow-500/20 text-yellow-600 border-yellow-500/30', bgColor: '#eab308', icon: <Clock className="h-3 w-3" />, label: 'Pending Review' },
-  assigned: { color: 'bg-blue-500/20 text-blue-600 border-blue-500/30', bgColor: '#3b82f6', icon: <User className="h-3 w-3" />, label: 'Assigned' },
-  resolved: { color: 'bg-green-500/20 text-green-600 border-green-500/30', bgColor: '#22c55e', icon: <CheckCircle className="h-3 w-3" />, label: 'Resolved' },
-  rejected: { color: 'bg-red-500/20 text-red-600 border-red-500/30', bgColor: '#ef4444', icon: <AlertCircle className="h-3 w-3" />, label: 'Rejected' },
+  pending: { color: 'bg-warning/20 text-warning border-warning/30', bgColor: 'hsl(var(--warning))', icon: <Clock className="h-3 w-3" />, label: 'Pending Review' },
+  assigned: { color: 'bg-primary/20 text-primary border-primary/30', bgColor: 'hsl(var(--primary))', icon: <User className="h-3 w-3" />, label: 'Assigned' },
+  resolved: { color: 'bg-success/20 text-success border-success/30', bgColor: 'hsl(var(--success))', icon: <CheckCircle className="h-3 w-3" />, label: 'Resolved' },
+  rejected: { color: 'bg-destructive/20 text-destructive border-destructive/30', bgColor: 'hsl(var(--destructive))', icon: <AlertCircle className="h-3 w-3" />, label: 'Rejected' },
 };
 
 export const MyCaseReports = () => {

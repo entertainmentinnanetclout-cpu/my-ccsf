@@ -209,10 +209,10 @@ export const IncidentDetailsModal = ({ incidentId, isOpen, onClose }: IncidentDe
       rejected: 'destructive'
     };
     const colors: Record<string, string> = {
-      pending: 'bg-amber-500/10 text-amber-600 border-amber-500/30',
-      assigned: 'bg-blue-500/10 text-blue-600 border-blue-500/30',
-      resolved: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30',
-      rejected: 'bg-red-500/10 text-red-600 border-red-500/30'
+      pending: 'bg-warning/10 text-warning border-warning/30',
+      assigned: 'bg-primary/10 text-primary border-primary/30',
+      resolved: 'bg-success/10 text-success border-success/30',
+      rejected: 'bg-destructive/10 text-destructive border-destructive/30'
     };
     return (
       <Badge variant={variants[status] || 'default'} className={colors[status]}>
@@ -456,7 +456,7 @@ export const IncidentDetailsModal = ({ incidentId, isOpen, onClose }: IncidentDe
               <Button 
                 onClick={handleResolve}
                 disabled={isUpdating}
-                className="bg-emerald-600 hover:bg-emerald-700"
+                className="bg-success hover:bg-success/90"
               >
                 Mark Resolved
               </Button>

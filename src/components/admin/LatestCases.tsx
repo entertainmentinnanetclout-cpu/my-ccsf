@@ -26,10 +26,10 @@ const campusDisplayNames: Record<string, string> = {
 };
 
 const statusColors: Record<string, string> = {
-  pending: 'bg-amber-500/20 text-amber-600 border-amber-500/30',
-  assigned: 'bg-blue-500/20 text-blue-600 border-blue-500/30',
-  resolved: 'bg-green-500/20 text-green-600 border-green-500/30',
-  rejected: 'bg-red-500/20 text-red-600 border-red-500/30',
+  pending: 'bg-warning/20 text-warning border-warning/30',
+  assigned: 'bg-primary/20 text-primary border-primary/30',
+  resolved: 'bg-success/20 text-success border-success/30',
+  rejected: 'bg-destructive/20 text-destructive border-destructive/30',
 };
 
 export const LatestCases = () => {
