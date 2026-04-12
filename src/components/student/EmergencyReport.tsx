@@ -251,13 +251,13 @@ export const EmergencyReport = () => {
             </div>
 
             {/* Live tracking info */}
-            <div className="p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg flex items-start gap-3">
-              <Radio className="h-5 w-5 text-blue-600 mt-0.5" />
+            <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg flex items-start gap-3">
+              <Radio className="h-5 w-5 text-primary mt-0.5" />
               <div>
-                <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                <p className="text-sm font-medium text-foreground">
                   Live Location Tracking
                 </p>
-                <p className="text-xs text-blue-700 dark:text-blue-300">
+                <p className="text-xs text-muted-foreground">
                   Your location will be updated every 30 seconds until the case is resolved. You can stop tracking at any time.
                 </p>
               </div>
@@ -265,22 +265,22 @@ export const EmergencyReport = () => {
 
             {/* Current location preview */}
             {currentAddress && (
-              <div className="p-3 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg">
-                <p className="text-xs font-medium text-green-700 dark:text-green-400 mb-1">
+              <div className="p-3 bg-success/10 border border-success/20 rounded-lg">
+                <p className="text-xs font-medium text-success mb-1">
                   📍 Your Location:
                 </p>
-                <p className="text-sm text-green-800 dark:text-green-300">
+                <p className="text-sm text-foreground">
                   {currentAddress}
                 </p>
               </div>
             )}
 
             {/* Consent Declaration */}
-            <div className="p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg space-y-3">
-              <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+            <div className="p-4 bg-warning/10 border border-warning/20 rounded-lg space-y-3">
+              <p className="text-sm font-medium text-foreground">
                 ⚠️ Emergency Declaration
               </p>
-              <p className="text-xs text-amber-700 dark:text-amber-300">
+              <p className="text-xs text-muted-foreground">
                 By sending this alert, I confirm that this is a genuine emergency requiring immediate assistance. 
                 I understand that misuse of the emergency system may result in disciplinary action.
               </p>
@@ -290,7 +290,7 @@ export const EmergencyReport = () => {
                   checked={consentAgreed}
                   onCheckedChange={(checked) => setConsentAgreed(checked === true)}
                 />
-                <label htmlFor="emergency-consent" className="text-sm cursor-pointer text-amber-900 dark:text-amber-100 font-medium">
+                <label htmlFor="emergency-consent" className="text-sm cursor-pointer text-foreground font-medium">
                   I confirm this is a genuine emergency
                 </label>
               </div>

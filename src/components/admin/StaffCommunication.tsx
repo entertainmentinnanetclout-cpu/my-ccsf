@@ -1009,7 +1009,7 @@ export const StaffCommunication = () => {
                                   <span className="text-xs">{formatTime(msg.created_at)}</span>
                                   {isMe && (
                                     msg.is_read ? (
-                                      <CheckCheck className="h-3.5 w-3.5 text-blue-400" />
+                                      <CheckCheck className="h-3.5 w-3.5 text-primary" />
                                     ) : (
                                       <Check className="h-3.5 w-3.5" />
                                     )

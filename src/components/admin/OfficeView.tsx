@@ -120,7 +120,7 @@ export const OfficeView = () => {
       case 'pending': return 'bg-warning/20 text-warning-foreground border-warning';
       case 'assigned': return 'bg-primary/20 text-primary border-primary';
       case 'rejected': return 'bg-destructive/20 text-destructive border-destructive';
-      case 'resolved': return 'bg-green-500/20 text-green-600 border-green-500';
+      case 'resolved': return 'bg-success/20 text-success border-success';
       default: return 'bg-muted text-muted-foreground border-muted';
     }
   };
@@ -179,7 +179,7 @@ export const OfficeView = () => {
             </Card>
             <Card className="p-6 shadow-large">
               <h3 className="text-sm text-muted-foreground">Resolved</h3>
-              <p className="text-3xl font-bold text-green-600">{getStats(incidents).resolved}</p>
+              <p className="text-3xl font-bold text-success">{getStats(incidents).resolved}</p>
             </Card>
           </div>
 
@@ -207,7 +207,7 @@ export const OfficeView = () => {
                       <p className="text-muted-foreground">Active</p>
                     </div>
                     <div>
-                      <p className="text-lg font-bold text-green-600">{campusStats.resolved}</p>
+                      <p className="text-lg font-bold text-success">{campusStats.resolved}</p>
                       <p className="text-muted-foreground">Resolved</p>
                     </div>
                   </div>
@@ -262,7 +262,7 @@ export const OfficeView = () => {
             <Badge variant="outline" className="text-sm">Total: {stats.total}</Badge>
             <Badge variant="outline" className="text-sm bg-warning/10">Pending: {stats.pending}</Badge>
             <Badge variant="outline" className="text-sm bg-primary/10">Active: {stats.investigating}</Badge>
-            <Badge variant="outline" className="text-sm bg-green-500/10">Resolved: {stats.resolved}</Badge>
+            <Badge variant="outline" className="text-sm bg-success/10">Resolved: {stats.resolved}</Badge>
           </div>
 
           {/* Reports List */}

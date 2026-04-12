@@ -20,7 +20,7 @@ const generateCaseNumber = () => `Ref#${Math.floor(1000 + Math.random() * 9000)}
 const QUICK_ACTIONS = [
   { label: 'Emergency Help', icon: AlertTriangle, color: 'text-destructive' },
   { label: 'Check Status', icon: Info, color: 'text-primary' },
-  { label: 'Contact Security', icon: Phone, color: 'text-green-600' },
+  { label: 'Contact Security', icon: Phone, color: 'text-success' },
 ];
 
 export const StudentChat = () => {
@@ -110,7 +110,7 @@ export const StudentChat = () => {
             <Badge variant="secondary" className="text-xs bg-white/20 text-white border-0">AI Assistant</Badge>
           </h3>
           <p className="text-white/70 text-sm flex items-center gap-1">
-            <span className="h-2 w-2 bg-green-400 rounded-full animate-pulse" />
+            <span className="h-2 w-2 bg-success rounded-full animate-pulse" />
             Always Available
           </p>
         </div>

@@ -156,7 +156,7 @@ export const WifiAccessPointManager = ({ campusFilter }: { campusFilter?: string
           {accessPoints.map((ap) => (
             <div key={ap.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50 gap-2">
               <div className="flex items-center gap-3 min-w-0">
-                <Wifi className={`h-4 w-4 shrink-0 ${ap.is_active ? 'text-green-500' : 'text-muted-foreground'}`} />
+                <Wifi className={`h-4 w-4 shrink-0 ${ap.is_active ? 'text-success' : 'text-muted-foreground'}`} />
                 <div className="min-w-0">
                   <p className="text-sm font-medium truncate">{ap.name}</p>
                   <p className="text-xs text-muted-foreground truncate">{ap.location} · {ap.ssid} · {ap.band}</p>

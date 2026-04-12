@@ -177,8 +177,8 @@ const Profile = () => {
   }, [formData]);
 
   const getCompletionColor = () => {
-    if (profileCompletion >= 80) return 'text-green-500';
-    if (profileCompletion >= 50) return 'text-yellow-500';
+    if (profileCompletion >= 80) return 'text-success';
+    if (profileCompletion >= 50) return 'text-warning';
     return 'text-destructive';
   };
 
@@ -249,7 +249,7 @@ const Profile = () => {
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-3">
                 {profileCompletion === 100 ? (
-                  <CheckCircle2 className="h-6 w-6 text-green-500" />
+                  <CheckCircle2 className="h-6 w-6 text-success" />
                 ) : (
                   <AlertCircle className={`h-6 w-6 ${getCompletionColor()}`} />
                 )}

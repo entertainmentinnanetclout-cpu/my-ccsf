@@ -231,17 +231,17 @@ export const CampusMap = () => {
   }, []);
 
   const getSpeedLabel = (speed: number) => {
-    if (speed >= 10) return { label: 'Excellent', color: 'text-green-600 dark:text-green-400' };
-    if (speed >= 5) return { label: 'Good', color: 'text-blue-600 dark:text-blue-400' };
-    if (speed >= 1) return { label: 'Fair', color: 'text-amber-600 dark:text-amber-400' };
-    return { label: 'Poor', color: 'text-red-600 dark:text-red-400' };
+    if (speed >= 10) return { label: 'Excellent', color: 'text-success' };
+    if (speed >= 5) return { label: 'Good', color: 'text-primary' };
+    if (speed >= 1) return { label: 'Fair', color: 'text-warning' };
+    return { label: 'Poor', color: 'text-destructive' };
   };
 
   const getSpeedIcon = (speed: number) => {
-    if (speed >= 10) return <SignalHigh className="h-5 w-5 text-green-500" />;
-    if (speed >= 5) return <SignalMedium className="h-5 w-5 text-blue-500" />;
-    if (speed >= 1) return <SignalLow className="h-5 w-5 text-amber-500" />;
-    return <Signal className="h-5 w-5 text-red-500" />;
+    if (speed >= 10) return <SignalHigh className="h-5 w-5 text-success" />;
+    if (speed >= 5) return <SignalMedium className="h-5 w-5 text-primary" />;
+    if (speed >= 1) return <SignalLow className="h-5 w-5 text-warning" />;
+    return <Signal className="h-5 w-5 text-destructive" />;
   };
 
   const campus = campusData[userCampus] || campusData.pretoria_west_main;
@@ -282,10 +282,10 @@ export const CampusMap = () => {
                   24/7 security monitoring with CCTV coverage across all campus facilities.
                 </p>
                 <div className="flex gap-2 flex-wrap">
-                  <span className="inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs font-medium bg-green-500/10 text-green-700 dark:text-green-400">
+                  <span className="inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs font-medium bg-success/10 text-success">
                     CCTV Active
                   </span>
-                  <span className="inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs font-medium bg-blue-500/10 text-blue-700 dark:text-blue-400">
+                  <span className="inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
                     Security Patrols
                   </span>
                 </div>
@@ -366,7 +366,7 @@ export const CampusMap = () => {
                 </div>
                 <p className="text-2xl font-bold">{speedTest.latency}</p>
                 <p className="text-xs text-muted-foreground">ms Latency</p>
-                <Badge variant="outline" className={`mt-1 text-xs ${speedTest.latency < 50 ? 'text-green-600 dark:text-green-400' : speedTest.latency < 100 ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400'}`}>
+                <Badge variant="outline" className={`mt-1 text-xs ${speedTest.latency < 50 ? 'text-success' : speedTest.latency < 100 ? 'text-warning' : 'text-destructive'}`}>
                   {speedTest.latency < 50 ? 'Low' : speedTest.latency < 100 ? 'Medium' : 'High'}
                 </Badge>
               </div>
@@ -398,11 +398,11 @@ export const CampusMap = () => {
             </div>
             <div className="flex items-center gap-3 text-xs sm:text-sm">
               <span className="flex items-center gap-1">
-                <span className="h-2 w-2 sm:h-3 sm:w-3 rounded-full bg-green-500 animate-pulse" />
+                <span className="h-2 w-2 sm:h-3 sm:w-3 rounded-full bg-success animate-pulse" />
                 5GHz
               </span>
               <span className="flex items-center gap-1">
-                <span className="h-2 w-2 sm:h-3 sm:w-3 rounded-full bg-blue-500 animate-pulse" />
+                <span className="h-2 w-2 sm:h-3 sm:w-3 rounded-full bg-primary animate-pulse" />
                 2.4GHz
               </span>
               <span className="flex items-center gap-1">
@@ -417,7 +417,7 @@ export const CampusMap = () => {
               <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
                 <defs>
                   <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-                    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="currentColor" strokeWidth="0.5" className="text-blue-500"/>
+                    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="currentColor" strokeWidth="0.5" className="text-primary"/>
                   </pattern>
                 </defs>
                 <rect width="100%" height="100%" fill="url(#grid)" />
@@ -447,7 +447,7 @@ export const CampusMap = () => {
             {wifiAccessPoints.map((ap) => {
               const isDual = ap.band.includes('/');
               const is5GHz = ap.band === '5GHz';
-              const dotColor = isDual ? 'bg-purple-500' : is5GHz ? 'bg-green-500' : 'bg-blue-500';
+              const dotColor = isDual ? 'bg-purple-500' : is5GHz ? 'bg-success' : 'bg-primary';
 
               return (
                 <motion.div
@@ -472,7 +472,7 @@ export const CampusMap = () => {
                       <p className="text-xs sm:text-sm font-semibold">{ap.name}</p>
                       <p className="text-[10px] sm:text-xs text-muted-foreground">{ap.location}</p>
                       <div className="flex items-center gap-1 mt-1">
-                        <Wifi className={`h-2.5 w-2.5 sm:h-3 sm:w-3 ${isDual ? 'text-purple-500' : is5GHz ? 'text-green-500' : 'text-blue-500'}`} />
+                        <Wifi className={`h-2.5 w-2.5 sm:h-3 sm:w-3 ${isDual ? 'text-purple-500' : is5GHz ? 'text-success' : 'text-primary'}`} />
                         <span className="text-[10px] sm:text-xs">{ap.band}</span>
                       </div>
                       <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">SSID: {ap.ssid}</p>
@@ -498,11 +498,11 @@ export const CampusMap = () => {
                   <span className="text-[10px] sm:text-xs">Residences</span>
                 </div>
                 <div className="flex items-center gap-1.5 sm:gap-2">
-                  <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-green-500" />
+                  <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-success" />
                   <span className="text-[10px] sm:text-xs">5GHz WiFi</span>
                 </div>
                 <div className="flex items-center gap-1.5 sm:gap-2">
-                  <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-blue-500" />
+                  <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-primary" />
                   <span className="text-[10px] sm:text-xs">2.4GHz WiFi</span>
                 </div>
                 <div className="flex items-center gap-1.5 sm:gap-2">
