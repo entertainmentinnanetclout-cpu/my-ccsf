@@ -179,7 +179,7 @@ export const OfficeView = () => {
             </Card>
             <Card className="p-6 shadow-large">
               <h3 className="text-sm text-muted-foreground">Resolved</h3>
-              <p className="text-3xl font-bold text-green-600">{getStats(incidents).resolved}</p>
+              <p className="text-3xl font-bold text-success">{getStats(incidents).resolved}</p>
             </Card>
           </div>
 
@@ -207,7 +207,7 @@ export const OfficeView = () => {
                       <p className="text-muted-foreground">Active</p>
                     </div>
                     <div>
-                      <p className="text-lg font-bold text-green-600">{campusStats.resolved}</p>
+                      <p className="text-lg font-bold text-success">{campusStats.resolved}</p>
                       <p className="text-muted-foreground">Resolved</p>
                     </div>
                   </div>
@@ -262,7 +262,7 @@ export const OfficeView = () => {
             <Badge variant="outline" className="text-sm">Total: {stats.total}</Badge>
             <Badge variant="outline" className="text-sm bg-warning/10">Pending: {stats.pending}</Badge>
             <Badge variant="outline" className="text-sm bg-primary/10">Active: {stats.investigating}</Badge>
-            <Badge variant="outline" className="text-sm bg-green-500/10">Resolved: {stats.resolved}</Badge>
+            <Badge variant="outline" className="text-sm bg-success/10">Resolved: {stats.resolved}</Badge>
           </div>
 
           {/* Reports List */}
