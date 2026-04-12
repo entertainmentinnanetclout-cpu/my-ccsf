@@ -69,7 +69,7 @@ const Admin = () => {
   }];
   return <CasesProvider>
     <MasterSyncProvider>
-      <div className="min-h-screen bg-gradient-admin admin-theme" data-testid="ready-admin">
+      <div className="min-h-screen bg-background admin-theme" data-testid="ready-admin">
         {/* Header */}
         <motion.header initial={{
         y: -100,
@@ -80,13 +80,12 @@ const Admin = () => {
       }} transition={{
         duration: 0.5,
         ease: 'easeInOut'
-      }} className="sticky top-0 z-50 bg-primary border-b border-white/10 shadow-large">
-          <div className="container mx-auto px-4 py-4">
+      }} className="sticky top-0 z-50 bg-white border-b border-border shadow-soft">
+          <div className="container mx-auto px-4 py-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <motion.img src={tutLogo} alt="TUT Logo" className="h-10 logo-glow" whileHover={{
-                scale: 1.1,
-                rotate: -5
+                <motion.img src={tutLogo} alt="TUT Logo" className="h-10" whileHover={{
+                scale: 1.05
               }} transition={{
                 type: "spring",
                 stiffness: 300,
@@ -94,10 +93,10 @@ const Admin = () => {
               }} />
                 <div>
                   <div className="flex items-center gap-2">
-                    <Shield className="h-5 w-5 text-white animate-pulse" />
-                    <h1 className="text-xl font-bold text-white">Campus Community Safety Forum</h1>
+                    <Shield className="h-5 w-5 text-primary" />
+                    <h1 className="text-xl font-bold text-foreground">Campus Community Safety Forum</h1>
                   </div>
-                  <p className="text-sm text-white/90 font-semibold">CCSF Admin Console</p>
+                  <p className="text-sm text-muted-foreground font-semibold uppercase tracking-wider">CCSF Super Admin</p>
                 </div>
               </div>
 
@@ -106,11 +105,11 @@ const Admin = () => {
                 <MasterSyncButton />
                 <NotificationBell />
                 <motion.div whileHover={{
-                scale: 1.08
+                scale: 1.05
               }} whileTap={{
                 scale: 0.95
               }}>
-                  <Button variant="destructive" size="sm" className="text-xs px-2 sm:px-3" onClick={async () => {
+                  <Button variant="outline" size="sm" className="text-xs px-2 sm:px-3 border-border" onClick={async () => {
                   const {
                     supabase
                   } = await import('@/integrations/supabase/client');
@@ -118,7 +117,7 @@ const Admin = () => {
                   navigate('/auth');
                 }}>
                     <span className="hidden sm:inline">Sign Out</span>
-                    <span className="sm:hidden">Exit</span>
+                    <span className="sm:hidden text-muted-foreground">Exit</span>
                   </Button>
                 </motion.div>
               </div>
@@ -132,7 +131,21 @@ const Admin = () => {
         </div>
 
         {/* Main Content */}
-        <main className="container mx-auto px-4 py-6 pb-20 md:pb-6">
+        <main className="container mx-auto px-4 py-2 pb-20 md:pb-6">
+          {/* Welcome Banner - Admin */}
+          {activeView === 'overview' && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-6 p-4 rounded-xl bg-primary/5 border border-primary/10 flex items-center justify-between"
+            >
+              <div>
+                <h2 className="text-lg font-bold text-foreground">Super Admin Dashboard</h2>
+                <p className="text-sm text-muted-foreground">Manage campus-wide security operations and administrative controls.</p>
+              </div>
+            </motion.div>
+          )}
+
           {/* Navigation - Desktop Tabs + Mobile Menu */}
           <motion.div initial={{
           opacity: 0,
@@ -146,18 +159,20 @@ const Admin = () => {
         }} className="mb-6">
 
             {/* Desktop Navigation Tabs */}
-            <Card className="hidden md:block p-3 shadow-large">
-              <div className="flex flex-wrap justify-center gap-2">
+            <Card className="hidden md:block p-1.5 shadow-soft bg-white border-border">
+              <div className="flex flex-wrap justify-center gap-1">
                 {navItems.map(({
                 view,
                 icon: Icon,
                 label
-              }) => <motion.div key={view} whileHover={{
-                scale: 1.05
-              }} whileTap={{
-                scale: 0.95
+              }) => <motion.div key={view} whileTap={{
+                scale: 0.98
               }}>
-                    <Button variant={activeView === view ? 'default' : 'ghost'} onClick={() => setActiveView(view as typeof activeView)} className="transition-all" size="sm">
+                    <Button variant={activeView === view ? 'default' : 'ghost'} onClick={() => setActiveView(view as typeof activeView)} className={`transition-all ${
+                      activeView === view
+                        ? 'bg-primary text-white shadow-md'
+                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                    }`} size="sm">
                       <Icon className="h-4 w-4 lg:mr-2" />
                       <span className="hidden lg:inline">{label}</span>
                     </Button>
@@ -198,7 +213,7 @@ const Admin = () => {
 
           {/* Footer */}
           <footer className="mt-12 pb-6 text-center text-sm text-muted-foreground">
-            <p className="font-bold text-primary-foreground">Powered By Campus Protection Service</p>
+            <p className="font-bold text-primary">Powered By Campus Protection Service</p>
           </footer>
         </main>
         <MobileBottomNav

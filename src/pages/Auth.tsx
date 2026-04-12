@@ -180,14 +180,14 @@ const Auth = () => {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-primary">
-        <Loader2 className="h-16 w-16 animate-spin text-white" />
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-16 w-16 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'linear-gradient(135deg, hsl(213 100% 21%) 0%, hsl(217 67% 30%) 50%, hsl(213 100% 16%) 100%)' }}>
+    <div className="min-h-screen flex items-center justify-center p-4 bg-background">
       <motion.div
         initial={{ opacity: 0, y: 25 }}
         animate={{ opacity: 1, y: 0 }}
@@ -203,16 +203,16 @@ const Auth = () => {
           <motion.img
             src={tutLogo}
             alt="TUT Logo"
-            className="h-16 mx-auto mb-4 logo-glow"
+            className="h-20 mx-auto mb-6"
             initial={{ scale: 0.9 }}
             animate={{ scale: 1 }}
             transition={{ delay: 0.3, type: 'spring', stiffness: 200 }}
           />
           <div className="flex items-center justify-center gap-2 mb-2">
-            <Shield className="h-8 w-8 text-foreground drop-shadow-lg" />
-            <h1 className="text-3xl font-bold text-foreground">Campus Protection Services</h1>
+            <Shield className="h-8 w-8 text-primary" />
+            <h1 className="text-3xl font-bold text-foreground">Campus Safety Forum</h1>
           </div>
-          <p className="text-foreground/80">Report incidents, stay safe</p>
+          <p className="text-muted-foreground font-medium uppercase tracking-wider text-sm">Official Security Portal</p>
         </motion.div>
 
         <motion.div
@@ -220,7 +220,7 @@ const Auth = () => {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.4, duration: 0.3 }}
         >
-          <Card className="shadow-large border-0 bg-card/95 backdrop-blur-sm">
+          <Card className="shadow-large border-border bg-white">
             <CardHeader>
               <CardTitle>
                 {view === 'login' && 'Sign In'}

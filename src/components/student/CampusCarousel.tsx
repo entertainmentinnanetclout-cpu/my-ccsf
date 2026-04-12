@@ -108,17 +108,19 @@ export const CampusCarousel = ({ campus }: CampusCarouselProps) => {
   // Show empty state if no images
   if (carouselItems.length === 0) {
     return (
-      <div className="w-full h-[180px] xs:h-[200px] sm:h-[280px] md:h-[350px] lg:h-[400px] rounded-xl sm:rounded-2xl bg-muted flex flex-col items-center justify-center">
-        <ImageOff className="h-12 w-12 text-muted-foreground mb-3" />
-        <p className="text-muted-foreground text-sm">No campus images available</p>
-        <p className="text-muted-foreground text-xs mt-1">Images will appear once uploaded by admin</p>
+      <div className="w-full h-[180px] xs:h-[200px] sm:h-[280px] md:h-[350px] lg:h-[400px] rounded-2xl bg-white border border-border shadow-soft flex flex-col items-center justify-center text-center p-6">
+        <div className="p-4 rounded-full bg-muted mb-4">
+          <ImageOff className="h-8 w-8 text-muted-foreground" />
+        </div>
+        <h3 className="text-lg font-bold text-foreground mb-1">No campus images available</h3>
+        <p className="text-muted-foreground text-sm max-w-[250px]">Images will appear here once they are uploaded by the campus administrator.</p>
       </div>
     );
   }
 
   return (
     <div
-      className="relative w-full h-[180px] xs:h-[200px] sm:h-[280px] md:h-[350px] lg:h-[400px] rounded-xl sm:rounded-2xl overflow-hidden shadow-lg sm:shadow-large"
+      className="relative w-full h-[180px] xs:h-[200px] sm:h-[280px] md:h-[350px] lg:h-[400px] rounded-2xl overflow-hidden shadow-medium border border-border/50"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >

@@ -226,11 +226,11 @@ export const EmergencyReport = () => {
           </DialogHeader>
 
           <div className="space-y-4 py-4">
-            <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
-              <p className="text-sm font-medium mb-2 text-white">
+            <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-4">
+              <p className="text-sm font-bold mb-2 text-foreground">
                 Emergency alert will include:
               </p>
-              <ul className="text-sm space-y-1 text-white/80">
+              <ul className="text-sm space-y-1 text-muted-foreground">
                 <li className="flex items-center gap-2">
                   <span>•</span> Your name and student number
                 </li>
@@ -239,7 +239,7 @@ export const EmergencyReport = () => {
                 </li>
                 <li className="flex items-center gap-2">
                   <MapPin className="h-4 w-4 text-primary" />
-                  <span className="font-medium text-white">Your live location (full address)</span>
+                  <span className="font-medium text-foreground">Your live location (full address)</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <span>•</span> Emergency contact details

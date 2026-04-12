@@ -131,30 +131,32 @@ export const NewsFeed = () => {
                 transition={{ delay: index * 0.1 }}
               >
                 <Card 
-                  className="overflow-hidden cursor-pointer hover:shadow-large transition-all group active:scale-[0.99] bg-card"
+                  className="overflow-hidden cursor-pointer hover:shadow-medium transition-all group active:scale-[0.99] bg-white border-border/50"
                   onClick={handleCardClick}
                 >
                   <CardContent className="p-0">
-                    <div className="p-4">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="space-y-1 flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <Badge className={getPriorityColor(item.priority)}>
+                    <div className="p-5">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="space-y-2 flex-1 min-w-0">
+                          <div className="flex items-center gap-3 flex-wrap">
+                            <Badge className={`${getPriorityColor(item.priority)} px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider`}>
                               {item.priority === 'urgent' ? 'Urgent' : item.priority === 'high' ? 'Important' : 'Notice'}
                             </Badge>
-                            <span className="text-xs text-muted-foreground flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
+                            <span className="text-xs text-muted-foreground font-medium flex items-center gap-1">
+                              <Clock className="h-3.5 w-3.5" />
                               {formatTimeAgo(item.created_at)}
                             </span>
                           </div>
-                          <h3 className="font-semibold text-sm sm:text-base text-card-foreground line-clamp-2">
+                          <h3 className="font-bold text-base sm:text-lg text-foreground group-hover:text-primary transition-colors line-clamp-2 leading-tight">
                             {item.title}
                           </h3>
-                          <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2">
+                          <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
                             {item.content}
                           </p>
                         </div>
-                        <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0 group-hover:translate-x-1 transition-transform" />
+                        <div className="mt-1 p-2 rounded-full bg-muted group-hover:bg-primary/10 transition-colors">
+                          <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-transform group-hover:translate-x-0.5" />
+                        </div>
                       </div>
                     </div>
                   </CardContent>

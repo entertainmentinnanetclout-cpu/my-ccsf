@@ -106,7 +106,7 @@ const Security = () => {
   }, [userProfile?.campus]);
   return <MasterSyncProvider>
       <CasesProvider>
-      <div className="min-h-screen bg-gradient-admin admin-theme" data-testid="ready-campus-admin">
+      <div className="min-h-screen bg-background admin-theme" data-testid="ready-campus-admin">
         {/* Header */}
         <motion.header initial={{
           y: -100,
@@ -117,14 +117,13 @@ const Security = () => {
         }} transition={{
           duration: 0.5,
           ease: 'easeInOut'
-        }} className="sticky top-0 z-50 bg-primary border-b border-white/10 shadow-large">
+        }} className="sticky top-0 z-50 bg-white border-b border-border shadow-soft">
           <div className="container mx-auto px-4 py-3">
             <div className="flex items-center justify-between gap-4">
               {/* Left: Logo and Title */}
               <div className="flex items-center gap-3 min-w-0 flex-shrink-0">
-                <motion.img src={tutLogo} alt="TUT Logo" className="h-10 w-auto object-contain flex-shrink-0 logo-glow" whileHover={{
-                  scale: 1.1,
-                  rotate: -5
+                <motion.img src={tutLogo} alt="TUT Logo" className="h-10 w-auto object-contain flex-shrink-0" whileHover={{
+                  scale: 1.05
                 }} transition={{
                   type: "spring",
                   stiffness: 300,
@@ -132,12 +131,12 @@ const Security = () => {
                 }} />
                 <div className="hidden sm:block min-w-0">
                   <div className="flex items-center gap-2">
-                    <Shield className="h-4 w-4 text-white animate-pulse flex-shrink-0" />
-                    <h1 className="text-base md:text-lg font-bold text-white whitespace-nowrap">CCSF Portal</h1>
+                    <Shield className="h-4 w-4 text-primary flex-shrink-0" />
+                    <h1 className="text-base md:text-lg font-bold text-foreground whitespace-nowrap">CCSF Portal</h1>
                   </div>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <span className="px-2 py-0.5 bg-white/20 rounded-full text-xs text-white font-medium flex items-center gap-1">
-                      <MapPin className="h-3 w-3 flex-shrink-0" />
+                    <span className="px-2 py-0.5 bg-muted rounded-full text-xs text-foreground font-medium flex items-center gap-1 border border-border">
+                      <MapPin className="h-3 w-3 flex-shrink-0 text-primary" />
                       <span className="truncate max-w-[100px] md:max-w-[150px]">{userCampus}</span>
                     </span>
                   </div>
@@ -146,15 +145,15 @@ const Security = () => {
 
               {/* Right: Stats and Actions */}
               <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 flex-shrink-0">
-                <div className="hidden lg:flex items-center gap-3 px-3 py-1.5 bg-white/10 rounded-lg">
+                <div className="hidden lg:flex items-center gap-3 px-3 py-1.5 bg-muted rounded-lg border border-border">
                   <div className="text-center">
-                    <p className="text-lg font-bold text-white leading-none">{campusStudentCount}</p>
-                    <p className="text-[10px] text-white/70 uppercase tracking-wide">Students</p>
+                    <p className="text-lg font-bold text-primary leading-none">{campusStudentCount}</p>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-semibold">Students</p>
                   </div>
-                  <div className="w-px h-8 bg-white/20" />
+                  <div className="w-px h-8 bg-border" />
                   <div className="text-center">
-                    <p className="text-lg font-bold text-white leading-none">{campusIncidentCount}</p>
-                    <p className="text-[10px] text-white/70 uppercase tracking-wide">Cases</p>
+                    <p className="text-lg font-bold text-primary leading-none">{campusIncidentCount}</p>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-semibold">Cases</p>
                   </div>
                 </div>
                 <ThemeToggle />
@@ -165,9 +164,9 @@ const Security = () => {
                 }} whileTap={{
                   scale: 0.95
                 }}>
-                  <Button variant="destructive" size="sm" className="text-xs px-2 sm:px-3" onClick={() => signOut()}>
+                  <Button variant="outline" size="sm" className="text-xs px-2 sm:px-3 border-border" onClick={() => signOut()}>
                     <span className="hidden sm:inline">Sign Out</span>
-                    <span className="sm:hidden">Exit</span>
+                    <span className="sm:hidden text-muted-foreground">Exit</span>
                   </Button>
                 </motion.div>
               </div>
@@ -181,7 +180,21 @@ const Security = () => {
         </div>
 
         {/* Main Content */}
-        <main className="container mx-auto px-4 py-6 pb-20 md:pb-6">
+        <main className="container mx-auto px-4 py-2 pb-20 md:pb-6">
+          {/* Welcome Banner - Campus Admin */}
+          {activeView === 'overview' && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-6 p-4 rounded-xl bg-primary/5 border border-primary/10 flex items-center justify-between"
+            >
+              <div>
+                <h2 className="text-lg font-bold text-foreground">{userCampus} Security Dashboard</h2>
+                <p className="text-sm text-muted-foreground">Monitor and respond to campus incidents in real-time.</p>
+              </div>
+            </motion.div>
+          )}
+
           {/* Navigation - Desktop Tabs + Mobile Menu */}
           <motion.div initial={{
             opacity: 0,
@@ -195,18 +208,20 @@ const Security = () => {
           }} className="mb-6">
 
             {/* Desktop Navigation Tabs */}
-            <Card className="hidden md:block p-3 shadow-large">
-              <div className="flex flex-wrap justify-center gap-2">
+            <Card className="hidden md:block p-1.5 shadow-soft bg-white border-border">
+              <div className="flex flex-wrap justify-center gap-1">
                 {navItems.map(({
                   view,
                   icon: Icon,
                   label
-                }) => <motion.div key={view} whileHover={{
-                  scale: 1.05
-                }} whileTap={{
-                  scale: 0.95
+                }) => <motion.div key={view} whileTap={{
+                  scale: 0.98
                 }}>
-                    <Button variant={activeView === view ? 'default' : 'ghost'} onClick={() => setActiveView(view as typeof activeView)} className="transition-all" size="sm">
+                    <Button variant={activeView === view ? 'default' : 'ghost'} onClick={() => setActiveView(view as typeof activeView)} className={`transition-all ${
+                      activeView === view
+                        ? 'bg-primary text-white shadow-md'
+                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                    }`} size="sm">
                       <Icon className="h-4 w-4 lg:mr-2" />
                       <span className="hidden lg:inline">{label}</span>
                     </Button>
@@ -248,7 +263,7 @@ const Security = () => {
 
           {/* Footer */}
           <footer className="mt-12 pb-6 text-center text-sm text-muted-foreground">
-            <p className="text-sm font-bold text-primary-foreground">Powered By Campus Protection Service</p>
+            <p className="text-sm font-bold text-primary">Powered By Campus Protection Service</p>
           </footer>
         </main>
         <MobileBottomNav

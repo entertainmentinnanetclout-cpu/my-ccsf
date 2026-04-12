@@ -62,61 +62,60 @@ const Dashboard = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-primary user-theme" data-testid="ready-dashboard">
+    <div className="min-h-screen bg-background user-theme" data-testid="ready-dashboard">
       <EmergencyReport />
 
-      {/* Header with Glass Effect */}
+      {/* Header with Cleaner Design */}
       <div className="relative">
         <motion.header
           initial={{ y: -100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.5, ease: 'easeInOut' }}
-          className="sticky top-0 z-40 bg-primary border-b border-white/20 shadow-large"
+          className="sticky top-0 z-40 bg-white border-b border-border shadow-soft"
         >
           <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 sm:gap-3">
                 <motion.div
                   className="relative"
-                  whileHover={{ scale: 1.1, rotate: 5 }}
+                  whileHover={{ scale: 1.05 }}
                   transition={{ type: "spring", stiffness: 300, damping: 20 }}
                 >
                   <img
                     src={tutLogo}
                     alt="TUT Logo"
-                    className="h-9 sm:h-11 w-auto object-contain logo-glow"
+                    className="h-10 sm:h-12 w-auto object-contain"
                   />
-                  <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-success rounded-full border-2 border-white animate-pulse" />
                 </motion.div>
                 <div className="hidden sm:block">
                   <div className="flex items-center gap-2">
-                    <Shield className="h-5 w-5 text-white drop-shadow-lg" />
-                    <h1 className="text-lg sm:text-xl font-bold text-white drop-shadow-md">Campus Safety Forum</h1>
+                    <Shield className="h-5 w-5 text-primary" />
+                    <h1 className="text-lg sm:text-xl font-bold text-foreground">Campus Safety Forum</h1>
                   </div>
-                  <p className="text-xs sm:text-sm text-white/80 font-medium">CCSF Student Portal</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground font-medium uppercase tracking-wider">CCSF Student Portal</p>
                 </div>
               </div>
 
               <div className="flex items-center gap-2 sm:gap-3">
                 <motion.div 
-                  className="hidden lg:flex items-center gap-2 px-4 py-2 bg-white/15 backdrop-blur-sm rounded-full border border-white/20 shadow-lg"
-                  whileHover={{ scale: 1.02, backgroundColor: 'rgba(255,255,255,0.2)' }}
+                  className="hidden lg:flex items-center gap-2 px-4 py-2 bg-muted rounded-full border border-border"
+                  whileHover={{ scale: 1.02 }}
                 >
-                  <MapPin className="h-4 w-4 text-white drop-shadow" />
-                  <span className="text-sm font-semibold text-white drop-shadow">{userCampus}</span>
+                  <MapPin className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-semibold text-foreground">{userCampus}</span>
                 </motion.div>
 
                 <ThemeToggle />
                 <NotificationBell />
 
-                <motion.div whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.95 }}>
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                   <Button 
-                    variant="default" 
+                    variant="outline"
                     size="icon" 
                     onClick={signOut} 
-                    className="hidden sm:flex bg-white/20 hover:bg-white/30 border border-white/20 backdrop-blur-sm shadow-lg"
+                    className="hidden sm:flex border-border"
                   >
-                    <LogOut className="h-5 w-5 text-white" />
+                    <LogOut className="h-5 w-5 text-muted-foreground" />
                   </Button>
                 </motion.div>
               </div>
@@ -127,35 +126,51 @@ const Dashboard = () => {
       </div>
 
       {/* Main Content */}
-      <main className="container mx-auto px-3 sm:px-4 pb-20 md:pb-6">
+      <main className="container mx-auto px-4 pb-20 md:pb-6">
+        {/* Welcome Banner - Institutional Yellow */}
+        {activeView === 'home' && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-6 mb-6 p-6 rounded-2xl bg-warning/10 border border-warning/20 flex flex-col md:flex-row items-center justify-between gap-4"
+          >
+            <div>
+              <h2 className="text-xl font-bold text-foreground">Welcome to CCSF Portal</h2>
+              <p className="text-muted-foreground">Your safety is our priority. Access campus safety resources and report incidents.</p>
+            </div>
+            <Button className="bg-primary hover:bg-primary/90 text-white shrink-0">
+              Get Started
+            </Button>
+          </motion.div>
+        )}
+
         {/* Navigation - Desktop Tabs + Mobile Menu */}
         <motion.div
           initial={{ opacity: 0, y: 25 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4, duration: 0.4 }}
+          transition={{ delay: 0.2, duration: 0.4 }}
           className="mb-4 sm:mb-6"
         >
 
           {/* Desktop Navigation Tabs */}
-          <Card className="hidden md:block p-2 sm:p-3 shadow-elevated bg-card/95 backdrop-blur-sm border-border/50">
-            <div className="grid grid-cols-5 gap-1.5 sm:gap-2">
+          <Card className="hidden md:block p-1.5 shadow-soft bg-white border-border">
+            <div className="grid grid-cols-5 gap-1">
               {navItems.map(({ view, icon: Icon, label }) => (
                 <motion.div 
                   key={view}
-                  whileHover={{ scale: 1.05, y: -2 }} 
-                  whileTap={{ scale: 0.95 }}
+                  whileTap={{ scale: 0.98 }}
                 >
                   <Button
                     variant={activeView === view ? 'default' : 'ghost'}
                     onClick={() => setActiveView(view as typeof activeView)}
-                    className={`w-full transition-all text-xs sm:text-sm px-1 sm:px-3 ${
+                    className={`w-full transition-all text-xs sm:text-sm ${
                       activeView === view 
-                        ? 'shadow-lg bg-gradient-to-r from-primary to-secondary' 
-                        : 'hover:bg-primary/10'
+                        ? 'bg-primary text-white shadow-md'
+                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                     }`}
                     size="sm"
                   >
-                    <Icon className={`h-4 w-4 ${activeView === view ? '' : 'lg:mr-2'}`} />
+                    <Icon className="h-4 w-4 lg:mr-2" />
                     <span className="hidden lg:inline">{label}</span>
                   </Button>
                 </motion.div>
@@ -184,16 +199,16 @@ const Dashboard = () => {
           {activeView === 'messages' && <StudentChat />}
         </motion.div>
 
-        {/* Footer - Enhanced */}
+        {/* Footer - Clean */}
         <footer className="mt-8 sm:mt-12 pb-6 text-center">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5 }}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full border border-white/20"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-muted rounded-full border border-border"
           >
-            <Shield className="h-4 w-4 text-white/80" />
-            <p className="text-xs sm:text-sm text-white font-medium">Powered By Campus Protection Service</p>
+            <Shield className="h-4 w-4 text-primary" />
+            <p className="text-xs sm:text-sm text-muted-foreground font-medium">Powered By Campus Protection Service</p>
           </motion.div>
         </footer>
       </main>
