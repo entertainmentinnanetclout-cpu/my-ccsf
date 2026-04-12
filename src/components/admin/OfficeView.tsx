@@ -120,7 +120,7 @@ export const OfficeView = () => {
       case 'pending': return 'bg-warning/20 text-warning-foreground border-warning';
       case 'assigned': return 'bg-primary/20 text-primary border-primary';
       case 'rejected': return 'bg-destructive/20 text-destructive border-destructive';
-      case 'resolved': return 'bg-green-500/20 text-green-600 border-green-500';
+      case 'resolved': return 'bg-success/20 text-success border-success';
       default: return 'bg-muted text-muted-foreground border-muted';
     }
   };
