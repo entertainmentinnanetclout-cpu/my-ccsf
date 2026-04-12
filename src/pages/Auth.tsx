@@ -187,7 +187,7 @@ const Auth = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'linear-gradient(135deg, hsl(0 72% 51%) 0%, hsl(0 84% 40%) 50%, hsl(0 72% 35%) 100%)' }}>
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'linear-gradient(135deg, hsl(213 100% 21%) 0%, hsl(217 67% 30%) 50%, hsl(213 100% 16%) 100%)' }}>
       <motion.div
         initial={{ opacity: 0, y: 25 }}
         animate={{ opacity: 1, y: 0 }}

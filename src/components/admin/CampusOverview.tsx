@@ -215,7 +215,7 @@ export const CampusOverview = () => {
                   hasEmergencies 
                     ? 'border-destructive/50 bg-destructive/5' 
                     : hasPending 
-                      ? 'border-amber-500/30 bg-amber-500/5' 
+                      ? 'border-warning/30 bg-warning/5' 
                       : 'border-border bg-card'
                 }`}
               >
@@ -338,13 +338,13 @@ export const CampusOverview = () => {
                   icon={Clock} 
                   label="Pending" 
                   value={selectedMetrics.pending} 
-                  color="bg-amber-500/10 text-amber-600"
+                  color="bg-warning/10 text-warning"
                 />
                 <MetricCard 
                   icon={TrendingUp} 
                   label="Assigned" 
                   value={selectedMetrics.assigned} 
-                  color="bg-blue-500/10 text-blue-600"
+                  color="bg-primary/10 text-primary"
                 />
                 <MetricCard 
                   icon={CheckCircle} 

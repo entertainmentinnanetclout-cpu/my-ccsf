@@ -327,7 +327,7 @@ export const ReportIncident = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     {location ? (
-                      <CheckCircle2 className="h-5 w-5 text-green-500" />
+                      <CheckCircle2 className="h-5 w-5 text-success" />
                     ) : (
                       <Navigation className="h-5 w-5 text-muted-foreground" />
                     )}
@@ -367,11 +367,11 @@ export const ReportIncident = () => {
 
                 {/* Display Full Address */}
                 {locationAddress && (
-                  <div className="p-3 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-md">
+                  <div className="p-3 bg-success/10 border border-success/20 rounded-md">
                     <p className="text-sm">
-                      <span className="font-semibold text-green-700 dark:text-green-400">📍 Full Address:</span>
+                      <span className="font-semibold text-success">📍 Full Address:</span>
                     </p>
-                    <p className="text-sm text-green-800 dark:text-green-300 mt-1">
+                    <p className="text-sm text-foreground mt-1">
                       {locationAddress}
                     </p>
                   </div>
@@ -456,7 +456,7 @@ export const ReportIncident = () => {
                   </ul>
                 </div>
 
-                <div className="flex items-start space-x-3 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
+                <div className="flex items-start space-x-3 p-3 bg-warning/10 border border-warning/20 rounded-lg">
                   <Checkbox 
                     id="consent" 
                     checked={consentAgreed}
@@ -482,7 +482,7 @@ export const ReportIncident = () => {
                       Clear
                     </Button>
                   </div>
-                  <div className="border-2 border-dashed rounded-lg bg-white dark:bg-gray-900 overflow-hidden">
+                  <div className="border-2 border-dashed rounded-lg bg-background overflow-hidden">
                     <SignatureCanvas
                       ref={signatureRef}
                       canvasProps={{
@@ -495,7 +495,7 @@ export const ReportIncident = () => {
                     />
                   </div>
                   {signatureData ? (
-                    <p className="text-xs text-green-600 flex items-center gap-1">
+                    <p className="text-xs text-success flex items-center gap-1">
                       <CheckCircle2 className="h-3 w-3" />
                       Signature captured
                     </p>

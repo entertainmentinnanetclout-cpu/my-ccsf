@@ -236,7 +236,7 @@ export const MyCaseReports = () => {
 
                     {incident.location_description && (
                       <div className="flex items-start gap-2 text-xs p-2 bg-muted/50 rounded-md">
-                        <MapPin className="h-3.5 w-3.5 text-green-600 shrink-0 mt-0.5" />
+                        <MapPin className="h-3.5 w-3.5 text-success shrink-0 mt-0.5" />
                         <span className="text-foreground line-clamp-2">{incident.location_description}</span>
                       </div>
                     )}
@@ -247,9 +247,9 @@ export const MyCaseReports = () => {
                     </div>
 
                     {incident.resolution_notes && (
-                      <div className="p-2 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-md">
-                        <p className="text-xs font-medium text-green-700 dark:text-green-400">Resolution:</p>
-                        <p className="text-xs text-green-800 dark:text-green-300 line-clamp-2">{incident.resolution_notes}</p>
+                      <div className="p-2 bg-success/10 border border-success/20 rounded-md">
+                        <p className="text-xs font-medium text-success">Resolution:</p>
+                        <p className="text-xs text-foreground line-clamp-2">{incident.resolution_notes}</p>
                       </div>
                     )}
                     
@@ -294,16 +294,16 @@ export const MyCaseReports = () => {
                 {(selectedIncident.location_description || selectedIncident.location_lat) && (
                   <div>
                     <h4 className="font-semibold mb-2">📍 Location Details</h4>
-                    <div className="p-4 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg space-y-2">
+                    <div className="p-4 bg-success/10 border border-success/20 rounded-lg space-y-2">
                       {selectedIncident.location_description && (
-                        <p className="text-green-800 dark:text-green-300">{selectedIncident.location_description}</p>
+                        <p className="text-foreground">{selectedIncident.location_description}</p>
                       )}
                       {selectedIncident.location_lat && selectedIncident.location_lng && (
                         <a 
                           href={`https://www.google.com/maps?q=${selectedIncident.location_lat},${selectedIncident.location_lng}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-sm text-blue-600 hover:underline"
+                          className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
                         >
                           <Navigation className="h-3 w-3" />
                           Open in Google Maps
@@ -316,9 +316,9 @@ export const MyCaseReports = () => {
                 {/* Resolution Notes */}
                 {selectedIncident.resolution_notes && (
                   <div>
-                    <h4 className="font-semibold mb-2 text-green-700 dark:text-green-400">✅ Resolution</h4>
-                    <div className="p-4 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg">
-                      <p className="text-green-800 dark:text-green-300">{selectedIncident.resolution_notes}</p>
+                    <h4 className="font-semibold mb-2 text-success">✅ Resolution</h4>
+                    <div className="p-4 bg-success/10 border border-success/20 rounded-lg">
+                      <p className="text-foreground">{selectedIncident.resolution_notes}</p>
                     </div>
                   </div>
                 )}
@@ -326,7 +326,7 @@ export const MyCaseReports = () => {
                 {/* Upcoming Scheduled Dates */}
                 {getUpcomingDates(caseUpdates).length > 0 && (
                   <div>
-                    <h4 className="font-semibold mb-2 text-amber-700 dark:text-amber-400 flex items-center gap-2">
+                    <h4 className="font-semibold mb-2 text-warning flex items-center gap-2">
                       <CalendarClock className="h-5 w-5" />
                       Scheduled Appearances
                     </h4>
@@ -334,17 +334,17 @@ export const MyCaseReports = () => {
                       {getUpcomingDates(caseUpdates).map((update) => (
                         <div 
                           key={update.id}
-                          className="p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg"
+                          className="p-4 bg-warning/10 border border-warning/20 rounded-lg"
                         >
                           <div className="flex items-center gap-2 mb-1">
-                            <Calendar className="h-4 w-4 text-amber-600" />
-                            <span className="font-medium text-amber-800 dark:text-amber-200">
+                            <Calendar className="h-4 w-4 text-warning" />
+                            <span className="font-medium text-foreground">
                               {format(new Date(update.scheduled_date!), 'PPPp')}
                             </span>
                           </div>
-                          <p className="text-sm font-medium text-amber-900 dark:text-amber-100">{update.title}</p>
+                          <p className="text-sm font-medium text-foreground">{update.title}</p>
                           {update.description && (
-                            <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">{update.description}</p>
+                            <p className="text-sm text-muted-foreground mt-1">{update.description}</p>
                           )}
                         </div>
                       ))}
@@ -391,7 +391,7 @@ export const MyCaseReports = () => {
                               <p className="text-sm text-muted-foreground">{update.description}</p>
                             )}
                             {update.scheduled_date && (
-                              <div className="mt-2 flex items-center gap-1 text-xs text-amber-600">
+                              <div className="mt-2 flex items-center gap-1 text-xs text-warning">
                                 <CalendarClock className="h-3 w-3" />
                                 <span>Scheduled: {format(new Date(update.scheduled_date), 'PPp')}</span>
                               </div>

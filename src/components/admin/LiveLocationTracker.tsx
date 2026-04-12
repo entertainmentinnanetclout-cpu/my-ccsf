@@ -24,10 +24,10 @@ interface LiveLocationTrackerProps {
 
 const getAccuracyColor = (accuracy: number | null): string => {
   if (!accuracy) return 'text-muted-foreground';
-  if (accuracy <= 10) return 'text-green-600 dark:text-green-400';
-  if (accuracy <= 50) return 'text-emerald-600 dark:text-emerald-400';
-  if (accuracy <= 100) return 'text-yellow-600 dark:text-yellow-400';
-  return 'text-orange-600 dark:text-orange-400';
+  if (accuracy <= 10) return 'text-success';
+  if (accuracy <= 50) return 'text-success';
+  if (accuracy <= 100) return 'text-warning';
+  return 'text-warning';
 };
 
 const getAccuracyLabel = (accuracy: number | null): string => {

@@ -202,7 +202,7 @@ const SplashScreen = ({ onComplete, minDuration = 4500 }: SplashScreenProps) => 
           </div>
           <div className="mt-2 ml-1">
             <p className="text-[10px] font-mono text-primary/80">CCSF_SECURE_v2.4</p>
-            <p className="text-[8px] font-mono text-neutral-500">SYSTEM ONLINE</p>
+            <p className="text-[8px] font-mono text-muted-foreground">SYSTEM ONLINE</p>
           </div>
         </motion.div>
 
@@ -219,13 +219,13 @@ const SplashScreen = ({ onComplete, minDuration = 4500 }: SplashScreenProps) => 
           </div>
           <div className="mt-2 mr-1 text-right">
             <motion.p 
-              className="text-[10px] font-mono text-green-400"
+              className="text-[10px] font-mono text-success"
               animate={{ opacity: [1, 0.5, 1] }}
               transition={{ duration: 1, repeat: Infinity }}
             >
               ● LIVE
             </motion.p>
-            <p className="text-[8px] font-mono text-neutral-500">
+            <p className="text-[8px] font-mono text-muted-foreground">
               {new Date().toLocaleTimeString()}
             </p>
           </div>
@@ -272,9 +272,9 @@ const SplashScreen = ({ onComplete, minDuration = 4500 }: SplashScreenProps) => 
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.7 + index * 0.1 }}
           >
-            <div className="w-1 h-6 bg-red-500/50 rounded-full" />
+            <div className="w-1 h-6 bg-primary/50 rounded-full" />
             <div>
-              <p className="text-[10px] font-mono text-neutral-500 uppercase tracking-wider">{stat.label}</p>
+              <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">{stat.label}</p>
               <p className="text-sm font-mono text-white font-bold">{stat.value}</p>
             </div>
           </motion.div>
@@ -456,7 +456,7 @@ const SplashScreen = ({ onComplete, minDuration = 4500 }: SplashScreenProps) => 
             My CCSF
           </motion.h1>
           <motion.h1
-            className="text-5xl md:text-6xl font-bold tracking-tight absolute inset-0 text-cyan-500/20"
+            className="text-5xl md:text-6xl font-bold tracking-tight absolute inset-0 text-primary/20"
             animate={{
               x: [2, -2, 2],
               opacity: [0.5, 0.3, 0.5],
@@ -490,14 +490,14 @@ const SplashScreen = ({ onComplete, minDuration = 4500 }: SplashScreenProps) => 
           transition={{ delay: 0.7 }}
         >
           <div className="h-[1px] w-12 bg-gradient-to-r from-transparent to-primary/50" />
-          <p className="text-neutral-400 text-sm tracking-[0.2em] uppercase font-light">
+          <p className="text-muted-foreground text-sm tracking-[0.2em] uppercase font-light">
             Campus Community Safety Forum
           </p>
           <div className="h-[1px] w-12 bg-gradient-to-l from-transparent to-primary/50" />
         </motion.div>
 
         <motion.p
-          className="mt-3 text-neutral-500 text-xs tracking-wider"
+          className="mt-3 text-muted-foreground text-xs tracking-wider"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.9 }}
@@ -550,7 +550,7 @@ const SplashScreen = ({ onComplete, minDuration = 4500 }: SplashScreenProps) => 
         
         <div className="mt-4 flex items-center justify-between">
           <motion.p
-            className="text-neutral-500 text-xs font-mono"
+            className="text-muted-foreground text-xs font-mono"
             animate={{ opacity: [0.5, 1, 0.5] }}
             transition={{ duration: 2, repeat: Infinity }}
           >
@@ -567,7 +567,7 @@ const SplashScreen = ({ onComplete, minDuration = 4500 }: SplashScreenProps) => 
         animate={{ opacity: 1 }}
         transition={{ delay: 1.2 }}
       >
-        <p className="text-neutral-600 text-[10px] font-mono tracking-widest uppercase">
+        <p className="text-muted-foreground text-[10px] font-mono tracking-widest uppercase">
           Protecting • Monitoring • Responding
         </p>
       </motion.div>

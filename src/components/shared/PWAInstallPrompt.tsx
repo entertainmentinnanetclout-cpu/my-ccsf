@@ -103,8 +103,8 @@ const PWAInstallPrompt = () => {
           <motion.div
             className="flex items-center justify-center w-14 h-14 rounded-2xl mb-4"
             style={{
-              background: 'linear-gradient(135deg, hsl(0 72% 51%) 0%, hsl(0 84% 40%) 100%)',
-              boxShadow: '0 10px 30px -5px hsl(0 72% 51% / 0.4)',
+              background: 'linear-gradient(135deg, hsl(213 100% 21%) 0%, hsl(217 67% 30%) 100%)',
+              boxShadow: '0 10px 30px -5px hsl(213 100% 21% / 0.4)',
             }}
             animate={{
               scale: [1, 1.05, 1],
@@ -161,7 +161,7 @@ const PWAInstallPrompt = () => {
                 onClick={handleInstall}
                 className="flex-1 gap-2"
                 style={{
-                  background: 'linear-gradient(135deg, hsl(0 72% 51%) 0%, hsl(0 84% 40%) 100%)',
+                  background: 'linear-gradient(135deg, hsl(213 100% 21%) 0%, hsl(217 67% 30%) 100%)',
                 }}
               >
                 <Download className="h-4 w-4" />
@@ -183,7 +183,7 @@ const PWAInstallPrompt = () => {
           <div 
             className="absolute -top-20 -right-20 w-40 h-40 rounded-full opacity-10 pointer-events-none"
             style={{
-              background: 'radial-gradient(circle, hsl(0 72% 51%) 0%, transparent 70%)',
+              background: 'radial-gradient(circle, hsl(213 100% 21%) 0%, transparent 70%)',
             }}
           />
         </div>

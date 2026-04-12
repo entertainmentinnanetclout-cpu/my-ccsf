@@ -237,13 +237,13 @@ export const EmergencyCases = () => {
                   </div>
                   <div className="flex justify-between items-center p-3 bg-background rounded-lg">
                     <span>Pending Cases</span>
-                    <span className="font-bold text-yellow-500 text-xl">
+                    <span className="font-bold text-warning text-xl">
                       {cases.filter(c => c.status === 'pending').length}
                     </span>
                   </div>
                   <div className="flex justify-between items-center p-3 bg-background rounded-lg">
                     <span>Assigned Cases</span>
-                    <span className="font-bold text-blue-500 text-xl">
+                    <span className="font-bold text-primary text-xl">
                       {cases.filter(c => c.status === 'assigned').length}
                     </span>
                   </div>
