@@ -106,7 +106,7 @@ const Security = () => {
   }, [userProfile?.campus]);
   return <MasterSyncProvider>
       <CasesProvider>
-      <div className="min-h-screen bg-gradient-admin admin-theme" data-testid="ready-campus-admin">
+      <div className="min-h-screen bg-background" data-testid="ready-campus-admin">
         {/* Header */}
         <motion.header initial={{
           y: -100,
@@ -248,7 +248,7 @@ const Security = () => {
 
           {/* Footer */}
           <footer className="mt-12 pb-6 text-center text-sm text-muted-foreground">
-            <p className="text-sm font-bold text-primary-foreground">Powered By Campus Protection Service</p>
+            <p className="text-sm font-bold text-primary">Powered By Campus Protection Service</p>
           </footer>
         </main>
         <MobileBottomNav

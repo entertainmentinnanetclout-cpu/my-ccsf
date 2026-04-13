@@ -62,7 +62,7 @@ const Dashboard = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-primary user-theme" data-testid="ready-dashboard">
+    <div className="min-h-screen bg-background" data-testid="ready-dashboard">
       <EmergencyReport />
 
       {/* Header with Glass Effect */}
@@ -190,10 +190,10 @@ const Dashboard = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5 }}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full border border-white/20"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-muted/50 rounded-full border border-border"
           >
-            <Shield className="h-4 w-4 text-white/80" />
-            <p className="text-xs sm:text-sm text-white font-medium">Powered By Campus Protection Service</p>
+            <Shield className="h-4 w-4 text-primary" />
+            <p className="text-xs sm:text-sm text-muted-foreground font-medium">Powered By Campus Protection Service</p>
           </motion.div>
         </footer>
       </main>

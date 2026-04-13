@@ -113,7 +113,7 @@ const Office = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-admin admin-theme">
+    <div className="min-h-screen bg-background">
       {/* Header */}
       <motion.header
         initial={{ y: -100, opacity: 0 }}

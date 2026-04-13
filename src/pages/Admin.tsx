@@ -69,7 +69,7 @@ const Admin = () => {
   }];
   return <CasesProvider>
     <MasterSyncProvider>
-      <div className="min-h-screen bg-gradient-admin admin-theme" data-testid="ready-admin">
+      <div className="min-h-screen bg-background" data-testid="ready-admin">
         {/* Header */}
         <motion.header initial={{
         y: -100,
@@ -198,7 +198,7 @@ const Admin = () => {
 
           {/* Footer */}
           <footer className="mt-12 pb-6 text-center text-sm text-muted-foreground">
-            <p className="font-bold text-primary-foreground">Powered By Campus Protection Service</p>
+            <p className="font-bold text-primary">Powered By Campus Protection Service</p>
           </footer>
         </main>
         <MobileBottomNav

@@ -174,14 +174,14 @@ const ProfileCompletion = () => {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-primary">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="h-16 w-16 animate-spin text-white" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-primary user-theme py-8 px-4">
+    <div className="min-h-screen bg-background py-8 px-4">
       <motion.div
         initial={{ opacity: 0, y: 25 }}
         animate={{ opacity: 1, y: 0 }}

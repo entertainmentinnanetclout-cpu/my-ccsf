@@ -14,27 +14,27 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Light Theme - TUT Institutional Navy/Gold/White */
-    --background: 0 0% 100%;
-    --foreground: 213 100% 21%;
+    /* Light Theme - TUT White-Dominant Design */
+    --background: 220 20% 97%;
+    --foreground: 0 0% 10%;
 
-    --card: 220 20% 97%;
-    --card-foreground: 213 100% 21%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 213 100% 21%;
+    --popover-foreground: 0 0% 10%;
 
     /* Primary navy - ALWAYS white text */
-    --primary: 213 100% 21%;
+    --primary: 216 100% 28%;
     --primary-foreground: 0 0% 100%;
 
     /* Secondary - light background, dark text */
     --secondary: 220 14% 96%;
-    --secondary-foreground: 213 100% 21%;
+    --secondary-foreground: 216 100% 28%;
 
     /* Muted */
     --muted: 220 14% 94%;
-    --muted-foreground: 218 15% 35%;
+    --muted-foreground: 220 9% 46%;
 
     /* Accent - TUT Gold */
     --accent: 41 100% 47%;
@@ -50,12 +50,12 @@ All colors MUST be HSL.
     --danger: 352 89% 43%;
     --danger-foreground: 0 0% 100%;
 
-    --destructive: 352 89% 43%;
+    --destructive: 352 84% 50%;
     --destructive-foreground: 0 0% 100%;
 
     --border: 220 13% 88%;
     --input: 0 0% 100%;
-    --ring: 213 100% 21%;
+    --ring: 216 100% 28%;
 
     --radius: 1rem;
 
@@ -94,10 +94,10 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 218 45% 8%;
+    --background: 222 47% 11%;
     --foreground: 0 0% 100%;
 
-    --card: 220 33% 11%;
+    --card: 217 33% 17%;
     --card-foreground: 0 0% 98%;
 
     --popover: 220 33% 11%;
@@ -154,23 +154,19 @@ All colors MUST be HSL.
   }
 
   .admin-theme {
-    background: linear-gradient(135deg, hsl(213 100% 18%) 0%, hsl(213 100% 21%) 50%, hsl(217 67% 30%) 100%);
-    background-size: 200% 200%;
-    animation: gradient-shift 15s ease infinite;
+    background: hsl(var(--background));
   }
 
   .dark .admin-theme {
-    background: linear-gradient(135deg, hsl(218 45% 6%) 0%, hsl(217 50% 18%) 50%, hsl(218 45% 10%) 100%);
+    background: hsl(var(--background));
   }
 
   .user-theme {
-    background: linear-gradient(135deg, hsl(213 100% 18%) 0%, hsl(213 100% 21%) 25%, hsl(217 67% 30%) 50%, hsl(213 100% 21%) 75%, hsl(213 100% 18%) 100%);
-    background-size: 300% 300%;
-    animation: gradient-shift 20s ease infinite;
+    background: hsl(var(--background));
   }
 
   .dark .user-theme {
-    background: linear-gradient(135deg, hsl(218 45% 5%) 0%, hsl(217 50% 15%) 50%, hsl(218 45% 8%) 100%);
+    background: hsl(var(--background));
   }
 
   @keyframes gradient-shift {
