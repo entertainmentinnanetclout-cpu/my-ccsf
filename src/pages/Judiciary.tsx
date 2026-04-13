@@ -105,7 +105,7 @@ const Judiciary = () => {
   const recentUpdates = caseUpdates.filter(u => u.update_type !== 'hearing' || !u.scheduled_date);
 
   return (
-    <div className="min-h-screen bg-gradient-admin admin-theme">
+    <div className="min-h-screen bg-background">
       <motion.header
         initial={{ y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
