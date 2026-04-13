@@ -175,7 +175,7 @@ const ProfileCompletion = () => {
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-16 w-16 animate-spin text-white" />
+        <Loader2 className="h-16 w-16 animate-spin text-primary" />
       </div>
     );
   }
