@@ -1,65 +1,80 @@
 
 
-## Plan: Complete TUT Color Cleanup -- Fix All Remaining Hardcoded Colors
+## Plan: White-Dominant TUT Design System Migration
 
 ### Problem
-The previous color migration left ~15 files with hardcoded Tailwind color classes (`bg-red-*`, `text-green-*`, `bg-blue-*`, `text-amber-*`, etc.) and inline red HSL gradients. The Auth page still has a red gradient background. These need to use the TUT design system variables.
+Every page currently uses full-screen navy blue gradient backgrounds (`admin-theme`, `user-theme`, `bg-gradient-primary`). The reference image and TUT website show a **white-dominant** design where blue is used only for headers/icons/accents, not as page backgrounds.
 
-### What Changes
+### Core Change
+Replace all full-page navy gradient backgrounds with white/light grey (`bg-background`), keeping navy headers intact. Update footer text colors that will break on white backgrounds.
 
-**Critical fix -- Auth page red gradient:**
-- `src/pages/Auth.tsx` line 190: Replace `hsl(0 72% 51%)` red gradient with navy gradient using `hsl(213 100% 21%)`
-- Also fix `text-foreground` on white text (should be `text-white` since it's on dark bg)
+### Color System Update
 
-**Critical fix -- PWA Install Prompt red gradients:**
-- `src/components/shared/PWAInstallPrompt.tsx` lines 106, 164, 186: Replace all `hsl(0 72%)` red references with navy `hsl(213 100% 21%)`
+**Updated values in `src/index.css`:**
+- `--primary: 216 100% 28%` (#003A8F — slightly lighter navy per spec)
+- `--destructive: 352 84% 50%` (#E31C3D)
+- `--accent: 43 100% 48%` (#F4B400)
+- `--background: 220 20% 97%` (#F5F7FA) — light grey instead of pure white
+- `--card: 0 0% 100%` (#FFFFFF) — white cards on grey bg
+- `--foreground: 0 0% 10%` (#1A1A1A) — near-black text
+- `--muted-foreground: 220 9% 46%` (#6B7280)
 
-**Critical fix -- Splash Screen:**
-- `src/components/shared/SplashScreen.tsx` line 275: `bg-red-500/50` to `bg-primary/50`
-- `text-neutral-*` classes to `text-muted-foreground` (lines 205, 228, 277, 493, 500, 553, 570)
-- `text-cyan-500/20` glitch effect to `text-primary/20`
+**Dark mode adjustments:**
+- `--background: 222 47% 11%` (#0F172A)
+- `--card: 217 33% 17%` (#1E293B)
 
-**Status color standardization (semantic variables):**
+**`.admin-theme` and `.user-theme`:** Change from navy gradients to just `background: hsl(var(--background))` — let the page be white/light, not navy.
 
-| File | Change |
-|------|--------|
-| `EmergencyCases.tsx` | `text-yellow-500` → `text-warning`, `text-blue-500` → `text-primary` |
-| `CampusOverview.tsx` | `bg-blue-500/10 text-blue-600` → `bg-primary/10 text-primary`, `bg-amber-500/10 text-amber-600` → `bg-warning/10 text-warning` |
-| `LiveLocationTracker.tsx` | `text-green-600` → `text-success`, `text-emerald-600` → `text-success`, `text-yellow-600` → `text-warning`, `text-orange-600` → `text-warning` |
-| `Profile.tsx` | `text-green-500` → `text-success`, `text-yellow-500` → `text-warning` |
-| `StudentChat.tsx` | `text-green-600` → `text-success`, `bg-green-400` → `bg-success` |
-| `MyCaseReports.tsx` | All `bg-green-50/text-green-*` resolution sections → `bg-success/10 text-success`, `text-blue-600` → `text-primary`, `text-amber-*` blocks → `text-warning` variants |
-| `ReportIncident.tsx` | `text-green-500/600` → `text-success`, `bg-green-50` → `bg-success/10`, `bg-gray-900` → `bg-card` |
-| `EmergencyReport.tsx` | `bg-amber-*` → `bg-warning/10`, `text-amber-*` → `text-warning` |
-| `CampusMap.tsx` | Speed test colors: `text-red-*` → `text-destructive`, `text-blue-*` → `text-primary`, `text-green-*` → `text-success`, `text-amber-*` → `text-warning`. Map landmarks: keep functional colors (yellow gates, blue buildings, gray parking, purple residences) as they serve map differentiation. WiFi band colors: `bg-blue-500` → `bg-primary` for 2.4GHz |
-| `WifiAccessPointManager.tsx` | `text-green-500` → `text-success` |
-| `StaffCommunication.tsx` | `text-blue-400` → `text-primary` |
-| `AlertsPanel.tsx` | `text-amber-500` → `text-warning` |
+**Gradient variables:** Keep `--gradient-primary` and `--gradient-admin` for use on headers only, not full-page backgrounds.
 
-**Toast component (keep as-is):**
-- `src/components/ui/toast.tsx` uses `text-red-300` etc. inside `group-[.destructive]` context -- this is ShadCN default and acceptable.
+### Page Background Changes (~8 files)
 
-### Files Modified (~15)
-1. `src/pages/Auth.tsx`
-2. `src/pages/Profile.tsx`
-3. `src/components/shared/PWAInstallPrompt.tsx`
-4. `src/components/shared/SplashScreen.tsx`
-5. `src/components/admin/EmergencyCases.tsx`
-6. `src/components/admin/CampusOverview.tsx`
-7. `src/components/admin/LiveLocationTracker.tsx`
-8. `src/components/admin/StaffCommunication.tsx`
-9. `src/components/admin/Dashboard/AlertsPanel.tsx`
-10. `src/components/admin/WifiAccessPointManager.tsx`
-11. `src/components/student/MyCaseReports.tsx`
-12. `src/components/student/CampusMap.tsx`
-13. `src/components/student/ReportIncident.tsx`
-14. `src/components/student/EmergencyReport.tsx`
-15. `src/components/student/StudentChat.tsx`
+| File | Current | New |
+|------|---------|-----|
+| `Dashboard.tsx` | `bg-gradient-primary user-theme` | `bg-background` |
+| `Admin.tsx` | `bg-gradient-admin admin-theme` | `bg-background` |
+| `Security.tsx` | `bg-gradient-admin admin-theme` | `bg-background` |
+| `Office.tsx` | `bg-gradient-admin admin-theme` | `bg-background` |
+| `Judiciary.tsx` | `bg-gradient-admin admin-theme` | `bg-background` |
+| `Profile.tsx` | `bg-gradient-primary user-theme` | `bg-background` |
+| `ProfileCompletion.tsx` | `bg-gradient-primary user-theme` | `bg-background` |
+| `Index.tsx` | `bg-gradient-primary` | `bg-background` |
+| `Auth.tsx` (line 183) | `bg-gradient-primary` | `bg-background` |
+
+### Footer Text Color Fixes
+Currently footers use `text-primary-foreground` (white) which was visible on navy backgrounds. On white backgrounds this becomes invisible. Change to `text-primary` (navy on white).
+
+**Files:** `Admin.tsx`, `Security.tsx`, `Dashboard.tsx`
+
+### Dashboard Footer/Content Text
+The student Dashboard footer currently uses `text-white` classes for the "Powered by" text and `bg-white/10` glass effect — these will be invisible on white. Change to `text-muted-foreground` and `bg-muted/50`.
+
+### Auth Page Background
+Line 190 has inline `style={{ background: 'linear-gradient(...)' }}`. Keep this as the one exception — Auth login page can retain the navy gradient for visual impact, OR change to white. Per reference image, the auth area appears to use a clean white card on a subtle background.
+
+**Decision:** Keep Auth page with navy gradient (it's a single login screen, not a working dashboard).
+
+### Card Styling
+Cards currently use `bg-card` which is `#F8F9FB` (very light grey). With new system, background becomes `#F5F7FA` and cards become `#FFFFFF` — creating proper card-on-background contrast with soft shadows.
 
 ### What Does NOT Change
-- No layout or logic changes
+- Header styling (stays `bg-primary` with white text) 
+- Button variants
+- Status color system
+- Component layouts
+- Navigation structure
+- MobileBottomNav styling
 - No new components
-- `toast.tsx` ShadCN defaults left intact
-- Map landmark differentiation colors (yellow/blue/gray/purple) kept for visual map clarity
-- CSS variables in `index.css` already correct from previous migration
+
+### Files Modified (~10)
+1. `src/index.css` — CSS variables + theme classes
+2. `src/pages/Dashboard.tsx` — background + footer
+3. `src/pages/Admin.tsx` — background + footer
+4. `src/pages/Security.tsx` — background + footer
+5. `src/pages/Office.tsx` — background
+6. `src/pages/Judiciary.tsx` — background
+7. `src/pages/Profile.tsx` — background
+8. `src/pages/ProfileCompletion.tsx` — background
+9. `src/pages/Index.tsx` — background
+10. `src/pages/Auth.tsx` — loading state background
 
