@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card';
 import { motion } from 'framer-motion';
 import { Shield, Plus, LogOut, Map, MessageCircle, Home, MapPin, FileText } from 'lucide-react';
 import tutLogo from '@/assets/tut-logo.png';
+import tutLogoLight from '@/assets/tut_light_theme.png';
 import { ReportIncident } from '@/components/student/ReportIncident';
 import { EmergencyReport } from '@/components/student/EmergencyReport';
 import { CampusMap } from '@/components/student/CampusMap';
@@ -16,9 +17,11 @@ import { NotificationBell } from '@/components/shared/NotificationBell';
 import { ThemeToggle } from '@/components/shared/ThemeToggle';
 import { MobileBottomNav } from '@/components/shared/MobileBottomNav';
 import { supabase } from '@/integrations/supabase/client';
+import { useTheme } from 'next-themes';
 
 const Dashboard = () => {
   const { user, signOut } = useAuth();
+  const { theme } = useTheme();
   const [activeView, setActiveView] = useState<'home' | 'report' | 'mycases' | 'map' | 'messages'>('home');
   const [userCampus, setUserCampus] = useState<string>('Campus');
   const [userCampusId, setUserCampusId] = useState<string | null>(null);
@@ -96,9 +99,9 @@ const Dashboard = () => {
                   transition={{ type: "spring", stiffness: 300, damping: 20 }}
                 >
                   <img
-                    src={tutLogo}
+                    src={theme === 'dark' ? tutLogo : tutLogoLight}
                     alt="TUT Logo"
-                    className="h-10 sm:h-12 w-auto object-contain dark:brightness-0 dark:invert"
+                    className="h-10 sm:h-12 w-auto object-contain"
                   />
                   <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-success rounded-full border-2 border-background dark:border-primary animate-pulse" />
                 </motion.div>

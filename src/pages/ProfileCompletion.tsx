@@ -12,6 +12,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { motion } from 'framer-motion';
 import { Shield, Loader2, MapPin, User, Phone, BookOpen, Home as HomeIcon, CheckCircle2 } from 'lucide-react';
 import tutLogo from '@/assets/tut-logo.png';
+import tutLogoLight from '@/assets/tut_light_theme.png';
+import { useTheme } from 'next-themes';
 
 const campusOptions = [
   { value: 'pretoria_west_main', label: 'Pretoria West (Main Campus)' },
@@ -45,6 +47,7 @@ const residenceOptions = [
 
 const ProfileCompletion = () => {
   const { user, userProfile, loading: authLoading, profileCompleted } = useAuth();
+  const { theme } = useTheme();
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -196,7 +199,7 @@ const ProfileCompletion = () => {
           transition={{ delay: 0.2 }}
         >
           <motion.img
-            src={tutLogo}
+            src={theme === 'dark' ? tutLogo : tutLogoLight}
             alt="TUT Logo"
             className="h-14 mx-auto mb-4 logo-glow"
           />
