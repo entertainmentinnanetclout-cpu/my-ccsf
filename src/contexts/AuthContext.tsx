@@ -58,6 +58,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           dbRole = 'student';
         }
       }
+
+
       setUserRole(dbRole);
 
       // Fetch profile data including profile_completed status

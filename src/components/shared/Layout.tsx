@@ -3,9 +3,9 @@ import Navigation from './Navigation';
 
 const Layout = () => {
   return (
-    <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen w-full">
       <Navigation />
-      <main className="py-4">
+      <main>
         <Outlet />
       </main>
     </div>
