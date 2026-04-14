@@ -38,13 +38,14 @@ const App = () => (
               <Routes>
                 <Route element={<Layout />}>
                   {/* Public routes */}
-                  <Route path="/" element={<Index />} />
-                  <Route path="/auth" element={<Auth />} />
+                  <Route path="/" element={DEV_MODE ? <Dashboard /> : <Index />} />
+                  <Route path="/auth" element={DEV_MODE ? <Dashboard /> : <Auth />} />
                   
                   {/* DEV MODE: Allow direct access to all dashboards */}
                   {DEV_MODE ? (
                     <>
                       <Route path="/dashboard" element={<Dashboard />} />
+                      <Route path="/auth" element={<Dashboard />} />
                       <Route path="/security/*" element={<Security />} />
                       <Route path="/admin/*" element={<Admin />} />
                       <Route path="/office" element={<Office />} />

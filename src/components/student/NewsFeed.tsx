@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Newspaper, Clock, ChevronRight, AlertCircle } from 'lucide-react';
+import { Megaphone, Clock, ChevronRight, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { NewsFeedSkeleton } from '@/components/shared/LoadingSkeletons';
@@ -107,14 +107,14 @@ export const NewsFeed = () => {
     <PullToRefresh onRefresh={handleRefresh}>
       <div className="space-y-4">
         <div className="flex items-center gap-2 mb-4">
-          <Newspaper className="h-5 w-5 text-primary" />
-          <h2 className="text-lg font-semibold text-foreground">Campus News Feed</h2>
+          <Megaphone className="h-5 w-5 text-primary dark:text-white" />
+          <h2 className="text-lg font-semibold text-foreground dark:text-white">Campus News Feed</h2>
         </div>
 
         {announcements.length === 0 ? (
           <Card className="p-6">
             <div className="flex flex-col items-center justify-center text-center py-6">
-              <AlertCircle className="h-12 w-12 text-muted-foreground mb-3" />
+              <Megaphone className="h-12 w-12 text-muted-foreground mb-3" />
               <h3 className="font-medium text-foreground mb-1">No Announcements</h3>
               <p className="text-sm text-muted-foreground">
                 There are no current announcements. Check back later for updates.
