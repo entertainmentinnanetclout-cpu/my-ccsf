@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/card';
 import { motion } from 'framer-motion';
 import { Shield, Home, Search, AlertCircle, BarChart3, FileText, Loader2, MapPin, Clock, User } from 'lucide-react';
 import tutLogo from '@/assets/tut-logo.png';
+import tutLogoLight from '@/assets/tut_light_theme.png';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -12,12 +13,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import type { Database } from '@/integrations/supabase/types';
+import { useTheme } from 'next-themes';
 
 type Incident = Database['public']['Tables']['incidents']['Row'];
 type IncidentStatus = Database['public']['Enums']['incident_status'];
 
 const Office = () => {
   const navigate = useNavigate();
+  const { theme } = useTheme();
   const { toast } = useToast();
   const [activeView, setActiveView] = useState<'reports' | 'stats'>('reports');
   const [searchTerm, setSearchTerm] = useState('');
@@ -125,7 +128,7 @@ const Office = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <motion.img
-                src={tutLogo}
+                src={theme === 'dark' ? tutLogo : tutLogoLight}
                 alt="TUT Logo"
                 className="h-10 logo-glow"
                 whileHover={{ scale: 1.1, rotate: -5 }}

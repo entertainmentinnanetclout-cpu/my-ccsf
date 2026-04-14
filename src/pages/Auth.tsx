@@ -11,7 +11,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { motion } from 'framer-motion';
 import { Shield, AlertCircle, Loader2, MapPin, ArrowLeft } from 'lucide-react';
 import tutLogo from '@/assets/tut-logo.png';
+import tutLogoLight from '@/assets/tut_light_theme.png';
 import { z } from 'zod';
+import { useTheme } from 'next-themes';
 
 // Campus options with display names and DB values
 const campusOptions = [
@@ -48,6 +50,7 @@ const resetSchema = z.object({
 type AuthView = 'login' | 'signup' | 'forgot-password';
 
 const Auth = () => {
+  const { theme } = useTheme();
   const [view, setView] = useState<AuthView>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -201,7 +204,7 @@ const Auth = () => {
           transition={{ delay: 0.2 }}
         >
           <motion.img
-            src={tutLogo}
+            src={theme === 'dark' ? tutLogo : tutLogoLight}
             alt="TUT Logo"
             className="h-16 mx-auto mb-4 logo-glow"
             initial={{ scale: 0.9 }}

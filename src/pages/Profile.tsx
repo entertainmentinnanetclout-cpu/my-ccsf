@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/card';
 import { motion } from 'framer-motion';
 import { Shield, User, Loader2, Phone, Heart, AlertCircle, MapPin, Home, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import tutLogo from '@/assets/tut-logo.png';
+import tutLogoLight from '@/assets/tut_light_theme.png';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,6 +17,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Constants } from '@/integrations/supabase/types';
 import { AvatarUpload } from '@/components/shared/AvatarUpload';
+import { useTheme } from 'next-themes';
 
 const campuses = Constants.public.Enums.campus_location;
 
@@ -35,6 +37,7 @@ const PROFILE_FIELDS = [
 
 const Profile = () => {
   const navigate = useNavigate();
+  const { theme } = useTheme();
   const { user, userRole } = useAuth();
   const { toast } = useToast();
   
@@ -209,7 +212,7 @@ const Profile = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <motion.img
-                src={tutLogo}
+                src={theme === 'dark' ? tutLogo : tutLogoLight}
                 alt="TUT Logo"
                 className="h-10 logo-glow"
               />

@@ -177,8 +177,8 @@ export const MyCaseReports = () => {
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-xl font-bold text-white">My Case Reports</h2>
-          <p className="text-sm text-white/70">{incidents.length} case(s) submitted</p>
+            <h2 className="text-xl font-bold text-primary dark:text-[#F2A900]">My Case Reports</h2>
+          <p className="text-sm text-muted-foreground dark:text-white/70">{incidents.length} case(s) submitted</p>
         </div>
         <Button 
           variant="outline" 
@@ -286,14 +286,14 @@ export const MyCaseReports = () => {
 
                 {/* Description */}
                 <div>
-                  <h4 className="font-semibold mb-2">Description / Statement</h4>
+                  <h4 className="font-semibold mb-2 text-primary dark:text-[#F2A900]">Description / Statement</h4>
                   <p className="text-muted-foreground whitespace-pre-wrap">{selectedIncident.description}</p>
                 </div>
 
                 {/* Location Details */}
                 {(selectedIncident.location_description || selectedIncident.location_lat) && (
                   <div>
-                    <h4 className="font-semibold mb-2">📍 Location Details</h4>
+                    <h4 className="font-semibold mb-2 text-primary dark:text-[#F2A900]">📍 Location Details</h4>
                     <div className="p-4 bg-success/10 border border-success/20 rounded-lg space-y-2">
                       {selectedIncident.location_description && (
                         <p className="text-foreground">{selectedIncident.location_description}</p>
@@ -354,8 +354,8 @@ export const MyCaseReports = () => {
 
                 {/* Case Updates / Steps Taken */}
                 <div>
-                  <h4 className="font-semibold mb-3 flex items-center gap-2">
-                    <MessageSquare className="h-5 w-5 text-primary" />
+                  <h4 className="font-semibold mb-3 flex items-center gap-2 text-primary dark:text-[#F2A900]">
+                    <MessageSquare className="h-5 w-5" />
                     Case Updates & Steps Taken
                   </h4>
                   

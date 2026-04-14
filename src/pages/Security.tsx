@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { motion } from 'framer-motion';
 import { Shield, LayoutDashboard, AlertCircle, Megaphone, MessageSquare, MapPin, Users, BarChart3, Settings, Wifi } from 'lucide-react';
 import tutLogo from '@/assets/tut-logo.png';
+import tutLogoLight from '@/assets/tut_light_theme.png';
 import { CampusDashboard } from '@/components/admin/CampusDashboard';
 import { AdminIncidents } from '@/components/admin/AdminIncidents';
 import { AdminAnnouncements } from '@/components/admin/AdminAnnouncements';
@@ -24,6 +25,7 @@ import { ThemeToggle } from '@/components/shared/ThemeToggle';
 import { MobileBottomNav } from '@/components/shared/MobileBottomNav';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
+import { useTheme } from 'next-themes';
 type CampusLocation = Database['public']['Enums']['campus_location'];
 const campusDisplayNames: Record<string, string> = {
   'pretoria_west_main': 'Pretoria West',
@@ -42,6 +44,7 @@ const Security = () => {
     userProfile,
     signOut
   } = useAuth();
+  const { theme } = useTheme();
   const [activeView, setActiveView] = useState<'overview' | 'incidents' | 'announcements' | 'communication' | 'students' | 'analytics' | 'wifi' | 'settings'>('overview');
   const [campusStudentCount, setCampusStudentCount] = useState(0);
   const [campusIncidentCount, setCampusIncidentCount] = useState(0);
@@ -122,7 +125,7 @@ const Security = () => {
             <div className="flex items-center justify-between gap-4">
               {/* Left: Logo and Title */}
               <div className="flex items-center gap-3 min-w-0 flex-shrink-0">
-                <motion.img src={tutLogo} alt="TUT Logo" className="h-10 w-auto object-contain flex-shrink-0 logo-glow" whileHover={{
+                <motion.img src={theme === 'dark' ? tutLogo : tutLogoLight} alt="TUT Logo" className="h-10 w-auto object-contain flex-shrink-0 logo-glow" whileHover={{
                   scale: 1.1,
                   rotate: -5
                 }} transition={{
