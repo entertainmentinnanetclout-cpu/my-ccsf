@@ -41,37 +41,49 @@ No phase may modify production Supabase data automatically. SQL migrations and E
 
 ## Phase 1 — Full codebase audit
 
-**Status: IN PROGRESS**
+**Status: COMPLETE**
 
 - [x] Confirm application stack
 - [x] Confirm route framework and protected-route structure
 - [x] Confirm current role names
-- [x] Confirm Supabase client location
+- [x] Confirm Supabase client location and environment handling
+- [x] Complete route and portal inventory
+- [x] Complete generated schema and RPC inventory
+- [x] Complete database read/write inventory
 - [x] Trace standard incident submission
 - [x] Trace emergency alert submission
-- [x] Trace live-location writes
+- [x] Trace live-location writes and resume behaviour
+- [x] Trace student case-status workflow
+- [x] Trace status, assignment and resolution workflow
+- [x] Trace escalation workflow
+- [x] Complete notification and push inventory
+- [x] Complete Storage bucket inventory
+- [x] Complete Realtime channel inventory
+- [x] Complete Edge Function inventory
 - [x] Inspect campus-admin portal structure
 - [x] Inspect super-admin portal structure
-- [ ] Complete route inventory
-- [ ] Complete database read/write inventory
-- [ ] Complete storage inventory
-- [ ] Complete Realtime inventory
-- [ ] Complete Edge Function inventory
-- [ ] Complete notification flow inventory
-- [ ] Complete case-status lifecycle
-- [ ] Complete data-deletion inventory
-- [ ] Complete security risk register
-- [ ] Publish final `01-codebase-audit.md`
+- [x] Complete data-deletion inventory
+- [x] Inspect repository migrations and representative RLS policies
+- [x] Complete security and operational risk register
+- [x] Publish final `01-codebase-audit.md`
+- [x] Publish `01a-data-interaction-matrix.md`
+- [x] Publish `01b-security-risk-register.md`
 
-### Phase 1 exit criteria
+### Phase 1 conclusion
 
-Phase 1 is complete only when every production table, storage bucket, Edge Function, role gate, route, live-location flow and incident workflow used by the app has been documented.
+The production incident system is strongly interconnected through direct writes, Realtime subscriptions, dashboard contexts, status triggers, location tracking, notifications, case updates and escalation records.
+
+**Approved architecture direction:** keep the existing application and Supabase project, but isolate Pilot Mode with separate `pilot_*` tables, a private pilot attachment bucket, separate query keys, separate Realtime channels and server-controlled deletion/retention.
+
+### Phase 1 verification boundary
+
+The repository was fully audited for Pilot Mode dependencies. The live external Supabase configuration was not directly connected, so Phase 2 and Phase 3 must include a manual live policy/schema comparison before SQL execution.
 
 ---
 
 ## Phase 2 — Architecture and implementation plan
 
-**Status: NOT STARTED**
+**Status: NEXT**
 
 - [ ] Confirm final pilot-table architecture
 - [ ] Confirm Pilot Mode entry routes
@@ -81,13 +93,16 @@ Phase 1 is complete only when every production table, storage bucket, Edge Funct
 - [ ] Define campus pilot dashboard
 - [ ] Define super-admin pilot dashboard
 - [ ] Define pilot analytics
+- [ ] Define location simulation architecture
+- [ ] Define pilot notification architecture
 - [ ] Define deletion and retention model
-- [ ] Define manual Supabase setup sequence
+- [ ] Define manual Supabase verification and setup sequence
+- [ ] Define exact file-change register
 - [ ] Define rollback strategy
 
 ### Phase 2 exit criteria
 
-A written implementation plan must identify exact files to add, files to modify, SQL files to generate, roles permitted, and production-isolation controls.
+A written implementation plan must identify exact files to add, exact files to modify, SQL files to generate, roles permitted, campus scope, data retention, deletion flow and production-isolation controls.
 
 ---
 
@@ -99,6 +114,7 @@ A written implementation plan must identify exact files to add, files to modify,
 - [ ] Pilot sessions
 - [ ] Pilot reports
 - [ ] Pilot report events
+- [ ] Pilot location events
 - [ ] Pilot attachments
 - [ ] Pilot feedback
 - [ ] Pilot notifications
