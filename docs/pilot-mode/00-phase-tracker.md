@@ -4,15 +4,17 @@
 
 `feature/controlled-pilot-mode`
 
-## Tracking issue
+## Tracking
 
-GitHub Issue #4: **Controlled Pilot Mode — phased implementation tracker**
+- GitHub Issue #4 — Controlled Pilot Mode phased implementation tracker
+- Draft Pull Request #5 — branch review checkpoint
+- Vercel Preview — branch testing environment
 
 ## Delivery principle
 
-The Pilot Mode will reuse the existing application structure and user experience while keeping all pilot data, pilot actions, pilot analytics and simulated responses isolated from production operations.
+The Pilot Mode will reuse the existing application structure and visual language while keeping all pilot data, actions, analytics and simulated responses isolated from production emergency operations.
 
-All work remains traceable through Git history, Supabase migration history, phase documents and pull-request review. Pilot Mode must never trigger production emergency operations.
+The branch will not be merged into `main` until all phases are complete, the Vercel Preview has been tested and the user approves the final merge.
 
 ---
 
@@ -20,22 +22,12 @@ All work remains traceable through Git history, Supabase migration history, phas
 
 **Status: COMPLETE**
 
-- [x] Confirm repository access
-- [x] Confirm administrator-level repository permissions
+- [x] Confirm repository access and permissions
 - [x] Create `feature/controlled-pilot-mode`
-- [x] Confirm default branch remains `main`
-- [x] Create permanent GitHub phase tracker
-- [x] Confirm direct production incident writes exist
-- [x] Confirm production attachment storage flow exists
+- [x] Confirm `main` remains the production branch
+- [x] Create permanent phase tracking
+- [x] Confirm production incident and attachment write paths
 - [x] Establish no-direct-main rule
-
-### Phase 0 evidence
-
-- Repository: `entertainmentinnanetclout-cpu/my-ccsf`
-- Branch: `feature/controlled-pilot-mode`
-- Tracking issue: `#4`
-- Existing report component writes to `incidents`
-- Existing attachments use `incident-media` and `incident_media`
 
 ---
 
@@ -43,41 +35,25 @@ All work remains traceable through Git history, Supabase migration history, phas
 
 **Status: COMPLETE**
 
-- [x] Confirm application stack
-- [x] Confirm route framework and protected-route structure
-- [x] Confirm current role names
-- [x] Confirm Supabase client location and environment handling
-- [x] Complete route and portal inventory
-- [x] Complete generated schema and RPC inventory
-- [x] Complete database read/write inventory
-- [x] Trace standard incident submission
-- [x] Trace emergency alert submission
-- [x] Trace live-location writes and resume behaviour
-- [x] Trace student case-status workflow
-- [x] Trace status, assignment and resolution workflow
-- [x] Trace escalation workflow
-- [x] Complete notification and push inventory
-- [x] Complete Storage bucket inventory
-- [x] Complete Realtime channel inventory
-- [x] Complete Edge Function inventory
-- [x] Inspect campus-admin portal structure
-- [x] Inspect super-admin portal structure
-- [x] Complete data-deletion inventory
-- [x] Inspect repository migrations and representative RLS policies
-- [x] Complete security and operational risk register
-- [x] Publish final `01-codebase-audit.md`
-- [x] Publish `01a-data-interaction-matrix.md`
-- [x] Publish `01b-security-risk-register.md`
+- [x] Application stack and route inventory
+- [x] Authentication and role inventory
+- [x] Supabase client and generated schema inventory
+- [x] Database read/write matrix
+- [x] Student report and emergency workflow traces
+- [x] Live-location and resume behaviour
+- [x] Case status, assignment, resolution and escalation
+- [x] Notification, Storage and Realtime inventory
+- [x] Edge Function inventory
+- [x] Campus-admin and super-admin portal inventory
+- [x] Deletion inventory
+- [x] Security risk register
+- [x] Publish Phase 1 documentation
 
-### Phase 1 conclusion
+### Phase 1 architecture finding
 
-The production incident system is strongly interconnected through direct writes, Realtime subscriptions, dashboard contexts, status triggers, location tracking, notifications, case updates and escalation records.
+The production incident system is strongly interconnected through direct writes, Realtime subscriptions, status triggers, location tracking, notifications, case updates and escalations.
 
-**Approved architecture direction:** keep the existing application and Supabase project, but isolate Pilot Mode with separate `pilot_*` tables, a private pilot attachment bucket, separate query keys, separate Realtime channels and server-controlled deletion and retention.
-
-### Phase 1 verification boundary resolved
-
-The repository audit was followed by a direct live Supabase comparison and the complete Phase 1.5 remediation. The effective live schema, RLS policies, Storage configuration, role helpers, migrations and deployed Edge Functions are now verified.
+Approved direction: separate `pilot_*` tables, private pilot Storage, separate query keys, separate Realtime channels and controlled deletion/retention.
 
 ---
 
@@ -85,98 +61,122 @@ The repository audit was followed by a direct live Supabase comparison and the c
 
 **Status: COMPLETE — 17 July 2026**
 
-- [x] Compare live Supabase schema with checked-in frontend types
-- [x] Create and secure `app_settings`
-- [x] Create and secure `campus_emergency_contacts`
-- [x] Add authenticated ownership for anonymous incidents
-- [x] Harden incident insert, select, update and delete controls
-- [x] Harden incident-location writes
-- [x] Harden incident-media metadata and Storage access
-- [x] Make staff chat media private
-- [x] Add signed chat-media URLs in the frontend
+- [x] Compare live Supabase with frontend and checked-in types
+- [x] Add and secure `app_settings`
+- [x] Add and secure `campus_emergency_contacts`
+- [x] Add authenticated ownership for anonymous reports
+- [x] Harden incident, location and evidence permissions
+- [x] Make staff chat media private and use signed URLs
 - [x] Remove the unverified hard-coded CPS number
-- [x] Load campus emergency contacts from Supabase
 - [x] Move Supabase browser configuration to environment variables
-- [x] Synchronise checked-in Supabase types
-- [x] Raise staff-account password validation to twelve characters
-- [x] Correct campus-head and super-admin role separation
-- [x] Move elevated helpers to the non-exposed `private` schema
-- [x] Enable JWT verification on all privileged Edge Functions
-- [x] Replace false push-delivery success with real or explicitly unconfigured delivery
-- [x] Consolidate overlapping permissive RLS policies
-- [x] Remove RLS auth initialization-plan warnings
-- [x] Add missing foreign-key indexes
-- [x] Run final security adviser verification
-- [x] Run final performance adviser verification
-- [x] Publish `01c-production-sync-remediation.md`
-- [x] Publish `01d-live-migration-ledger.md`
-- [x] Publish `PHASE-1-5-COMPLETE.md`
-- [x] Pass the repository production-build workflow
+- [x] Synchronise TypeScript types
+- [x] Raise staff-password validation to twelve characters
+- [x] Correct campus-head/super-admin separation
+- [x] Move elevated helpers into the private schema
+- [x] Enable JWT verification on privileged Edge Functions
+- [x] Remove false push-delivery success
+- [x] Consolidate RLS policies and clear RLS performance warnings
+- [x] Add missing indexes
+- [x] Pass production build verification
 
-### Phase 1.5 accepted constraints
+### Accepted constraints
 
 - Leaked-password protection is deferred because it requires a qualifying paid Supabase plan.
-- VAPID secrets are not configured; Web Push returns a truthful `not_configured` response.
-- Official campus CPS numbers are awaiting institutional verification; no unverified number is displayed.
-- Informational unused-index notices are retained until production traffic provides representative usage data.
-
-### Phase 1.5 conclusion
-
-The production frontend and connected Supabase backend are synchronised and materially hardened. Critical security-adviser findings and RLS performance warnings have been resolved. Phase 2 is authorised to proceed.
+- VAPID secrets are not configured; Web Push returns `not_configured`.
+- Official campus CPS numbers await institutional verification.
+- Informational unused-index notices remain until representative traffic exists.
 
 ---
 
 ## Phase 2 — Architecture and implementation plan
 
-**Status: NEXT**
+**Status: COMPLETE — 17 July 2026**
 
-- [ ] Confirm final pilot-table architecture
-- [ ] Confirm Pilot Mode entry routes
-- [ ] Define central Pilot Mode context/provider
-- [ ] Define production and pilot service separation
-- [ ] Define student pilot journey
-- [ ] Define campus pilot dashboard
-- [ ] Define super-admin pilot dashboard
-- [ ] Define pilot analytics
-- [ ] Define location simulation architecture
-- [ ] Define pilot notification architecture
-- [ ] Define deletion and retention model
-- [ ] Define manual Supabase verification and setup sequence
-- [ ] Define exact file-change register
-- [ ] Define rollback strategy
+- [x] Confirm final pilot-table architecture
+- [x] Confirm student, campus-admin and super-admin routes
+- [x] Define `PilotModeProvider` and fail-closed feature flag
+- [x] Define production/pilot service separation
+- [x] Define student pilot journey and no-real-dispatch warnings
+- [x] Define campus pilot dashboard
+- [x] Define super-admin pilot dashboard
+- [x] Define analytics event catalogue
+- [x] Define pilot-only location and live-tracking architecture
+- [x] Define pilot in-app notification architecture
+- [x] Define RLS ownership, role and campus contract
+- [x] Define private Storage path and signed-URL contract
+- [x] Define deletion, withdrawal, purge and retention model
+- [x] Define Edge Function architecture
+- [x] Define Vercel Preview and production feature-flag control
+- [x] Define exact files to add and modify
+- [x] Define SQL migration sequence
+- [x] Define rollback and emergency shutdown sequence
+- [x] Publish Phase 2 documentation
 
-### Phase 2 exit criteria
+### Phase 2 approved routes
 
-A written implementation plan must identify exact files to add, exact files to modify, SQL files to generate, roles permitted, campus scope, data retention, deletion flow and production-isolation controls.
+- `/pilot`
+- `/pilot/session/:sessionId`
+- `/pilot/report/:reportId`
+- `/pilot/resources`
+- `/security/pilot`
+- `/admin/pilot`
+
+### Phase 2 approved data boundary
+
+Pilot Mode must not write to or invoke:
+
+- `incidents`
+- `incident_media`
+- `incident_location_updates`
+- production `notifications`
+- `case_updates`
+- `case_escalations`
+- `incident-media`
+- `send-push-notification`
+- production dispatch integrations
+
+### Phase 2 evidence
+
+- `02-architecture-and-implementation-plan.md`
+- `02a-data-security-and-retention-contract.md`
+- `02b-exact-file-change-register.md`
+- `PHASE-2-COMPLETE.md`
 
 ---
 
 ## Phase 3 — Database and SQL package
 
-**Status: NOT STARTED**
+**Status: NEXT**
 
 - [ ] Pilot enums
-- [ ] Pilot sessions
-- [ ] Pilot reports
-- [ ] Pilot report events
+- [ ] Pilot programmes and scenarios
+- [ ] Pilot participants and sessions
+- [ ] Pilot reports and immutable events
 - [ ] Pilot location events
 - [ ] Pilot attachments
 - [ ] Pilot feedback
 - [ ] Pilot notifications
 - [ ] Pilot feature tests
 - [ ] Pilot audit logs
-- [ ] Indexes
-- [ ] RLS policies
-- [ ] Storage bucket policies
-- [ ] Delete-report RPC
-- [ ] Delete-session RPC
-- [ ] Retention purge RPC
-- [ ] Campus/date purge RPC
-- [ ] Rollback SQL
+- [ ] Constraints and indexes
+- [ ] Student RLS policies
+- [ ] Campus RLS policies
+- [ ] Super-admin RLS policies
+- [ ] Private security helpers
+- [ ] Status-transition functions
+- [ ] Delete-report and delete-session functions
+- [ ] Withdrawal and retention-purge functions
+- [ ] Campus/program purge functions
+- [ ] Export functions
+- [ ] Private Storage bucket and policies
+- [ ] Pilot Realtime configuration
+- [ ] Regenerate checked-in types
+- [ ] SQL execution ledger
+- [ ] Rollback SQL and guide
 
 ### Phase 3 exit criteria
 
-All SQL must exist as reviewable migration files, have an execution order and include rollback guidance before being applied.
+The additive pilot backend must be live, typed, RLS-protected, Storage-isolated and rollback-documented without modifying production incident operations.
 
 ---
 
@@ -184,27 +184,25 @@ All SQL must exist as reviewable migration files, have an execution order and in
 
 **Status: NOT STARTED**
 
+- [ ] Pilot feature flag and route guards
 - [ ] Pilot Mode provider
-- [ ] Pilot route entry
-- [ ] Pilot warning banner
-- [ ] Pilot consent screen
-- [ ] Pilot session creation
-- [ ] Controlled test scenarios
+- [ ] Pilot warning and consent
+- [ ] Controlled scenarios
 - [ ] Pilot report submission
-- [ ] Pilot location testing
-- [ ] Pilot attachment testing
+- [ ] Emergency simulation
+- [ ] Pilot location and attachment tests
 - [ ] Pilot status tracking
 - [ ] Pilot in-app notifications
 - [ ] Safety PDF resources
-- [ ] Pilot feedback
+- [ ] Feedback and completion
 - [ ] Campus pilot dashboard
 - [ ] Super-admin pilot dashboard
-- [ ] Deletion controls
-- [ ] CSV export
+- [ ] Deletion and retention UI
+- [ ] CSV/de-identified export UI
 
 ### Phase 4 exit criteria
 
-Pilot Mode must function without writing to production incident, location, media, notification or escalation tables.
+Pilot Mode must function through Vercel Preview without writing to production incident, location, media, notification or escalation tables.
 
 ---
 
@@ -214,17 +212,17 @@ Pilot Mode must function without writing to production incident, location, media
 
 - [ ] Create session
 - [ ] Submit report
-- [ ] Update simulation status
+- [ ] Transition simulation status
 - [ ] Create pilot notification
 - [ ] Delete report
 - [ ] Delete session
 - [ ] Purge expired data
 - [ ] Export pilot results
-- [ ] Write deployment guide
+- [ ] Deployment guide
 
 ### Phase 5 exit criteria
 
-All functions must be pilot-only, documented and incapable of invoking real dispatch or production-notification integrations.
+Every function must be JWT-verified, role/campus validated, pilot-only and incapable of invoking production dispatch or notification integrations.
 
 ---
 
@@ -237,19 +235,15 @@ All functions must be pilot-only, documented and incapable of invoking real disp
 - [ ] Campus-scope tests
 - [ ] Super-admin tests
 - [ ] Retention and deletion tests
-- [ ] Location permission tests
-- [ ] Attachment limit tests
+- [ ] Location permission and tracking tests
+- [ ] Attachment and signed-URL tests
 - [ ] PDF download tracking tests
 - [ ] No-real-dispatch tests
-- [ ] Mobile usability tests
-- [ ] Lint
-- [ ] Type check
-- [ ] Build
-- [ ] Security review
-
-### Phase 6 exit criteria
-
-The production application must still build and behave as before. Pilot Mode must remain isolated and all destructive operations must be role-checked and auditable.
+- [ ] Mobile/browser usability tests
+- [ ] Lint and type checks
+- [ ] Production build
+- [ ] Supabase security/performance advisers
+- [ ] Vercel Preview user testing
 
 ---
 
@@ -258,27 +252,27 @@ The production application must still build and behave as before. Pilot Mode mus
 **Status: NOT STARTED**
 
 - [ ] Final changed-file register
-- [ ] SQL execution order
-- [ ] Edge Function deployment order
+- [ ] SQL and Edge Function deployment register
 - [ ] Environment-variable register
-- [ ] Manual QA checklist
-- [ ] Known-limitations register
+- [ ] QA evidence
+- [ ] Known limitations
 - [ ] Rollback guide
-- [ ] Draft pull request
-- [ ] Review corrections
-- [ ] Merge approval
+- [ ] Final pull-request review
+- [ ] User approval
+- [ ] User-controlled merge to `main`
+- [ ] Production Pilot Mode enablement decision
 
 ---
 
 ## Non-negotiable controls
 
-1. Do not commit implementation directly to `main`.
+1. Do not merge the implementation branch before user approval.
 2. Do not write Pilot Mode data to production incident tables.
-3. Do not trigger live CPS, SAPS, ambulance, SMS, email or push dispatch from Pilot Mode.
-4. Do not redesign the existing application.
-5. Do not replace current branding, colours, typography or navigation.
-6. Keep every phase documented, reviewable and reversible.
-7. Record missed deliverables with cause, impact and recovery action.
-8. Do not duplicate existing components, tables or services where safe reuse is possible.
-9. Apply production database changes only through named, traceable migrations.
-10. Require branch review before merging implementation into `main`.
+3. Do not trigger live CPS, SAPS, ambulance, SMS, email or production push from Pilot Mode.
+4. Do not redesign existing branding, colours, typography or navigation.
+5. Keep every phase documented, reviewable and reversible.
+6. Record deviations with cause, impact and recovery action.
+7. Reuse safe presentation components without sharing production data services.
+8. Apply database changes only through named, traceable migrations.
+9. Keep Pilot Mode disabled in production until explicitly approved.
+10. Use Vercel Preview for testing before the final merge.
