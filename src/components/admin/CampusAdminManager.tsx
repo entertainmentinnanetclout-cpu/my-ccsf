@@ -195,9 +195,9 @@ export const CampusAdminManager = () => {
       });
       return;
     }
-    if (createFormData.password.length < 6) {
+    if (createFormData.password.length < 12) {
       toast({
-        title: 'Password must be at least 6 characters',
+        title: 'Password must be at least 12 characters',
         variant: 'destructive'
       });
       return;

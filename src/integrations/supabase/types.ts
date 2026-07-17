@@ -178,6 +178,33 @@ export type Database = {
           },
         ]
       }
+      app_settings: {
+        Row: {
+          created_at: string
+          description: string | null
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+          value: Json
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Relationships: []
+      }
       bento_layouts: {
         Row: {
           created_at: string
@@ -199,6 +226,54 @@ export type Database = {
           layout?: Json
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      campus_emergency_contacts: {
+        Row: {
+          availability: string | null
+          campus: Database["public"]["Enums"]["campus_location"] | null
+          created_at: string
+          extension: string | null
+          id: string
+          is_active: boolean
+          label: string
+          last_verified_at: string | null
+          phone_number: string
+          priority: number
+          service: string
+          updated_at: string
+          verified_by: string | null
+        }
+        Insert: {
+          availability?: string | null
+          campus?: Database["public"]["Enums"]["campus_location"] | null
+          created_at?: string
+          extension?: string | null
+          id?: string
+          is_active?: boolean
+          label: string
+          last_verified_at?: string | null
+          phone_number: string
+          priority?: number
+          service: string
+          updated_at?: string
+          verified_by?: string | null
+        }
+        Update: {
+          availability?: string | null
+          campus?: Database["public"]["Enums"]["campus_location"] | null
+          created_at?: string
+          extension?: string | null
+          id?: string
+          is_active?: boolean
+          label?: string
+          last_verified_at?: string | null
+          phone_number?: string
+          priority?: number
+          service?: string
+          updated_at?: string
+          verified_by?: string | null
         }
         Relationships: []
       }
@@ -637,6 +712,7 @@ export type Database = {
           resolved_by: string | null
           signature_data: string | null
           status: Database["public"]["Enums"]["incident_status"]
+          submitted_by: string | null
           title: string
           updated_at: string
         }
@@ -657,6 +733,7 @@ export type Database = {
           resolved_by?: string | null
           signature_data?: string | null
           status?: Database["public"]["Enums"]["incident_status"]
+          submitted_by?: string | null
           title: string
           updated_at?: string
         }
@@ -677,6 +754,7 @@ export type Database = {
           resolved_by?: string | null
           signature_data?: string | null
           status?: Database["public"]["Enums"]["incident_status"]
+          submitted_by?: string | null
           title?: string
           updated_at?: string
         }
