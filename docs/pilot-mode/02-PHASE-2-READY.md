@@ -1,29 +1,28 @@
-# Phase 2 Readiness Gate
+# Phase 3 Ready — Pilot Backend Implementation Gate
 
 ## Status
 
-**READY**
+**PHASE 2 COMPLETE — PHASE 3 AUTHORISED**
 
-Phase 0, Phase 1 and Phase 1.5 are complete. The production frontend and live Supabase backend have been compared, synchronised and hardened.
+The Pilot Mode architecture, data contract, access model, route model, file register, retention model and rollback sequence are approved.
 
-## Authorised next step
+Phase 3 may create the additive pilot backend defined in:
 
-Phase 2 may now define the Controlled Pilot Mode architecture without carrying unresolved production schema or security drift into the design.
+- `02-architecture-and-implementation-plan.md`
+- `02a-data-security-and-retention-contract.md`
+- `02b-exact-file-change-register.md`
+- `PHASE-2-COMPLETE.md`
 
-## Phase 2 boundaries
+## Phase 3 restrictions
 
-The architecture plan must preserve:
+- Do not merge the feature branch into `main`.
+- Do not write pilot data to production incident tables.
+- Do not alter production emergency-dispatch behaviour.
+- Do not use production incident or chat Storage buckets for pilot files.
+- Do not enable Pilot Mode in production.
+- Apply backend changes only through named migrations.
+- Record every live migration and rollback dependency.
 
-- separate `pilot_*` data structures;
-- a private pilot attachment bucket;
-- pilot-only notifications and Realtime channels;
-- no writes to production incident, location, evidence, notification, update or escalation records;
-- no live emergency dispatch from Pilot Mode;
-- existing CCSF branding and interface patterns;
-- campus-scoped administration;
-- super-admin visibility across campuses;
-- traceable retention and deletion controls.
+## Testing strategy
 
-## Review gate
-
-No Phase 2 implementation code or Pilot Mode SQL should be introduced until the architecture and exact file-change plan have been documented and reviewed.
+The additive pilot backend will support the Vercel branch preview. The user will test the complete branch only after all implementation and QA phases are finished, then decide whether to merge into `main`.
