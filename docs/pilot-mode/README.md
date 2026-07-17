@@ -10,11 +10,11 @@
 6. `01c-production-sync-remediation.md` — production synchronisation and hardening record.
 7. `01d-live-migration-ledger.md` — authoritative live Supabase remediation ledger.
 8. `PHASE-1-5-COMPLETE.md` — Phase 1.5 completion record.
-9. `02-PHASE-2-READY.md` — Phase 2 entry and isolation gate.
-10. `02-architecture-and-implementation-plan.md` — approved Pilot Mode architecture.
-11. `02a-data-security-and-retention-contract.md` — tables, enums, RLS, Storage, deletion and retention contract.
-12. `02b-exact-file-change-register.md` — exact Phase 3–5 repository change register.
-13. `PHASE-2-COMPLETE.md` — Phase 2 completion and Phase 3 entry gate.
+9. `02-architecture-and-implementation-plan.md` — approved Pilot Mode architecture.
+10. `02a-data-security-and-retention-contract.md` — tables, enums, RLS, Storage, deletion and retention contract.
+11. `02b-exact-file-change-register.md` — exact Phase 3–5 repository change register.
+12. `PHASE-2-COMPLETE.md` — Phase 2 completion record.
+13. `02-PHASE-2-READY.md` — Phase 3 implementation-readiness gate retained under its original repository filename.
 
 ## Current status
 
