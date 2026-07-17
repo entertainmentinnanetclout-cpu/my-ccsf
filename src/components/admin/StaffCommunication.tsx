@@ -23,6 +23,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import imageCompression from 'browser-image-compression';
+import { resolveChatMediaUrl } from '@/lib/chatMedia';
 import { EmojiPicker, ReactionPicker } from './EmojiPicker';
 
 type ChatRoom = {
@@ -200,8 +201,15 @@ export const StaffCommunication = () => {
       if (error) {
         console.error('Error fetching messages:', error);
       } else if (msgs) {
+        const resolvedMessages = await Promise.all(
+          msgs.map(async (message) => ({
+            ...message,
+            media_url: await resolveChatMediaUrl(message.media_url),
+          })),
+        );
+
         // Fetch reactions for all messages
-        const messageIds = msgs.map(m => m.id);
+        const messageIds = resolvedMessages.map(m => m.id);
         const { data: reactions } = await supabase
           .from('message_reactions')
           .select('*')
@@ -217,14 +225,14 @@ export const StaffCommunication = () => {
         });
         
         // Attach reactions to messages
-        const messagesWithReactions = msgs.map(m => ({
+        const messagesWithReactions = resolvedMessages.map(m => ({
           ...m,
           reactions: reactionsByMessage[m.id] || []
         }));
         
         setMessages(messagesWithReactions);
         
-        const senderIds = [...new Set(msgs.map(m => m.sender_id))];
+        const senderIds = [...new Set(resolvedMessages.map(m => m.sender_id))];
         if (senderIds.length > 0) {
           const { data: profiles } = await supabase
             .from('profiles')
@@ -272,6 +280,10 @@ export const StaffCommunication = () => {
         },
         async (payload) => {
           const newMsg = payload.new as ChatMessage;
+          const resolvedNewMsg = {
+            ...newMsg,
+            media_url: await resolveChatMediaUrl(newMsg.media_url),
+          };
           
           if (!userProfiles[newMsg.sender_id]) {
             const { data: profile } = await supabase
@@ -285,7 +297,7 @@ export const StaffCommunication = () => {
             }
           }
           
-          setMessages(prev => [...prev, { ...newMsg, reactions: [] }]);
+          setMessages(prev => [...prev, { ...resolvedNewMsg, reactions: [] }]);
         }
       )
       .subscribe();
@@ -459,11 +471,7 @@ export const StaffCommunication = () => {
 
         if (uploadError) throw uploadError;
 
-        const { data: urlData } = supabase.storage
-          .from('chat-media')
-          .getPublicUrl(fileName);
-        
-        mediaUrl = urlData.publicUrl;
+        mediaUrl = fileName;
         mediaType = previewMedia.type.startsWith('image') ? 'image' : 'file';
       } catch (err) {
         console.error('Upload error:', err);

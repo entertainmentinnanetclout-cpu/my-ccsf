@@ -5,10 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
-import { AlertTriangle, Phone, MapPin, Loader2, Radio, StopCircle } from 'lucide-react';
+import { AlertTriangle, MapPin, Loader2, Radio, StopCircle } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useLocationTracking } from '@/hooks/useLocationTracking';
 import { Badge } from '@/components/ui/badge';
+import { CampusEmergencyContact } from './CampusEmergencyContact';
 
 // Reverse geocode using free Nominatim API (OpenStreetMap)
 const reverseGeocode = async (lat: number, lng: number): Promise<string> => {
@@ -296,13 +297,7 @@ export const EmergencyReport = () => {
               </div>
             </div>
 
-            <div className="bg-muted/50 rounded-lg p-4 flex items-start gap-3">
-              <Phone className="h-5 w-5 text-primary mt-0.5" />
-              <div>
-                <p className="text-sm font-medium">Campus Security</p>
-                <p className="text-sm text-muted-foreground">012 382 5911 / 5912</p>
-              </div>
-            </div>
+            <CampusEmergencyContact />
           </div>
 
           <div className="flex gap-3">
