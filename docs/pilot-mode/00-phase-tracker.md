@@ -12,7 +12,7 @@ GitHub Issue #4: **Controlled Pilot Mode — phased implementation tracker**
 
 The Pilot Mode will reuse the existing application structure and user experience while keeping all pilot data, pilot actions, pilot analytics and simulated responses isolated from production operations.
 
-No phase may modify production Supabase data automatically. SQL migrations and Edge Functions must be generated as reviewable files for manual execution and deployment.
+All work remains traceable through Git history, Supabase migration history, phase documents and pull-request review. Pilot Mode must never trigger production emergency operations.
 
 ---
 
@@ -73,11 +73,56 @@ No phase may modify production Supabase data automatically. SQL migrations and E
 
 The production incident system is strongly interconnected through direct writes, Realtime subscriptions, dashboard contexts, status triggers, location tracking, notifications, case updates and escalation records.
 
-**Approved architecture direction:** keep the existing application and Supabase project, but isolate Pilot Mode with separate `pilot_*` tables, a private pilot attachment bucket, separate query keys, separate Realtime channels and server-controlled deletion/retention.
+**Approved architecture direction:** keep the existing application and Supabase project, but isolate Pilot Mode with separate `pilot_*` tables, a private pilot attachment bucket, separate query keys, separate Realtime channels and server-controlled deletion and retention.
 
-### Phase 1 verification boundary
+### Phase 1 verification boundary resolved
 
-The repository was fully audited for Pilot Mode dependencies. The live external Supabase configuration was not directly connected, so Phase 2 and Phase 3 must include a manual live policy/schema comparison before SQL execution.
+The repository audit was followed by a direct live Supabase comparison and the complete Phase 1.5 remediation. The effective live schema, RLS policies, Storage configuration, role helpers, migrations and deployed Edge Functions are now verified.
+
+---
+
+## Phase 1.5 — Production synchronisation and security remediation
+
+**Status: COMPLETE — 17 July 2026**
+
+- [x] Compare live Supabase schema with checked-in frontend types
+- [x] Create and secure `app_settings`
+- [x] Create and secure `campus_emergency_contacts`
+- [x] Add authenticated ownership for anonymous incidents
+- [x] Harden incident insert, select, update and delete controls
+- [x] Harden incident-location writes
+- [x] Harden incident-media metadata and Storage access
+- [x] Make staff chat media private
+- [x] Add signed chat-media URLs in the frontend
+- [x] Remove the unverified hard-coded CPS number
+- [x] Load campus emergency contacts from Supabase
+- [x] Move Supabase browser configuration to environment variables
+- [x] Synchronise checked-in Supabase types
+- [x] Raise staff-account password validation to twelve characters
+- [x] Correct campus-head and super-admin role separation
+- [x] Move elevated helpers to the non-exposed `private` schema
+- [x] Enable JWT verification on all privileged Edge Functions
+- [x] Replace false push-delivery success with real or explicitly unconfigured delivery
+- [x] Consolidate overlapping permissive RLS policies
+- [x] Remove RLS auth initialization-plan warnings
+- [x] Add missing foreign-key indexes
+- [x] Run final security adviser verification
+- [x] Run final performance adviser verification
+- [x] Publish `01c-production-sync-remediation.md`
+- [x] Publish `01d-live-migration-ledger.md`
+- [x] Publish `PHASE-1-5-COMPLETE.md`
+- [x] Pass the repository production-build workflow
+
+### Phase 1.5 accepted constraints
+
+- Leaked-password protection is deferred because it requires a qualifying paid Supabase plan.
+- VAPID secrets are not configured; Web Push returns a truthful `not_configured` response.
+- Official campus CPS numbers are awaiting institutional verification; no unverified number is displayed.
+- Informational unused-index notices are retained until production traffic provides representative usage data.
+
+### Phase 1.5 conclusion
+
+The production frontend and connected Supabase backend are synchronised and materially hardened. Critical security-adviser findings and RLS performance warnings have been resolved. Phase 2 is authorised to proceed.
 
 ---
 
@@ -131,7 +176,7 @@ A written implementation plan must identify exact files to add, exact files to m
 
 ### Phase 3 exit criteria
 
-All SQL must exist as manually executable files. No SQL may be run automatically against the external Supabase project.
+All SQL must exist as reviewable migration files, have an execution order and include rollback guidance before being applied.
 
 ---
 
@@ -179,7 +224,7 @@ Pilot Mode must function without writing to production incident, location, media
 
 ### Phase 5 exit criteria
 
-All functions must be pilot-only, undeployed, documented and incapable of invoking real dispatch or production notification integrations.
+All functions must be pilot-only, documented and incapable of invoking real dispatch or production-notification integrations.
 
 ---
 
@@ -228,12 +273,12 @@ The production application must still build and behave as before. Pilot Mode mus
 ## Non-negotiable controls
 
 1. Do not commit implementation directly to `main`.
-2. Do not execute Supabase SQL automatically.
-3. Do not deploy Edge Functions automatically.
-4. Do not write Pilot Mode data to production incident tables.
-5. Do not trigger live CPS, SAPS, ambulance, SMS, email or push dispatch from Pilot Mode.
-6. Do not redesign the existing application.
-7. Do not replace current branding, colours, typography or navigation.
-8. Keep every phase documented, reviewable and reversible.
-9. Record missed deliverables with cause, impact and recovery action.
-10. Do not duplicate existing components, tables or services where safe reuse is possible.
+2. Do not write Pilot Mode data to production incident tables.
+3. Do not trigger live CPS, SAPS, ambulance, SMS, email or push dispatch from Pilot Mode.
+4. Do not redesign the existing application.
+5. Do not replace current branding, colours, typography or navigation.
+6. Keep every phase documented, reviewable and reversible.
+7. Record missed deliverables with cause, impact and recovery action.
+8. Do not duplicate existing components, tables or services where safe reuse is possible.
+9. Apply production database changes only through named, traceable migrations.
+10. Require branch review before merging implementation into `main`.
