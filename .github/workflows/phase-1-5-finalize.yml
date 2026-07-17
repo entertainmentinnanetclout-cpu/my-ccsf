@@ -15,6 +15,7 @@ jobs:
     env:
       VITE_SUPABASE_URL: https://lfelzsubrlqwcsnetpov.supabase.co
       VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_mk06MWImT-q1YuV_zFYsDg_r61IHhuO
+      VITE_VAPID_PUBLIC_KEY: ''
     steps:
       - name: Check out feature branch
         uses: actions/checkout@v4
@@ -45,6 +46,10 @@ jobs:
           fi
           git config user.name "CCSF Phase 1.5 Bot"
           git config user.email "actions@users.noreply.github.com"
-          git add src/integrations/supabase/types.ts src/components/admin/CampusAdminManager.tsx
-          git commit -m "fix(phase1.5): sync frontend types and password policy [phase-1-5-bot]"
+          git add \
+            src/integrations/supabase/types.ts \
+            src/components/admin/CampusAdminManager.tsx \
+            src/components/admin/StaffCommunication.tsx \
+            src/components/student/EmergencyReport.tsx
+          git commit -m "fix(phase1.5): finalize frontend security synchronisation [phase-1-5-bot]"
           git push origin HEAD:feature/controlled-pilot-mode
