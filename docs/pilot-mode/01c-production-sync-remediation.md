@@ -2,143 +2,144 @@
 
 ## Status
 
-**IN PROGRESS**
+**COMPLETE — 17 July 2026**
 
 ## Scope
 
 This phase was inserted before Pilot Mode architecture work because the live Supabase comparison identified production schema drift, overly broad access policies, Storage exposure, incomplete function hardening and frontend/backend mismatches.
 
-## Live Supabase project
+## Live systems
 
-- Project: `MY CCSF`
+- Supabase project: `MY CCSF`
 - Project reference: `lfelzsubrlqwcsnetpov`
 - GitHub branch: `feature/controlled-pilot-mode`
 - Production `main`: unchanged
 
-## Completed live remediations
+## Completed remediations
 
-### Schema synchronisation
+### Schema and frontend synchronisation
 
-- Created `public.app_settings`.
-- Seeded `welcome_banner_text` using the frontend fallback value.
-- Added authenticated read access and super-admin mutation policies.
-- Added an automatic `updated_at` trigger.
-- Created `public.campus_emergency_contacts`.
-- Added campus-aware read access and super-admin create/update/delete policies.
-- Added indexes and an automatic `updated_at` trigger.
-- No unverified campus emergency numbers were inserted.
+- Created and secured `public.app_settings`.
+- Seeded `welcome_banner_text` using the previous frontend fallback.
+- Created and secured `public.campus_emergency_contacts`.
+- Added `incidents.submitted_by` and automatic authenticated-submitter population.
+- Regenerated the checked-in TypeScript schema definitions to include the new tables and column.
+- Moved the browser Supabase URL and publishable key to environment variables.
+- Added `.env.example` using the modern Supabase publishable-key format.
+- Raised staff-account password validation to twelve characters in both frontend and backend.
 
-### Incident ownership
+### Incident ownership and workflow protection
 
-- Added `incidents.submitted_by` to retain the authenticated submitter for anonymous reports.
-- Backfilled existing identifiable records from `reporter_id`.
-- Added an index on `submitted_by`.
-- Replaced the incident INSERT policy so `submitted_by` must equal `auth.uid()`.
-- Replaced incident SELECT access to include the authenticated submitter, reporter, assignee, same-campus CPS officer and super admin.
+- Preserved the authenticated owner of anonymous reports through `submitted_by`.
+- Restricted incident insertion to the authenticated submitter.
+- Allowed reporters and authenticated submitters to view their own cases.
 - Restricted incident deletion to super admins.
-- Added a database trigger preventing students from modifying administrative incident fields.
-- Preserved student live-location updates for their own cases.
+- Added a database guard preventing students from changing assignment, status, resolution, campus, category and other administrative fields.
+- Preserved legitimate student live-location updates for their own incidents.
 
 ### Location and evidence
 
-- Removed the unrestricted authenticated insert policy from `incident_location_updates`.
+- Removed unrestricted authenticated inserts into `incident_location_updates`.
 - Added incident ownership, assignment, campus and super-admin checks.
-- Removed the unrestricted metadata insert policy from `incident_media`.
-- Added incident ownership, assignment, campus and super-admin checks.
-- Scoped incident-media metadata deletion to authorised staff.
+- Removed unrestricted inserts into `incident_media`.
+- Added incident ownership, assignment, campus and super-admin checks for evidence metadata.
+- Scoped evidence deletion to authorised staff.
+- Retained the private `incident-media` bucket with incident-path validation, file-size controls and MIME restrictions.
 
-### Storage
+### Private staff chat media
 
-- Replaced `incident-media` policies with incident-ID path validation and incident access checks.
-- Restricted incident evidence deletion to super admins or same-campus CPS officers.
-- Added file-size and MIME-type limits to incident evidence, avatars and carousel images.
-- Removed broad object-listing policies from public avatar and carousel buckets.
-- Removed broad object listing from `chat-media`.
-- Kept `chat-media` public object delivery temporarily because the current frontend stores public URLs; this prevents a production regression until signed-URL support is implemented.
+- Converted `chat-media` from public to private.
+- Restricted uploads to authenticated staff using a user-owned folder path.
+- Restricted object reads to authenticated staff.
+- Restricted deletion to the uploader or super admin.
+- Changed the frontend to store object paths instead of public URLs.
+- Added temporary signed-URL resolution for existing and realtime chat messages.
+- Preserved backward compatibility for historical absolute media URLs.
 
-### Functions and RPC exposure
+### Emergency contacts
 
-- Fixed the mutable `search_path` on `handle_updated_at()`.
-- Revoked direct execution of trigger-only functions from public, anonymous and authenticated roles.
-- Revoked anonymous execution of role, campus and administrator helper functions.
-- Restricted administrative assignment RPCs to signed-in users; the functions retain internal super-admin/head-admin validation.
+- Removed the unverified hard-coded CPS number from the emergency dialog.
+- Added a backend-driven campus emergency-contact component.
+- The component selects an active campus-specific or global contact.
+- When no institutionally verified contact exists, the interface clearly states that official contact details are awaiting verification.
+- No unverified emergency number was inserted into the database.
+
+### Roles, campus isolation and RPC exposure
+
+- Corrected the database defect that treated campus heads as super admins.
+- Restricted campus-head administration to the head's own campus.
+- Prevented campus heads from creating or removing other campus heads.
+- Moved elevated role and campus helper logic into the non-exposed `private` schema.
+- Replaced exposed elevated functions with validated `SECURITY INVOKER` wrappers.
+- Revoked anonymous and public execution of privileged helpers and trigger functions.
+- Removed all exposed `SECURITY DEFINER` adviser warnings.
 
 ### Case management
 
-- Replaced campus-security case-update visibility with same-campus enforcement.
-- Replaced case-update creation with same-campus enforcement and `admin_id = auth.uid()`.
-- Replaced case-update modification with creator/super-admin and campus checks.
-
-### Performance foundations
-
-Added covering indexes for previously unindexed foreign keys involving:
-
-- admin logs
-- announcements
-- carousel images
-- case escalations
-- case updates
-- chat messages
-- chat rooms
-- incident media
-- incident resolution
-- notification-to-incident relationships
-- Wi-Fi access points
-
-## Confirmed remaining work
-
-### Frontend synchronisation
-
-- Regenerate and commit `src/integrations/supabase/types.ts` so it includes:
-  - `app_settings`
-  - `campus_emergency_contacts`
-  - `incidents.submitted_by`
-- Move Supabase URL and publishable key to environment variables.
-- Raise campus-officer password validation from six to twelve characters.
-- Replace hard-coded emergency contact content with backend-driven contacts after official numbers are verified and entered.
-- Introduce signed URL handling before making staff chat media fully private.
+- Restricted campus-security case-update visibility to incidents from the same campus.
+- Required case-update creators to match the authenticated user.
+- Scoped case-update modification by creator, super-admin status and campus.
+- Consolidated student and staff case-update read policies.
+- Scoped escalation visibility to super admins or the matching campus.
 
 ### Edge Functions
 
-- Enable platform JWT verification for privileged Edge Functions.
-- Stop the current push function from reporting simulated delivery as a successful send.
-- Implement real Web Push only after VAPID credentials are configured.
+The following functions are active with platform JWT verification enabled:
 
-### Supabase dashboard-only controls
+| Function | Version | Final control |
+|---|---:|---|
+| `create-campus-admin` | 7 | Caller, role, campus, email and 12-character password validation |
+| `reset-staff-password` | 4 | Super-admin-only reset-email request |
+| `send-push-notification` | 7 | Real Web Push implementation and truthful delivery status |
 
-- **Leaked-password protection is intentionally deferred because it requires a paid Supabase plan.** This is an accepted plan limitation and is not a Phase 1.5 or Phase 2 blocker.
-- Reconsider leaked-password protection when the project moves to a qualifying paid plan.
-- Review MFA enforcement for privileged users separately where supported.
+The push function no longer reports simulated delivery as successful. Until VAPID secrets are configured, it returns HTTP 503 with `delivery_status: not_configured`.
 
-### Policy optimisation
+### RLS and performance
 
-- Consolidate overlapping permissive policies where doing so does not change access semantics.
-- Replace repeated raw `auth.uid()` evaluations with init-plan-safe expressions.
-- Retain new indexes despite temporary `unused index` notices while the database contains little or no production traffic.
+- Consolidated overlapping permissive policies.
+- Replaced broad `ALL` policies with separate read, insert, update and delete policies.
+- Converted repeated `auth.uid()` evaluation to init-plan-safe expressions.
+- Added missing foreign-key indexes.
+- Cleared all RLS initialization-plan warnings.
+- Cleared all multiple-permissive-policy warnings.
 
-## Accepted constraint
+## Final adviser state
 
-The Supabase security adviser will continue to report `auth_leaked_password_protection` while the project remains on the current plan. This warning is documented as an accepted platform-plan constraint rather than an unresolved implementation defect.
+### Security adviser
 
-Compensating controls for privileged accounts remain:
+Only the following accepted warning remains:
 
-- stronger application-level password validation;
-- authenticated and role-validated administrative Edge Functions;
-- restricted staff-account creation;
-- password-reset access limited to super admins;
-- future MFA review where available.
+- `auth_leaked_password_protection` — deferred because the current Supabase plan does not provide the feature.
 
-## Phase 1.5 exit criteria
+This is a documented plan limitation and is not a Phase 1.5 or Phase 2 blocker.
 
-Phase 1.5 is complete only when:
+### Performance adviser
 
-1. The checked-in Supabase types match the live schema.
-2. Frontend environment configuration no longer hard-codes project credentials.
-3. Privileged Edge Functions require platform JWT verification.
-4. Password validation is consistent across frontend and backend.
-5. Push delivery no longer reports false success.
-6. Official emergency contact data is centrally managed or clearly marked as awaiting institutional verification.
-7. Critical Supabase security-adviser findings are resolved, documented as intentional, or formally accepted as plan-limited constraints.
-8. The application builds successfully with the hardened backend.
+Only informational unused-index notices remain. The indexes are intentionally retained because the current dataset has insufficient traffic to establish representative usage and the indexes support expected production query paths.
 
-Leaked-password protection is explicitly excluded from the Phase 1.5 completion gate until the Supabase subscription supports it.
+## Accepted operational constraints
+
+1. VAPID secrets have not yet been supplied. Browser push remains safely unavailable instead of falsely reporting delivery.
+2. Official campus CPS contact records are awaiting institutional verification. The system does not display an unverified number.
+3. Leaked-password protection remains deferred until the Supabase subscription supports it.
+
+## Exit criteria result
+
+1. Checked-in Supabase types match the live Phase 1.5 schema — **passed**.
+2. Frontend Supabase configuration uses environment variables — **passed**.
+3. Privileged Edge Functions require platform JWT verification — **passed**.
+4. Staff-password validation is consistent — **passed**.
+5. Push delivery no longer reports false success — **passed**.
+6. Emergency-contact data is centrally managed and clearly marked pending verification — **passed**.
+7. Critical security-adviser findings are resolved or formally accepted as plan-limited — **passed**.
+8. The hardened frontend passed the repository production-build workflow — **passed**.
+
+## Completion evidence
+
+- `docs/pilot-mode/01d-live-migration-ledger.md`
+- `docs/pilot-mode/PHASE-1-5-COMPLETE.md`
+- Live Supabase migration history through `20260717152759_phase_1_5_rls_policy_consolidation`
+- Active JWT-verified Edge Functions
+- Repository CI production-build verification
+
+**Phase 2 is unblocked.**
