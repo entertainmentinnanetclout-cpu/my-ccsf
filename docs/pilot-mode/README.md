@@ -15,6 +15,23 @@
 11. `02b-exact-file-change-register.md` — exact Phase 3–5 repository change register.
 12. `PHASE-2-COMPLETE.md` — Phase 2 completion record.
 13. `02-PHASE-2-READY.md` — Phase 3 implementation-readiness gate retained under its original repository filename.
+14. `03-live-migration-ledger.md` — authoritative Phase 3 migration order and live object register.
+15. `03-backend-verification.md` — RLS, Storage, Realtime, grants, RPC and isolation verification.
+16. `PHASE-3-COMPLETE.md` — Phase 3 completion and Phase 4 entry gate.
+
+## SQL package
+
+The Phase 3 SQL control package is located at:
+
+```text
+supabase/manual-migrations/pilot-mode/phase-3/
+```
+
+It contains:
+
+- exact applied-SQL extraction;
+- repeatable read-only verification;
+- guarded destructive rollback guidance.
 
 ## Current status
 
@@ -22,7 +39,8 @@
 - Phase 1: complete
 - Phase 1.5: complete
 - Phase 2: complete
-- Phase 3: next
+- Phase 3: complete
+- Phase 4: next
 
 ## Release control
 
