@@ -146,43 +146,70 @@ Pilot Mode must not write to or invoke:
 
 ## Phase 3 — Database and SQL package
 
-**Status: NEXT**
+**Status: COMPLETE — 17 July 2026**
 
-- [ ] Pilot enums
-- [ ] Pilot programmes and scenarios
-- [ ] Pilot participants and sessions
-- [ ] Pilot reports and immutable events
-- [ ] Pilot location events
-- [ ] Pilot attachments
-- [ ] Pilot feedback
-- [ ] Pilot notifications
-- [ ] Pilot feature tests
-- [ ] Pilot audit logs
-- [ ] Constraints and indexes
-- [ ] Student RLS policies
-- [ ] Campus RLS policies
-- [ ] Super-admin RLS policies
-- [ ] Private security helpers
-- [ ] Status-transition functions
-- [ ] Delete-report and delete-session functions
-- [ ] Withdrawal and retention-purge functions
-- [ ] Campus/program purge functions
-- [ ] Export functions
-- [ ] Private Storage bucket and policies
-- [ ] Pilot Realtime configuration
-- [ ] Regenerate checked-in types
-- [ ] SQL execution ledger
-- [ ] Rollback SQL and guide
+- [x] Pilot enums
+- [x] Pilot programmes and scenarios
+- [x] Pilot participants and sessions
+- [x] Pilot reports and immutable events
+- [x] Pilot location events
+- [x] Pilot attachments
+- [x] Pilot feedback
+- [x] Pilot notifications
+- [x] Pilot feature tests
+- [x] Pilot audit logs
+- [x] Constraints and indexes
+- [x] Student RLS policies
+- [x] Campus RLS policies
+- [x] Super-admin RLS policies
+- [x] Private security helpers
+- [x] Status-transition functions
+- [x] Delete-report and delete-session planning functions
+- [x] Withdrawal and retention-purge planning functions
+- [x] Campus/program purge planning functions
+- [x] De-identified and identified export function
+- [x] Private Storage bucket and policies
+- [x] Pilot Realtime configuration
+- [x] Synchronise checked-in types
+- [x] SQL execution ledger
+- [x] Read-only verification SQL
+- [x] Guarded rollback SQL and guide
+- [x] Run final Supabase security adviser
+- [x] Run final Supabase performance adviser
+- [x] Verify zero production incident foreign keys
 
-### Phase 3 exit criteria
+### Phase 3 verified state
 
-The additive pilot backend must be live, typed, RLS-protected, Storage-isolated and rollback-documented without modifying production incident operations.
+- 12 isolated Pilot tables, all RLS-enabled
+- nine Pilot enums
+- 27 Pilot table policies
+- two private Storage policies
+- 12 public `SECURITY INVOKER` Pilot RPCs
+- zero anonymous Pilot table grants
+- zero public Pilot `SECURITY DEFINER` functions
+- zero Pilot foreign keys to production incident operations
+- four Pilot-only Realtime tables
+- private 10 MB attachment bucket
+
+### Phase 3 evidence
+
+- `03-live-migration-ledger.md`
+- `03-backend-verification.md`
+- `PHASE-3-COMPLETE.md`
+- `supabase/manual-migrations/pilot-mode/phase-3/README.md`
+- `supabase/manual-migrations/pilot-mode/phase-3/00_extract_applied_phase3.sql`
+- `supabase/manual-migrations/pilot-mode/phase-3/90_verify_phase3.sql`
+- `supabase/manual-migrations/pilot-mode/phase-3/99_rollback_phase3.sql`
+
+### Phase 3 exit result
+
+The additive pilot backend is live, typed, RLS-protected, Storage-isolated and rollback-documented without modifying production incident operations.
 
 ---
 
 ## Phase 4 — Application implementation
 
-**Status: NOT STARTED**
+**Status: NEXT**
 
 - [ ] Pilot feature flag and route guards
 - [ ] Pilot Mode provider
