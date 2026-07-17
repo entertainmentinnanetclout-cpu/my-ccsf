@@ -106,14 +106,27 @@ Added covering indexes for previously unindexed foreign keys involving:
 
 ### Supabase dashboard-only controls
 
-- Enable leaked-password protection in Auth settings.
-- Review MFA enforcement for privileged users.
+- **Leaked-password protection is intentionally deferred because it requires a paid Supabase plan.** This is an accepted plan limitation and is not a Phase 1.5 or Phase 2 blocker.
+- Reconsider leaked-password protection when the project moves to a qualifying paid plan.
+- Review MFA enforcement for privileged users separately where supported.
 
 ### Policy optimisation
 
 - Consolidate overlapping permissive policies where doing so does not change access semantics.
 - Replace repeated raw `auth.uid()` evaluations with init-plan-safe expressions.
 - Retain new indexes despite temporary `unused index` notices while the database contains little or no production traffic.
+
+## Accepted constraint
+
+The Supabase security adviser will continue to report `auth_leaked_password_protection` while the project remains on the current plan. This warning is documented as an accepted platform-plan constraint rather than an unresolved implementation defect.
+
+Compensating controls for privileged accounts remain:
+
+- stronger application-level password validation;
+- authenticated and role-validated administrative Edge Functions;
+- restricted staff-account creation;
+- password-reset access limited to super admins;
+- future MFA review where available.
 
 ## Phase 1.5 exit criteria
 
@@ -125,5 +138,7 @@ Phase 1.5 is complete only when:
 4. Password validation is consistent across frontend and backend.
 5. Push delivery no longer reports false success.
 6. Official emergency contact data is centrally managed or clearly marked as awaiting institutional verification.
-7. Critical Supabase security-adviser findings are resolved or documented as intentional and access-tested.
+7. Critical Supabase security-adviser findings are resolved, documented as intentional, or formally accepted as plan-limited constraints.
 8. The application builds successfully with the hardened backend.
+
+Leaked-password protection is explicitly excluded from the Phase 1.5 completion gate until the Supabase subscription supports it.
