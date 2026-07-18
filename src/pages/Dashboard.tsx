@@ -1,31 +1,21 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { motion } from 'framer-motion';
-import { Shield, Plus, LogOut, Map, MessageCircle, Home, MapPin, FileText } from 'lucide-react';
-import tutLogo from '@/assets/tut-logo.png';
-import tutLogoLight from '@/assets/tut_light_theme.png';
-import { ReportIncident } from '@/components/student/ReportIncident';
-import { EmergencyReport } from '@/components/student/EmergencyReport';
-import { CampusMap } from '@/components/student/CampusMap';
-import { CampusCarousel } from '@/components/student/CampusCarousel';
-import { NewsFeed } from '@/components/student/NewsFeed';
-import { StudentChat } from '@/components/student/StudentChat';
-import { MyCaseReports } from '@/components/student/MyCaseReports';
-import { NotificationBell } from '@/components/shared/NotificationBell';
-import { ThemeToggle } from '@/components/shared/ThemeToggle';
-import { MobileBottomNav } from '@/components/shared/MobileBottomNav';
 import { supabase } from '@/integrations/supabase/client';
-import { useTheme } from 'next-themes';
+import { Button } from '@/components/ui/button';
+import { Home, FileText, Plus, Map, MessageCircle, User, ChevronRight } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import ReportIncident from '@/components/student/ReportIncident';
+import MyCaseReports from '@/components/student/MyCaseReports';
+import CampusMap from '@/components/student/CampusMap';
+import Chatbot from '@/components/student/Chatbot';
+import Profile from '@/pages/Profile';
+import StudentHome from '@/components/student/StudentHome';
 
 const Dashboard = () => {
-  const { user, signOut } = useAuth();
-  const { theme } = useTheme();
-  const [activeView, setActiveView] = useState<'home' | 'report' | 'mycases' | 'map' | 'messages'>('home');
-  const [userCampus, setUserCampus] = useState<string>('Campus');
-  const [userCampusId, setUserCampusId] = useState<string | null>(null);
-  const [welcomeMessage, setWelcomeMessage] = useState<string>('Welcome | Re a le amogela | Nemukelekile');
+  const { user } = useAuth();
+  const [activeView, setActiveView] = useState('home');
+  const [userCampus, setUserCampus] = useState('Campus');
+  const [welcomeMessage, setWelcomeMessage] = useState('Your safety matters. Report incidents, stay informed, and help keep your campus community secure.');
 
   useEffect(() => {
     const checkProfile = async () => {
@@ -37,9 +27,8 @@ const Dashboard = () => {
           .single();
 
         if (data?.campus) {
-          setUserCampusId(data.campus);
           const campusDisplayNames: Record<string, string> = {
-            'pretoria_west_main': 'Pretoria West Campus',
+            'pretoria_west_main': 'Pretoria West (Main Campus)',
             'arcadia': 'Arcadia Campus',
             'arts': 'Arts Campus',
             'giyani': 'Giyani Campus',
@@ -62,7 +51,7 @@ const Dashboard = () => {
         .eq('key', 'welcome_banner_text')
         .maybeSingle();
 
-      if (data?.value) {
+      if (typeof data?.value === 'string' && data.value.trim()) {
         setWelcomeMessage(data.value);
       }
     };
@@ -78,171 +67,59 @@ const Dashboard = () => {
     { view: 'messages', icon: MessageCircle, label: 'Messages' },
   ];
 
+  const renderContent = () => {
+    switch (activeView) {
+      case 'home': return <StudentHome onNavigate={setActiveView} />;
+      case 'report': return <ReportIncident onSuccess={() => setActiveView('mycases')} />;
+      case 'mycases': return <MyCaseReports />;
+      case 'map': return <CampusMap />;
+      case 'messages': return <Chatbot />;
+      case 'profile': return <Profile />;
+      default: return <StudentHome onNavigate={setActiveView} />;
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-background" data-testid="ready-dashboard">
-      <EmergencyReport />
-
-      {/* Header with TUT Branding */}
-      <div className="relative">
-        <motion.header
-          initial={{ y: -100, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.5, ease: 'easeInOut' }}
-          className="sticky top-0 z-40 bg-background dark:bg-primary border-b border-border border-t-4 border-t-[#F2A900] shadow-soft"
-        >
-          <div className="w-full px-4 py-3 sm:py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <motion.div
-                  className="relative"
-                  whileHover={{ scale: 1.1, rotate: 5 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                >
-                  <img
-                    src={theme === 'dark' ? tutLogo : tutLogoLight}
-                    alt="TUT Logo"
-                    className="h-10 sm:h-12 w-auto object-contain"
-                  />
-                  <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-success rounded-full border-2 border-background dark:border-primary animate-pulse" />
-                </motion.div>
-                <div className="hidden sm:block">
-                  <div className="flex items-center gap-2">
-                    <Shield className="h-5 w-5 text-primary dark:text-white" />
-                    <h1 className="text-lg sm:text-xl font-bold text-primary dark:text-white">Campus Safety Forum</h1>
-                  </div>
-                  <p className="text-xs sm:text-sm text-muted-foreground dark:text-white/80 font-medium">CCSF Student Portal</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 sm:gap-3">
-                <motion.div 
-                  className="hidden lg:flex items-center gap-2 px-4 py-2 bg-muted dark:bg-white/10 rounded-full border border-border dark:border-white/20 shadow-sm"
-                  whileHover={{ scale: 1.02 }}
-                >
-                  <MapPin className="h-4 w-4 text-primary dark:text-white" />
-                  <span className="text-sm font-semibold text-primary dark:text-white">{userCampus}</span>
-                </motion.div>
-
-                <ThemeToggle />
-                <NotificationBell />
-
-                <motion.div whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.95 }}>
-                  <Button 
-                    variant="ghost"
-                    size="icon" 
-                    onClick={signOut} 
-                    className="hidden sm:flex"
-                  >
-                    <LogOut className="h-5 w-5" />
-                  </Button>
-                </motion.div>
-              </div>
-            </div>
+    <div className="min-h-screen bg-background">
+      <div className="border-b bg-card">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold">My CCSF</h1>
+            <p className="text-sm text-muted-foreground">{userCampus}</p>
           </div>
-        </motion.header>
-
+          <Button variant="ghost" size="icon" onClick={() => setActiveView('profile')}>
+            <User className="h-5 w-5" />
+          </Button>
+        </div>
       </div>
 
-      {/* Main Content */}
-      <main className="w-full pb-20 md:pb-6">
-        {/* Navigation - Desktop Tabs + Mobile Menu */}
-        <motion.div
-          initial={{ opacity: 0, y: 25 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4, duration: 0.4 }}
-          className="mb-4 sm:mb-6 px-4"
-        >
-
-          {/* Desktop Navigation Tabs */}
-          <Card className="hidden md:block p-2 sm:p-3 shadow-elevated bg-card/95 backdrop-blur-sm border-border/50">
-            <div className="grid grid-cols-5 gap-1.5 sm:gap-2">
-              {navItems.map(({ view, icon: Icon, label }) => (
-                <motion.div 
-                  key={view}
-                  whileHover={{ scale: 1.05, y: -2 }} 
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <Button
-                    variant={activeView === view ? 'default' : 'ghost'}
-                    onClick={() => setActiveView(view as typeof activeView)}
-                    className={`w-full transition-all text-xs sm:text-sm px-1 sm:px-3 ${
-                      activeView === view 
-                        ? 'shadow-lg bg-gradient-to-r from-primary to-secondary' 
-                        : 'hover:bg-primary/10'
-                    }`}
-                    size="sm"
-                  >
-                    <Icon className={`h-4 w-4 ${activeView === view ? '' : 'lg:mr-2'}`} />
-                    <span className="hidden lg:inline">{label}</span>
-                  </Button>
-                </motion.div>
-              ))}
-            </div>
+      <main className="container mx-auto px-4 py-6 pb-24">
+        {activeView === 'home' && (
+          <Card className="mb-6 border-primary/20 bg-primary/5">
+            <CardContent className="p-4 flex items-center justify-between gap-4">
+              <p className="text-sm">{welcomeMessage}</p>
+              <ChevronRight className="h-5 w-5 text-primary shrink-0" />
+            </CardContent>
           </Card>
-        </motion.div>
-
-        {/* Content Views */}
-        <motion.div
-          key={activeView}
-          initial={{ opacity: 0, x: 20, scale: 0.97 }}
-          animate={{ opacity: 1, x: 0, scale: 1 }}
-          exit={{ opacity: 0, x: -20, scale: 0.97 }}
-          transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        >
-          {activeView === 'home' && (
-            <div className="space-y-4 sm:space-y-6">
-              <div className="px-4">
-                <CampusCarousel campus={userCampusId || undefined} />
-              </div>
-
-              {/* Welcome Banner - Now below Carousel */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="w-full bg-[#F2A900] py-4 px-6 mb-4 overflow-hidden relative border-b-4 border-[#002F6C]"
-              >
-                <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(0,47,108,0.05)_50%,transparent_75%)] bg-[length:250%_250%] animate-gradient-x" />
-                <div className="relative z-10 text-center">
-                  <h2 className="text-[#002F6C] text-lg sm:text-xl font-bold tracking-tight uppercase">
-                    {welcomeMessage}
-                  </h2>
-                </div>
-              </motion.div>
-
-              <div className="px-4">
-                <NewsFeed />
-              </div>
-            </div>
-          )}
-          <div className="px-4">
-            {activeView === 'mycases' && <MyCaseReports />}
-            {activeView === 'report' && <ReportIncident />}
-            {activeView === 'map' && <CampusMap />}
-            {activeView === 'messages' && <StudentChat />}
-          </div>
-        </motion.div>
-
-        {/* Footer - Enhanced */}
-        <footer className="mt-8 sm:mt-12 pb-6 text-center">
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-muted/50 rounded-full border border-border"
-          >
-            <Shield className="h-4 w-4 text-primary" />
-            <p className="text-xs sm:text-sm text-muted-foreground font-medium">Powered By Campus Protection Service</p>
-          </motion.div>
-        </footer>
+        )}
+        {renderContent()}
       </main>
-      
-      {/* Mobile Bottom Navigation */}
-      <MobileBottomNav
-        items={navItems}
-        activeView={activeView}
-        onViewChange={(view) => setActiveView(view as typeof activeView)}
-      />
+
+      <nav className="fixed bottom-0 left-0 right-0 border-t bg-card z-50">
+        <div className="container mx-auto px-2 py-2 grid grid-cols-5 gap-1">
+          {navItems.map(({ view, icon: Icon, label }) => (
+            <Button
+              key={view}
+              variant={activeView === view ? 'secondary' : 'ghost'}
+              className="flex-col h-auto py-2 gap-1"
+              onClick={() => setActiveView(view)}
+            >
+              <Icon className="h-5 w-5" />
+              <span className="text-xs">{label}</span>
+            </Button>
+          ))}
+        </div>
+      </nav>
     </div>
   );
 };
