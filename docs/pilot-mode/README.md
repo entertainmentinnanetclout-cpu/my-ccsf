@@ -57,7 +57,8 @@ Phase 4 implements:
 - Phase 2: complete
 - Phase 3: complete
 - Phase 4: complete
-- Phase 5: next
+- Phase 5: complete
+- Phase 6: next
 
 ## Release control
 
