@@ -1,0 +1,31 @@
+name: Phase 5 Documentation Synchronisation
+
+on:
+  push:
+    branches:
+      - feature/controlled-pilot-mode
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    if: ${{ !contains(github.event.head_commit.message, '[phase-5-docs-bot]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/controlled-pilot-mode
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: node .github/scripts/phase5-docs-sync.mjs
+      - name: Commit completion records
+        run: |
+          if git diff --quiet -- docs/pilot-mode; then exit 0; fi
+          git config user.name "CCSF Phase 5 Docs Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add docs/pilot-mode
+          git commit -m "docs(phase5): synchronize completion records [phase-5-docs-bot]"
+          git push origin HEAD:feature/controlled-pilot-mode
