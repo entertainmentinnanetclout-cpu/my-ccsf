@@ -209,33 +209,67 @@ The additive pilot backend is live, typed, RLS-protected, Storage-isolated and r
 
 ## Phase 4 — Application implementation
 
-**Status: NEXT**
+**Status: COMPLETE — 18 July 2026**
 
-- [ ] Pilot feature flag and route guards
-- [ ] Pilot Mode provider
-- [ ] Pilot warning and consent
-- [ ] Controlled scenarios
-- [ ] Pilot report submission
-- [ ] Emergency simulation
-- [ ] Pilot location and attachment tests
-- [ ] Pilot status tracking
-- [ ] Pilot in-app notifications
-- [ ] Safety PDF resources
-- [ ] Feedback and completion
-- [ ] Campus pilot dashboard
-- [ ] Super-admin pilot dashboard
-- [ ] Deletion and retention UI
-- [ ] CSV/de-identified export UI
+- [x] Pilot feature flag and route guards
+- [x] Pilot Mode provider
+- [x] Pilot warning and consent
+- [x] Controlled scenarios
+- [x] Pilot report submission
+- [x] Emergency simulation
+- [x] Pilot location and attachment tests
+- [x] Pilot status tracking
+- [x] Pilot in-app notifications
+- [x] Printable safety resources and Print / Save as PDF
+- [x] Feedback and completion
+- [x] Campus pilot dashboard
+- [x] Super-admin pilot dashboard
+- [x] Deletion and retention planning UI
+- [x] JSON and CSV de-identified export UI
+- [x] Identified super-admin export UI
+- [x] Role-aware Pilot navigation
+- [x] Preview-only fail-closed feature activation
+- [x] Production build verification
+- [x] Vercel Preview deployment verification
+- [x] Verify no Pilot service reference to production incidents or push dispatch
 
-### Phase 4 exit criteria
+### Phase 4 verified state
 
-Pilot Mode must function through Vercel Preview without writing to production incident, location, media, notification or escalation tables.
+- six explicit Pilot routes
+- authenticated role and participant guards
+- Preview-only automatic feature enablement for the approved branch
+- production and unrelated previews disabled by default
+- student consent, session, report, tracking, resources and feedback journeys
+- campus-scoped operations under RLS
+- super-admin programme and cross-campus controls
+- private signed attachment access
+- separate `pilot_location_tracking` browser state
+- production `ReportIncident`, `EmergencyReport` and `useLocationTracking` preserved
+- GitHub Actions build passed
+- Vercel Preview deployment `READY`
+
+### Phase 4 evidence
+
+- `04-application-implementation.md`
+- `PHASE-4-COMPLETE.md`
+- `src/config/pilot.ts`
+- `src/contexts/PilotModeContext.tsx`
+- `src/components/pilot/`
+- `src/services/pilot/`
+- `src/hooks/pilot/usePilotLocationTracking.ts`
+- `src/pages/pilot/`
+- GitHub Actions run `29630113577`
+- Vercel deployment `dpl_4a8pmsyHJAHMAJyesXPtCj5f1zim`
+
+### Phase 4 exit result
+
+The Pilot browser application builds and deploys through Vercel Preview while using only the isolated Pilot data, Storage, Realtime and RPC domain.
 
 ---
 
 ## Phase 5 — Pilot-only Edge Functions
 
-**Status: NOT STARTED**
+**Status: NEXT**
 
 - [ ] Create session
 - [ ] Submit report
@@ -245,6 +279,7 @@ Pilot Mode must function through Vercel Preview without writing to production in
 - [ ] Delete session
 - [ ] Purge expired data
 - [ ] Export pilot results
+- [ ] Complete storage-first relational deletion finalisation
 - [ ] Deployment guide
 
 ### Phase 5 exit criteria
