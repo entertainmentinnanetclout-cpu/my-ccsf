@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { invokePilotFunction } from '@/services/pilot/pilotEdgeService';
 import {
   PILOT_ALLOWED_MIME_TYPES,
   PILOT_ATTACHMENT_BUCKET,
@@ -35,7 +36,6 @@ export function collectPilotDeviceInfo(): PilotDeviceInfo {
   const browserVersion = ua.match(/(?:Edg|Chrome|Firefox|Version)\/([\d.]+)/)?.[1] ?? null;
   const operatingSystem = /Windows/.test(ua) ? 'Windows' : /Android/.test(ua) ? 'Android' : /iPhone|iPad/.test(ua) ? 'iOS' : /Mac OS/.test(ua) ? 'macOS' : /Linux/.test(ua) ? 'Linux' : 'Other';
   const deviceType = /Mobi|Android|iPhone|iPad/.test(ua) ? 'mobile' : 'desktop';
-
   return {
     device_type: deviceType,
     browser_name: browserName,
@@ -65,17 +65,10 @@ export async function loadStudentPilotContext(userId: string): Promise<{
 
   const [{ data: program, error: programError }, { data: sessions, error: sessionError }] = await Promise.all([
     supabase.from('pilot_programs').select('*').eq('id', participant.program_id).maybeSingle(),
-    supabase
-      .from('pilot_sessions')
-      .select('*')
-      .eq('participant_id', participant.id)
-      .in('status', ['in_progress', 'completed'])
-      .order('started_at', { ascending: false })
-      .limit(1),
+    supabase.from('pilot_sessions').select('*').eq('participant_id', participant.id).in('status', ['in_progress', 'completed']).order('started_at', { ascending: false }).limit(1),
   ]);
   if (programError) fail('Unable to load Pilot programme.', programError);
   if (sessionError) fail('Unable to load Pilot session.', sessionError);
-
   return {
     participant,
     program: (program ?? null) as PilotProgram | null,
@@ -93,19 +86,11 @@ export async function consentToPilot(participantId: string, consentVersion: stri
 }
 
 export async function createPilotSession(participant: PilotParticipant): Promise<PilotSession> {
-  const device = collectPilotDeviceInfo();
-  const { data, error } = await supabase
-    .from('pilot_sessions')
-    .insert({
-      program_id: participant.program_id,
-      participant_id: participant.id,
-      campus: participant.campus,
-      ...device,
-    })
-    .select('*')
-    .single();
-  if (error || !data) fail('Unable to create Pilot session.', error);
-  return data as PilotSession;
+  const data = await invokePilotFunction<{ session: PilotSession }>('pilot-create-session', {
+    participant_id: participant.id,
+    device: collectPilotDeviceInfo(),
+  });
+  return data.session;
 }
 
 export async function loadPilotSession(sessionId: string): Promise<PilotSession | null> {
@@ -149,22 +134,19 @@ export async function loadPilotScenarios(programId: string): Promise<PilotScenar
 }
 
 export async function createPilotReport(input: PilotReportInput): Promise<PilotReport> {
-  const { data, error } = await supabase
-    .from('pilot_reports')
-    .insert({
-      ...input,
-      reference_number: '',
-      scenario_id: input.scenario_id ?? null,
-      is_anonymous: input.is_anonymous ?? false,
-      location_lat: input.location_lat ?? null,
-      location_lng: input.location_lng ?? null,
-      location_accuracy: input.location_accuracy ?? null,
-      location_description: input.location_description ?? null,
-    })
-    .select('*')
-    .single();
-  if (error || !data) fail('Unable to create the simulated Pilot report.', error);
-  return data as PilotReport;
+  const data = await invokePilotFunction<{ report: PilotReport }>('pilot-submit-report', {
+    session_id: input.session_id,
+    scenario_id: input.scenario_id ?? null,
+    title: input.title,
+    description: input.description,
+    category: input.category,
+    is_anonymous: input.is_anonymous ?? false,
+    location_lat: input.location_lat ?? null,
+    location_lng: input.location_lng ?? null,
+    location_accuracy: input.location_accuracy ?? null,
+    location_description: input.location_description ?? null,
+  });
+  return data.report;
 }
 
 export async function loadOwnPilotReports(sessionId?: string): Promise<PilotReport[]> {
@@ -182,11 +164,7 @@ export async function loadPilotReport(reportId: string): Promise<PilotReport | n
 }
 
 export async function loadPilotReportEvents(reportId: string): Promise<PilotReportEvent[]> {
-  const { data, error } = await supabase
-    .from('pilot_report_events')
-    .select('*')
-    .eq('report_id', reportId)
-    .order('created_at', { ascending: true });
+  const { data, error } = await supabase.from('pilot_report_events').select('*').eq('report_id', reportId).order('created_at', { ascending: true });
   if (error) fail('Unable to load Pilot report timeline.', error);
   return (data ?? []) as PilotReportEvent[];
 }
@@ -201,56 +179,37 @@ export function validatePilotFiles(files: File[]): void {
   if (files.length > PILOT_MAX_ATTACHMENTS) fail(`A maximum of ${PILOT_MAX_ATTACHMENTS} files is allowed.`);
   for (const file of files) {
     if (file.size <= 0 || file.size > PILOT_MAX_FILE_BYTES) fail(`${file.name} exceeds the 10 MB Pilot limit.`);
-    if (!PILOT_ALLOWED_MIME_TYPES.includes(file.type as (typeof PILOT_ALLOWED_MIME_TYPES)[number])) {
-      fail(`${file.name} has an unsupported file type.`);
-    }
+    if (!PILOT_ALLOWED_MIME_TYPES.includes(file.type as (typeof PILOT_ALLOWED_MIME_TYPES)[number])) fail(`${file.name} has an unsupported file type.`);
   }
 }
 
-export async function uploadPilotAttachments(
-  report: PilotReport,
-  files: File[],
-  userId: string,
-): Promise<PilotAttachment[]> {
+export async function uploadPilotAttachments(report: PilotReport, files: File[], userId: string): Promise<PilotAttachment[]> {
   validatePilotFiles(files);
   const uploaded: PilotAttachment[] = [];
-
   for (const file of files) {
     const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
     const storagePath = `${report.program_id}/${report.campus}/${userId}/${report.id}/${crypto.randomUUID()}-${safeName}`;
     const { error: uploadError } = await supabase.storage.from(PILOT_ATTACHMENT_BUCKET).upload(storagePath, file, {
-      cacheControl: '3600',
-      contentType: file.type,
-      upsert: false,
+      cacheControl: '3600', contentType: file.type, upsert: false,
     });
     if (uploadError) fail(`Unable to upload ${file.name}.`, uploadError);
-
-    const { data, error } = await supabase
-      .from('pilot_attachments')
-      .insert({
-        program_id: report.program_id,
-        session_id: report.session_id,
-        report_id: report.id,
-        storage_path: storagePath,
-        original_filename: file.name,
-        mime_type: file.type,
-        size_bytes: file.size,
-      })
-      .select('*')
-      .single();
-    if (error || !data) fail(`The file uploaded but its Pilot metadata could not be recorded.`, error);
+    const { data, error } = await supabase.from('pilot_attachments').insert({
+      program_id: report.program_id,
+      session_id: report.session_id,
+      report_id: report.id,
+      storage_path: storagePath,
+      original_filename: file.name,
+      mime_type: file.type,
+      size_bytes: file.size,
+    }).select('*').single();
+    if (error || !data) fail('The file uploaded but its Pilot metadata could not be recorded.', error);
     uploaded.push(data as PilotAttachment);
   }
-
   return uploaded;
 }
 
 export async function loadPilotAttachments(reportId: string): Promise<PilotAttachment[]> {
-  const { data, error } = await supabase
-    .from('pilot_attachments')
-    .select('*')
-    .eq('report_id', reportId)
-    .order('created_at', { ascending: true });
+  const { data, error } = await supabase.from('pilot_attachments').select('*').eq('report_id', reportId).order('created_at', { ascending: true });
   if (error) fail('Unable to load Pilot attachments.', error);
   return (data ?? []) as PilotAttachment[];
 }
@@ -271,20 +230,16 @@ export async function recordPilotFeatureTest(input: {
   errorCode?: string | null;
   metadata?: Json;
 }): Promise<PilotFeatureTest> {
-  const { data, error } = await supabase
-    .from('pilot_feature_tests')
-    .insert({
-      program_id: input.programId,
-      session_id: input.sessionId,
-      report_id: input.reportId ?? null,
-      feature_key: input.featureKey,
-      outcome: input.outcome,
-      duration_ms: input.durationMs ?? null,
-      error_code: input.errorCode ?? null,
-      metadata: input.metadata ?? {},
-    })
-    .select('*')
-    .single();
+  const { data, error } = await supabase.from('pilot_feature_tests').insert({
+    program_id: input.programId,
+    session_id: input.sessionId,
+    report_id: input.reportId ?? null,
+    feature_key: input.featureKey,
+    outcome: input.outcome,
+    duration_ms: input.durationMs ?? null,
+    error_code: input.errorCode ?? null,
+    metadata: input.metadata ?? {},
+  }).select('*').single();
   if (error || !data) fail('Unable to record Pilot feature result.', error);
   return data as PilotFeatureTest;
 }
@@ -295,18 +250,13 @@ export async function savePilotFeedback(input: PilotFeedbackInput): Promise<void
 }
 
 export async function loadPilotNotifications(): Promise<PilotNotification[]> {
-  const { data, error } = await supabase
-    .from('pilot_notifications')
-    .select('*')
-    .order('created_at', { ascending: false });
+  const { data, error } = await supabase.from('pilot_notifications').select('*').order('created_at', { ascending: false });
   if (error) fail('Unable to load Pilot notifications.', error);
   return (data ?? []) as PilotNotification[];
 }
 
 export async function markPilotNotificationRead(notificationId: string): Promise<PilotNotification> {
-  const { data, error } = await supabase.rpc('pilot_mark_notification_read', {
-    p_notification_id: notificationId,
-  });
+  const { data, error } = await supabase.rpc('pilot_mark_notification_read', { p_notification_id: notificationId });
   if (error || !data) fail('Unable to mark Pilot notification as read.', error);
   return data as PilotNotification;
 }
