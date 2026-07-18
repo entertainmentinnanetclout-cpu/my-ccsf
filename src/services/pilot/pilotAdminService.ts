@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { invokePilotFunction } from '@/services/pilot/pilotEdgeService';
 import type { Database, Json } from '@/integrations/supabase/types';
 import type {
   CampusLocation,
@@ -34,7 +35,6 @@ export async function loadPilotAdminData(options?: {
 }): Promise<PilotAdminData> {
   const programId = options?.programId ?? null;
   const campus = options?.campus ?? null;
-
   const programsQuery = supabase.from('pilot_programs').select('*').order('created_at', { ascending: false });
   let scenariosQuery = supabase.from('pilot_scenarios').select('*').order('display_order', { ascending: true });
   let participantsQuery = supabase.from('pilot_participants').select('*').order('created_at', { ascending: false });
@@ -64,18 +64,9 @@ export async function loadPilotAdminData(options?: {
   }
 
   const results = await Promise.all([
-    programsQuery,
-    scenariosQuery,
-    participantsQuery,
-    sessionsQuery,
-    reportsQuery,
-    eventsQuery,
-    testsQuery,
-    feedbackQuery,
-    notificationsQuery,
-    auditQuery,
+    programsQuery, scenariosQuery, participantsQuery, sessionsQuery, reportsQuery,
+    eventsQuery, testsQuery, feedbackQuery, notificationsQuery, auditQuery,
   ]);
-
   const firstError = results.find((result) => result.error)?.error;
   if (firstError) throwError('Unable to load Pilot administration data.', firstError);
 
@@ -107,7 +98,6 @@ export function calculatePilotMetrics(data: PilotAdminData): PilotDashboardMetri
     return values.length ? Number((values.reduce((sum, value) => sum + value, 0) / values.length).toFixed(2)) : 0;
   };
   const percentage = (numerator: number, denominator: number) => denominator ? Number(((numerator / denominator) * 100).toFixed(1)) : 0;
-
   return {
     invitedParticipants,
     consentedParticipants,
@@ -159,11 +149,8 @@ export async function updatePilotScenario(scenarioId: string, update: Database['
 }
 
 export async function searchPilotStudentProfiles(searchTerm: string, campus?: CampusLocation | null): Promise<PilotStudentProfile[]> {
-  let query = supabase
-    .from('profiles')
-    .select('id, full_name, email, campus, student_number')
-    .or(`full_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,student_number.ilike.%${searchTerm}%`)
-    .limit(25);
+  let query = supabase.from('profiles').select('id, full_name, email, campus, student_number')
+    .or(`full_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,student_number.ilike.%${searchTerm}%`).limit(25);
   if (campus) query = query.eq('campus', campus);
   const { data, error } = await query;
   if (error) throwError('Unable to search student profiles.', error);
@@ -192,21 +179,17 @@ export async function transitionPilotReport(
   notes?: string | null,
   assignedTo?: string | null,
 ): Promise<PilotReport> {
-  const { data, error } = await supabase.rpc('pilot_transition_report', {
-    p_report_id: reportId,
-    p_to_status: status,
-    p_notes: notes ?? undefined,
-    p_assigned_to: assignedTo ?? undefined,
+  const data = await invokePilotFunction<{ report: PilotReport }>('pilot-transition-status', {
+    report_id: reportId,
+    status,
+    notes: notes ?? null,
+    assigned_to: assignedTo ?? null,
   });
-  if (error || !data) throwError('Unable to transition Pilot report.', error);
-  return data as PilotReport;
+  return data.report;
 }
 
 export async function addPilotReportNote(reportId: string, notes: string): Promise<PilotReportEvent> {
-  const { data, error } = await supabase.rpc('pilot_add_report_note', {
-    p_report_id: reportId,
-    p_notes: notes,
-  });
+  const { data, error } = await supabase.rpc('pilot_add_report_note', { p_report_id: reportId, p_notes: notes });
   if (error || !data) throwError('Unable to add Pilot report note.', error);
   return data as PilotReportEvent;
 }
@@ -217,62 +200,51 @@ export async function createPilotNotification(input: {
   title: string;
   message: string;
 }): Promise<PilotNotification> {
-  const { data, error } = await supabase.rpc('pilot_create_notification', {
-    p_report_id: input.reportId,
-    p_type: input.type,
-    p_title: input.title,
-    p_message: input.message,
+  const data = await invokePilotFunction<{ notification: PilotNotification }>('pilot-create-notification', {
+    report_id: input.reportId,
+    type: input.type,
+    title: input.title,
+    message: input.message,
   });
-  if (error || !data) throwError('Unable to create Pilot notification.', error);
-  return data as PilotNotification;
+  return data.notification;
 }
 
-export async function requestPilotExport(
-  programId: string,
-  campus?: CampusLocation | null,
-  identified = false,
-): Promise<Json> {
-  const { data, error } = await supabase.rpc('pilot_export_data', {
-    p_program_id: programId,
-    p_campus: campus ?? undefined,
-    p_identified: identified,
+export async function requestPilotExport(programId: string, campus?: CampusLocation | null, identified = false): Promise<Json> {
+  const data = await invokePilotFunction<{ export: Json }>('pilot-export-results', {
+    program_id: programId,
+    campus: campus ?? null,
+    identified,
   });
-  if (error) throwError('Unable to export Pilot results.', error);
-  return data;
+  return data.export;
 }
 
 export async function requestPilotReportDeletion(reportId: string, reason: string): Promise<PilotDeletionPlan> {
-  const { data, error } = await supabase.rpc('pilot_delete_report', { p_report_id: reportId, p_reason: reason });
-  if (error) throwError('Unable to request Pilot report deletion.', error);
-  return data as unknown as PilotDeletionPlan;
+  const data = await invokePilotFunction<{ result: PilotDeletionPlan }>('pilot-delete-report', { report_id: reportId, reason });
+  return data.result;
 }
 
 export async function requestPilotSessionDeletion(sessionId: string, reason: string): Promise<PilotDeletionPlan> {
-  const { data, error } = await supabase.rpc('pilot_delete_session', { p_session_id: sessionId, p_reason: reason });
-  if (error) throwError('Unable to request Pilot session deletion.', error);
-  return data as unknown as PilotDeletionPlan;
+  const data = await invokePilotFunction<{ result: PilotDeletionPlan }>('pilot-delete-session', { session_id: sessionId, reason });
+  return data.result;
 }
 
 export async function requestPilotCampusPurge(programId: string, campus: CampusLocation, reason: string): Promise<PilotDeletionPlan> {
-  const { data, error } = await supabase.rpc('pilot_purge_campus', {
-    p_program_id: programId,
-    p_campus: campus,
-    p_reason: reason,
+  const data = await invokePilotFunction<{ result: PilotDeletionPlan }>('pilot-purge-data', {
+    operation: 'campus', program_id: programId, campus, reason,
   });
-  if (error) throwError('Unable to request campus Pilot purge.', error);
-  return data as unknown as PilotDeletionPlan;
+  return data.result;
 }
 
 export async function requestPilotProgramPurge(programId: string, reason: string): Promise<PilotDeletionPlan> {
-  const { data, error } = await supabase.rpc('pilot_purge_program', { p_program_id: programId, p_reason: reason });
-  if (error) throwError('Unable to request programme Pilot purge.', error);
-  return data as unknown as PilotDeletionPlan;
+  const data = await invokePilotFunction<{ result: PilotDeletionPlan }>('pilot-purge-data', {
+    operation: 'program', program_id: programId, reason,
+  });
+  return data.result;
 }
 
 export async function requestPilotRetentionPlan(): Promise<PilotDeletionPlan> {
-  const { data, error } = await supabase.rpc('pilot_purge_expired');
-  if (error) throwError('Unable to calculate Pilot retention plan.', error);
-  return data as unknown as PilotDeletionPlan;
+  const data = await invokePilotFunction<{ result: PilotDeletionPlan }>('pilot-purge-data', { operation: 'expired' });
+  return data.result;
 }
 
 export function downloadPilotJson(filename: string, payload: Json): void {
