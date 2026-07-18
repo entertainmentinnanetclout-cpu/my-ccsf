@@ -1,0 +1,102 @@
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { useLocation } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import { isApprovedPilotPath, PILOT_ENABLED } from '@/config/pilot';
+import { loadStudentPilotContext } from '@/services/pilot/pilotCoreService';
+import { supabase } from '@/integrations/supabase/client';
+import type { PilotParticipant, PilotProgram, PilotSession } from '@/types/pilot';
+
+type AppMode = 'production' | 'pilot';
+
+interface PilotModeContextValue {
+  mode: AppMode;
+  enabled: boolean;
+  isPilotRoute: boolean;
+  loading: boolean;
+  error: string | null;
+  program: PilotProgram | null;
+  participant: PilotParticipant | null;
+  session: PilotSession | null;
+  refresh: () => Promise<void>;
+  setSession: React.Dispatch<React.SetStateAction<PilotSession | null>>;
+}
+
+const PilotModeContext = createContext<PilotModeContextValue | undefined>(undefined);
+
+export function PilotModeProvider({ children }: { children: React.ReactNode }) {
+  const location = useLocation();
+  const { user, userRole } = useAuth();
+  const isPilotRoute = isApprovedPilotPath(location.pathname);
+  const enabled = PILOT_ENABLED && isPilotRoute;
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [program, setProgram] = useState<PilotProgram | null>(null);
+  const [participant, setParticipant] = useState<PilotParticipant | null>(null);
+  const [session, setSession] = useState<PilotSession | null>(null);
+
+  const refresh = useCallback(async () => {
+    if (!enabled || !user || !userRole) {
+      setProgram(null);
+      setParticipant(null);
+      setSession(null);
+      setError(null);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    try {
+      if (userRole === 'student') {
+        const context = await loadStudentPilotContext(user.id);
+        setProgram(context.program);
+        setParticipant(context.participant);
+        setSession(context.session);
+      } else {
+        const { data, error: programError } = await supabase
+          .from('pilot_programs')
+          .select('*')
+          .in('status', ['active', 'paused', 'completed'])
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (programError) throw programError;
+        setProgram((data ?? null) as PilotProgram | null);
+        setParticipant(null);
+        setSession(null);
+      }
+    } catch (caught) {
+      console.error('Pilot context loading failed', caught);
+      setError(caught instanceof Error ? caught.message : 'Unable to load Pilot Mode.');
+      setProgram(null);
+      setParticipant(null);
+      setSession(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [enabled, user, userRole]);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  const value = useMemo<PilotModeContextValue>(() => ({
+    mode: enabled ? 'pilot' : 'production',
+    enabled,
+    isPilotRoute,
+    loading,
+    error,
+    program,
+    participant,
+    session,
+    refresh,
+    setSession,
+  }), [enabled, isPilotRoute, loading, error, program, participant, session, refresh]);
+
+  return <PilotModeContext.Provider value={value}>{children}</PilotModeContext.Provider>;
+}
+
+export function usePilotMode(): PilotModeContextValue {
+  const context = useContext(PilotModeContext);
+  if (!context) throw new Error('usePilotMode must be used within PilotModeProvider');
+  return context;
+}
