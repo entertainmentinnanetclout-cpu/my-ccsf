@@ -1,14 +1,7 @@
 import { authenticatePilotRequest, requireStudent } from '../_shared/pilot/auth.ts';
 import { handleError, jsonResponse, readJson, requirePost, PilotHttpError } from '../_shared/pilot/http.ts';
-import { enumValue, optionalBoolean, optionalNumber, optionalText, optionalUuid, requiredText, requiredUuid } from '../_shared/pilot/validation.ts';
+import { optionalBoolean, optionalNumber, optionalText, optionalUuid, requiredText, requiredUuid } from '../_shared/pilot/validation.ts';
 import { writePilotAudit } from '../_shared/pilot/audit.ts';
-
-const INCIDENT_CATEGORIES = [
-  'Rape','Sexual assault','Gbv','Murder','Attempted murder','Assault common','Assault GBH','Fraud','Theft','Robbery',
-  'Armed robbery','Arson','Malicious damage to property','Trespassing','Reckless and negligent driving',
-  'Driving under the influence of alcohol','Public violence','Sports and Rec Events Act Violation',
-  'Crimmen enjuria (Hate speech)','Cyber related crime (bullying etc.)','Vandalism',
-] as const;
 
 Deno.serve(async (req) => {
   const early = requirePost(req);
@@ -23,7 +16,7 @@ Deno.serve(async (req) => {
     const scenarioId = optionalUuid(body.scenario_id, 'scenario_id');
     const title = requiredText(body.title, 'title', 160);
     const description = requiredText(body.description, 'description', 5000);
-    const category = enumValue(body.category, 'category', INCIDENT_CATEGORIES);
+    const category = requiredText(body.category, 'category', 120);
 
     const { data: session, error: sessionError } = await context.adminClient
       .from('pilot_sessions')
