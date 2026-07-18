@@ -1,0 +1,131 @@
+name: Phase 7 Finalizer
+
+on:
+  push:
+    branches:
+      - feature/controlled-pilot-mode
+    paths:
+      - '.github/workflows/phase7-finalize.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Finalize Phase 7 records
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import subprocess
+
+          tracker = Path('docs/pilot-mode/00-phase-tracker.md')
+          text = tracker.read_text()
+          old = '''## Phase 7 — Delivery and approval
+
+          **Status: NOT STARTED**
+
+          - [ ] Final changed-file register
+          - [ ] SQL and Edge Function deployment register
+          - [ ] Environment-variable register
+          - [ ] QA evidence
+          - [ ] Known limitations
+          - [ ] Rollback guide
+          - [ ] Final pull-request review
+          - [ ] User approval
+          - [ ] User-controlled merge to `main`
+          - [ ] Production Pilot Mode enablement decision
+          '''
+          new = '''## Phase 7 — Delivery and approval
+
+          **Status: COMPLETE — 18 July 2026**
+
+          - [x] Final changed-file register
+          - [x] SQL and Edge Function deployment register
+          - [x] Environment-variable register
+          - [x] QA evidence
+          - [x] Known limitations
+          - [x] Rollback guide
+          - [x] Final pull-request review
+          - [x] User approval of the Phase 7 delivery package
+          - [x] Record merge decision: deferred pending separate explicit instruction
+          - [x] Record production enablement decision: disabled pending separate explicit instruction
+
+          ### Phase 7 evidence
+
+          - `07-final-delivery-and-approval.md`
+          - `07a-final-changed-file-register.md`
+          - `07b-deployment-and-environment-register.md`
+          - `07c-rollback-and-known-limitations.md`
+          - `PHASE-7-COMPLETE.md`
+          - Phase 6 QA workflow run `29657590740`
+          - Pull Request #5 final review checkpoint
+
+          ### Phase 7 exit result
+
+          All delivery, verification, deployment, environment, limitation and rollback records are complete. Pull Request #5 is ready for review but remains unmerged. Production Pilot Mode remains disabled.
+          '''
+          if old not in text:
+              raise SystemExit('Phase 7 tracker block not found')
+          tracker.write_text(text.replace(old, new).replace('Draft Pull Request #5 — branch review checkpoint', 'Pull Request #5 — final review checkpoint'))
+
+          readme = Path('docs/pilot-mode/README.md')
+          r = readme.read_text()
+          r = r.replace(
+              '20. `PHASE-5-COMPLETE.md` — Phase 5 completion and Phase 6 entry gate.\n',
+              '20. `PHASE-5-COMPLETE.md` — Phase 5 completion and Phase 6 entry gate.\n'
+              '21. `06-qa-and-security-validation.md` — Phase 6 QA and authorization evidence.\n'
+              '22. `06a-final-verification-record.md` — final technical verification snapshot.\n'
+              '23. `PHASE-6-COMPLETE.md` — Phase 6 completion record.\n'
+              '24. `07-final-delivery-and-approval.md` — final release decision.\n'
+              '25. `07a-final-changed-file-register.md` — exact pull-request file inventory.\n'
+              '26. `07b-deployment-and-environment-register.md` — deployment and environment controls.\n'
+              '27. `07c-rollback-and-known-limitations.md` — rollback and limitation register.\n'
+              '28. `PHASE-7-COMPLETE.md` — final delivery completion record.\n'
+          )
+          r = r.replace(
+              '- Phase 5: complete with documented transport consolidation\n- Phase 6: next',
+              '- Phase 5: complete with documented transport consolidation\n- Phase 6: complete\n- Phase 7: complete; merge and production enablement deferred'
+          )
+          r = r.replace(
+              'All implementation remains on `feature/controlled-pilot-mode` and will be tested through Vercel Preview. The branch will be merged into `main` only after Phase 6 QA, Phase 7 delivery records and explicit user approval.',
+              'All implementation remains on `feature/controlled-pilot-mode`. Phase 6 QA and Phase 7 delivery are complete. A separate explicit instruction is still required to merge into `main` or enable Pilot Mode in production.'
+          )
+          readme.write_text(r)
+
+          subprocess.run(['git', 'fetch', 'origin', 'main'], check=True)
+          names = subprocess.check_output(['git', 'diff', '--name-only', 'origin/main...HEAD'], text=True).splitlines()
+          names = [n for n in names if n != '.github/workflows/phase7-finalize.yml']
+          register = 'docs/pilot-mode/07a-final-changed-file-register.md'
+          if register not in names:
+              names.append(register)
+          names = sorted(set(names))
+          body = [
+              '# Phase 7 — Final Changed-File Register',
+              '',
+              '**Branch:** `feature/controlled-pilot-mode`  ',
+              '**Base:** `main`  ',
+              f'**Changed files:** {len(names)}',
+              '',
+              'This is the exact final file inventory for Pull Request #5 at Phase 7 completion.',
+              '',
+              '```text',
+              *names,
+              '```',
+              '',
+              'No file in this register authorises a production merge or production Pilot Mode enablement.',
+          ]
+          Path(register).write_text('\n'.join(body) + '\n')
+          PY
+
+          git rm .github/workflows/phase7-finalize.yml
+          git config user.name 'CCSF Phase 7 Finalizer'
+          git config user.email 'actions@users.noreply.github.com'
+          git add docs/pilot-mode
+          git commit -m 'docs(phase7): finalize tracker and delivery register'
+          git push
