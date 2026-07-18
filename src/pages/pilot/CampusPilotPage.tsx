@@ -1,6 +1,7 @@
 import { ArrowLeft, MapPin, Shield } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { PilotAdminWorkspace } from '@/components/pilot/PilotAdminWorkspace';
+import { PilotCsvExportPanel } from '@/components/pilot/PilotCsvExportPanel';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import type { CampusLocation } from '@/types/pilot';
@@ -21,7 +22,10 @@ export default function CampusPilotPage() {
           <Button variant="secondary" asChild><Link to="/security"><ArrowLeft className="mr-2 h-4 w-4" /> Production Campus Portal</Link></Button>
         </div>
       </header>
-      <main className="container mx-auto px-4 py-6"><PilotAdminWorkspace scope="campus" campus={campus} /></main>
+      <main className="container mx-auto space-y-6 px-4 py-6">
+        <PilotAdminWorkspace scope="campus" campus={campus} />
+        <PilotCsvExportPanel campus={campus} />
+      </main>
     </div>
   );
 }
