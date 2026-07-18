@@ -62,9 +62,7 @@ for (const file of sourceFiles) {
   const content = read(file);
   for (const pattern of forbiddenProductionPatterns) {
     pattern.regex.lastIndex = 0;
-    if (pattern.regex.test(content)) {
-      failures.push(`${file} references ${pattern.name}.`);
-    }
+    if (pattern.regex.test(content)) failures.push(`${file} references ${pattern.name}.`);
   }
 }
 assert(!failures.some((failure) => failure.includes('references')), 'Pilot browser and Edge source contain no production incident, location, media, case, escalation, push, or reporting references.');
@@ -117,6 +115,15 @@ assert(locationHook.includes('PILOT_LOCATION_STORAGE_KEY'), 'Pilot location hook
 assert(locationHook.includes("source: 'initial_fix' | 'live_tracking' | 'manual_pin' | 'resumed_tracking'"), 'Pilot location sources are explicitly constrained.');
 assert(locationHook.includes('clearWatch'), 'Pilot location tracking clears browser watches.');
 assert(locationHook.includes('localStorage.removeItem(PILOT_LOCATION_STORAGE_KEY)'), 'Stopping Pilot tracking clears persisted tracking state.');
+
+const resources = read('src/pages/pilot/PilotResources.tsx');
+assert(resources.includes("recordDownload('safety_resource_print_pdf')"), 'Print / Save as PDF activity is recorded as a Pilot feature test.');
+assert(resources.includes("recordDownload('safety_resource_download')"), 'Safety-resource download activity is recorded as a Pilot feature test.');
+assert(resources.includes('window.print()'), 'Printable Pilot resources use the browser print/PDF workflow.');
+assert(resources.includes('sm:flex-row') && resources.includes('flex-wrap'), 'Pilot resources expose responsive mobile and desktop controls.');
+
+const indexHtml = read('index.html');
+assert(indexHtml.includes('width=device-width, initial-scale=1.0'), 'Application viewport metadata supports mobile rendering.');
 
 if (failures.length) {
   console.error(`Pilot isolation verification failed with ${failures.length} issue(s):`);
