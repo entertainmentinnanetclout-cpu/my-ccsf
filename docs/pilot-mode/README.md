@@ -18,6 +18,8 @@
 14. `03-live-migration-ledger.md` — authoritative Phase 3 migration order and live object register.
 15. `03-backend-verification.md` — RLS, Storage, Realtime, grants, RPC and isolation verification.
 16. `PHASE-3-COMPLETE.md` — Phase 3 completion and Phase 4 entry gate.
+17. `04-application-implementation.md` — routes, services, student journey, dashboards and deployment controls.
+18. `PHASE-4-COMPLETE.md` — Phase 4 completion and Phase 5 entry gate.
 
 ## SQL package
 
@@ -33,6 +35,20 @@ It contains:
 - repeatable read-only verification;
 - guarded destructive rollback guidance.
 
+## Application package
+
+Phase 4 implements:
+
+- fail-closed Preview-only Pilot activation;
+- student consent, sessions, scenarios and simulated reporting;
+- location, live-tracking and private attachment tests;
+- status timelines and Pilot notifications;
+- printable safety resources;
+- feedback and completion;
+- campus and super-admin Pilot dashboards;
+- deletion and retention planning;
+- JSON and CSV exports.
+
 ## Current status
 
 - Phase 0: complete
@@ -40,7 +56,8 @@ It contains:
 - Phase 1.5: complete
 - Phase 2: complete
 - Phase 3: complete
-- Phase 4: next
+- Phase 4: complete
+- Phase 5: next
 
 ## Release control
 
