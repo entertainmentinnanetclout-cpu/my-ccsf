@@ -22,6 +22,14 @@
 18. `PHASE-4-COMPLETE.md` — Phase 4 completion and Phase 5 entry gate.
 19. `05-edge-functions-and-service-finalization.md` — Edge delivery, Storage finalisation and transport-consolidation record.
 20. `PHASE-5-COMPLETE.md` — Phase 5 completion and Phase 6 entry gate.
+21. `06-qa-and-security-validation.md` — Phase 6 QA and authorization evidence.
+22. `06a-final-verification-record.md` — final technical verification snapshot.
+23. `PHASE-6-COMPLETE.md` — Phase 6 completion record.
+24. `07-final-delivery-and-approval.md` — final release decision.
+25. `07a-final-changed-file-register.md` — exact pull-request file inventory.
+26. `07b-deployment-and-environment-register.md` — deployment and environment controls.
+27. `07c-rollback-and-known-limitations.md` — rollback and limitation register.
+28. `PHASE-7-COMPLETE.md` — final delivery completion record.
 
 ## SQL packages
 
@@ -54,10 +62,11 @@ Phase 5 implements JWT-verified Pilot operations, service-only Storage finalisat
 - Phase 3: complete
 - Phase 4: complete
 - Phase 5: complete with documented transport consolidation
-- Phase 6: next
+- Phase 6: complete
+- Phase 7: complete; merge and production enablement deferred
 
 ## Release control
 
-All implementation remains on `feature/controlled-pilot-mode` and will be tested through Vercel Preview. The branch will be merged into `main` only after Phase 6 QA, Phase 7 delivery records and explicit user approval.
+All implementation remains on `feature/controlled-pilot-mode`. Phase 6 QA and Phase 7 delivery are complete. A separate explicit instruction is still required to merge into `main` or enable Pilot Mode in production.
 
 Pilot Mode must remain isolated from production incident operations.
