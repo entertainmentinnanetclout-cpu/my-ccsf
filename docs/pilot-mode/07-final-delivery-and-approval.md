@@ -36,6 +36,8 @@ The user's request to complete Phase 7 records approval of the final delivery pa
 
 Technical acceptance is supported by the completed Phase 6 isolation, authorization, Storage, deletion, retention, location, no-dispatch, TypeScript, ESLint, build, Supabase and Vercel checks.
 
+The permanent QA workflow remains the final branch gate after generation of the Phase 7 records.
+
 ## Final isolation rule
 
 Pilot Mode must not write to production incident, media, location, notification, case-update or escalation workflows and must not trigger CPS, SAPS, ambulance, SMS, email or production push dispatch.
