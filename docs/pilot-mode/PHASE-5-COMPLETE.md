@@ -67,7 +67,10 @@ They have no operational data workflow and are not referenced by the application
 
 ## Verification
 
-- branch production build: passed;
+- final branch production build: passed;
+- GitHub Actions run: `29632380385`;
+- final Vercel Preview deployment: `READY`;
+- final preview deployment ID: `dpl_8vEeipuetuec8iBUNcUm9ABLo3Gh`;
 - Phase 5 wrappers synchronized into checked-in types;
 - service-only finalisers: authenticated execution denied;
 - private Storage guard: authenticated execution denied;
