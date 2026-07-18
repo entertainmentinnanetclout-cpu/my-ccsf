@@ -1,6 +1,7 @@
 import { ArrowLeft, ShieldCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { PilotAdminWorkspace } from '@/components/pilot/PilotAdminWorkspace';
+import { PilotCsvExportPanel } from '@/components/pilot/PilotCsvExportPanel';
 import { Button } from '@/components/ui/button';
 
 export default function SuperAdminPilotPage() {
@@ -15,7 +16,10 @@ export default function SuperAdminPilotPage() {
           <Button variant="secondary" asChild><Link to="/admin"><ArrowLeft className="mr-2 h-4 w-4" /> Production Admin Portal</Link></Button>
         </div>
       </header>
-      <main className="container mx-auto px-4 py-6"><PilotAdminWorkspace scope="admin" /></main>
+      <main className="container mx-auto space-y-6 px-4 py-6">
+        <PilotAdminWorkspace scope="admin" />
+        <PilotCsvExportPanel />
+      </main>
     </div>
   );
 }
