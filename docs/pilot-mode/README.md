@@ -20,34 +20,30 @@
 16. `PHASE-3-COMPLETE.md` — Phase 3 completion and Phase 4 entry gate.
 17. `04-application-implementation.md` — routes, services, student journey, dashboards and deployment controls.
 18. `PHASE-4-COMPLETE.md` — Phase 4 completion and Phase 5 entry gate.
+19. `05-edge-functions-and-service-finalization.md` — Edge delivery, Storage finalisation and transport-consolidation record.
+20. `PHASE-5-COMPLETE.md` — Phase 5 completion and Phase 6 entry gate.
 
-## SQL package
+## SQL packages
 
-The Phase 3 SQL control package is located at:
+Phase 3:
 
 ```text
 supabase/manual-migrations/pilot-mode/phase-3/
 ```
 
-It contains:
+Phase 5:
 
-- exact applied-SQL extraction;
-- repeatable read-only verification;
-- guarded destructive rollback guidance.
+```text
+supabase/manual-migrations/pilot-mode/phase-5/
+```
 
-## Application package
+The packages contain exact applied-SQL extraction, repeatable read-only verification and controlled operational guidance.
 
-Phase 4 implements:
+## Application and service packages
 
-- fail-closed Preview-only Pilot activation;
-- student consent, sessions, scenarios and simulated reporting;
-- location, live-tracking and private attachment tests;
-- status timelines and Pilot notifications;
-- printable safety resources;
-- feedback and completion;
-- campus and super-admin Pilot dashboards;
-- deletion and retention planning;
-- JSON and CSV exports.
+Phase 4 implements the Preview-only Pilot application, student workflow, dashboards, tracking, private attachments, resources, feedback and exports.
+
+Phase 5 implements JWT-verified Pilot operations, service-only Storage finalisation, audited destructive workflows and documented secure transport consolidation.
 
 ## Current status
 
@@ -57,11 +53,11 @@ Phase 4 implements:
 - Phase 2: complete
 - Phase 3: complete
 - Phase 4: complete
-- Phase 5: complete
+- Phase 5: complete with documented transport consolidation
 - Phase 6: next
 
 ## Release control
 
-All implementation remains on `feature/controlled-pilot-mode` and will be tested through Vercel Preview. The branch will be merged into `main` only after all phases, final QA and user approval.
+All implementation remains on `feature/controlled-pilot-mode` and will be tested through Vercel Preview. The branch will be merged into `main` only after Phase 6 QA, Phase 7 delivery records and explicit user approval.
 
 Pilot Mode must remain isolated from production incident operations.
