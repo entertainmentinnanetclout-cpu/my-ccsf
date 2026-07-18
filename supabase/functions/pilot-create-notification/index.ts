@@ -1,53 +1,44 @@
-import { authenticatePilotRequest, requireCampusScope, requireStaff } from '../_shared/pilot/auth.ts';
-import { handleError, jsonResponse, readJson, requirePost, PilotHttpError } from '../_shared/pilot/http.ts';
-import { enumValue, requiredText, requiredUuid } from '../_shared/pilot/validation.ts';
-import { writePilotAudit } from '../_shared/pilot/audit.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.87.1';
 
-const TYPES = ['report_received','status_changed','assigned','simulation_completed','action_required','session_expiring','programme_message'] as const;
+const headers = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+};
+
+const respond = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
+  status,
+  headers: { ...headers, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+});
 
 Deno.serve(async (req) => {
-  const early = requirePost(req);
-  if (early) return early;
+  if (req.method === 'OPTIONS') return new Response(null, { headers });
+  if (req.method !== 'POST') return respond({ error: 'Method not allowed.' }, 405);
 
   try {
-    const context = await authenticatePilotRequest(req);
-    requireStaff(context);
-    const body = await readJson(req);
-    const reportId = requiredUuid(body.report_id, 'report_id');
-    const type = enumValue(body.type, 'type', TYPES);
-    const title = requiredText(body.title, 'title', 160);
-    const message = requiredText(body.message, 'message', 2000);
+    const authorization = req.headers.get('Authorization');
+    if (!authorization) return respond({ error: 'Authentication required.' }, 401);
+    const body = await req.json();
+    const url = Deno.env.get('SUPABASE_URL');
+    const key = Deno.env.get('SUPABASE_ANON_KEY');
+    if (!url || !key) return respond({ error: 'Service configuration missing.' }, 500);
 
-    const { data: report, error: reportError } = await context.adminClient
-      .from('pilot_reports')
-      .select('*')
-      .eq('id', reportId)
-      .maybeSingle();
-    if (reportError) throw reportError;
-    if (!report) throw new PilotHttpError(404, 'Pilot report not found.', 'report_not_found');
-    requireCampusScope(context, report.campus);
-
-    const { data, error } = await context.callerClient.rpc('pilot_create_notification', {
-      p_report_id: reportId,
-      p_type: type,
-      p_title: title,
-      p_message: message,
+    const client = createClient(url, key, {
+      global: { headers: { Authorization: authorization } },
+      auth: { persistSession: false },
     });
-    if (error || !data) throw error ?? new Error('Notification creation returned no record.');
+    const { data: { user } } = await client.auth.getUser();
+    if (!user) return respond({ error: 'Invalid authentication.' }, 401);
 
-    await writePilotAudit(context.adminClient, {
-      programId: report.program_id,
-      actorId: context.user.id,
-      actorRole: context.role,
-      actorCampus: context.campus,
-      action: 'notification_created',
-      entityType: 'pilot_notification',
-      entityId: data.id,
-      metadata: { report_id: report.id, notification_type: type, edge_function: 'pilot-create-notification' },
+    const { data, error } = await client.rpc('pilot_staff_message', {
+      p_report_id: body.report_id,
+      p_kind: body.kind,
+      p_title: body.title,
+      p_content: body.content,
     });
-
-    return jsonResponse({ notification: data }, 201);
+    if (error) throw error;
+    return respond({ result: data }, 201);
   } catch (error) {
-    return handleError(error);
+    return respond({ error: error instanceof Error ? error.message : 'Pilot request failed.' }, 500);
   }
 });
