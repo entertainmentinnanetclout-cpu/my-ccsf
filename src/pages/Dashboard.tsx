@@ -1,26 +1,40 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { FileText, Home, LifeBuoy, LogOut, Map, MapPin, Plus, Shield } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { motion } from 'framer-motion';
-import { Shield, Plus, LogOut, Map, LifeBuoy, Home, MapPin, FileText } from 'lucide-react';
 import { InstitutionBrand } from '@/components/shared/InstitutionBrand';
+import { NotificationBell } from '@/components/shared/NotificationBell';
+import { ThemeToggle } from '@/components/shared/ThemeToggle';
+import { MobileBottomNav } from '@/components/shared/MobileBottomNav';
 import { ReportIncident } from '@/components/student/ReportIncident';
 import { EmergencyReport } from '@/components/student/EmergencyReport';
 import { CampusMap } from '@/components/student/CampusMap';
 import { StudentDashboardHome } from '@/components/student/StudentDashboardHome';
 import { StudentChat } from '@/components/student/StudentChat';
 import { MyCaseReports } from '@/components/student/MyCaseReports';
-import { NotificationBell } from '@/components/shared/NotificationBell';
-import { ThemeToggle } from '@/components/shared/ThemeToggle';
-import { MobileBottomNav } from '@/components/shared/MobileBottomNav';
-import { supabase } from '@/integrations/supabase/client';
+
+type StudentView = 'home' | 'report' | 'mycases' | 'map' | 'messages';
+const STUDENT_VIEWS = new Set<StudentView>(['home', 'report', 'mycases', 'map', 'messages']);
 
 const Dashboard = () => {
   const { user, signOut } = useAuth();
-  const [activeView, setActiveView] = useState<'home' | 'report' | 'mycases' | 'map' | 'messages'>('home');
-  const [userCampus, setUserCampus] = useState<string>('Campus');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedView = searchParams.get('tab') as StudentView | null;
+  const [activeView, setActiveView] = useState<StudentView>(
+    requestedView && STUDENT_VIEWS.has(requestedView) ? requestedView : 'home',
+  );
+  const [userCampus, setUserCampus] = useState('Campus');
   const [userCampusId, setUserCampusId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const requested = searchParams.get('tab') as StudentView | null;
+    if (requested && STUDENT_VIEWS.has(requested)) setActiveView(requested);
+    if (!requested) setActiveView('home');
+  }, [searchParams]);
 
   useEffect(() => {
     let cancelled = false;
@@ -57,6 +71,14 @@ const Dashboard = () => {
       cancelled = true;
     };
   }, [user]);
+
+  const changeView = (view: StudentView) => {
+    setActiveView(view);
+    const next = new URLSearchParams(searchParams);
+    if (view === 'home') next.delete('tab');
+    else next.set('tab', view);
+    setSearchParams(next, { replace: true });
+  };
 
   const navItems = [
     { view: 'home', icon: Home, label: 'Home' },
@@ -98,10 +120,8 @@ const Dashboard = () => {
                   <MapPin className="h-4 w-4 text-primary dark:text-white" aria-hidden="true" />
                   <span className="text-sm font-semibold text-primary dark:text-white">{userCampus}</span>
                 </motion.div>
-
                 <ThemeToggle />
                 <NotificationBell />
-
                 <motion.div whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.95 }}>
                   <Button variant="ghost" size="icon" onClick={signOut} className="hidden sm:flex" aria-label="Sign out of CCSF">
                     <LogOut className="h-5 w-5" aria-hidden="true" />
@@ -123,7 +143,7 @@ const Dashboard = () => {
                     role="tab"
                     aria-selected={activeView === view}
                     variant={activeView === view ? 'default' : 'ghost'}
-                    onClick={() => setActiveView(view as typeof activeView)}
+                    onClick={() => changeView(view as StudentView)}
                     className={`w-full px-1 text-xs transition-all sm:px-3 sm:text-sm ${activeView === view ? 'bg-gradient-to-r from-primary to-secondary shadow-lg' : 'hover:bg-primary/10'}`}
                     size="sm"
                   >
@@ -142,7 +162,7 @@ const Dashboard = () => {
             {activeView === 'mycases' && <MyCaseReports />}
             {activeView === 'report' && <ReportIncident />}
             {activeView === 'map' && <CampusMap />}
-            {activeView === 'messages' && <StudentChat onNavigate={(view) => setActiveView(view)} />}
+            {activeView === 'messages' && <StudentChat onNavigate={changeView} />}
           </div>
         </motion.div>
 
@@ -154,7 +174,7 @@ const Dashboard = () => {
         </footer>
       </main>
 
-      <MobileBottomNav items={navItems} activeView={activeView} onViewChange={(view) => setActiveView(view as typeof activeView)} />
+      <MobileBottomNav items={navItems} activeView={activeView} onViewChange={(view) => changeView(view as StudentView)} />
     </div>
   );
 };
