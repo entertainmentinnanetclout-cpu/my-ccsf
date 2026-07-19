@@ -2,7 +2,9 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { isPilotAdminPath, isPilotSecurityPath, isPilotStudentPath } from '@/config/pilot';
+import { isPilotAdminPath, isPilotSecurityPath, isPilotStudentPath, PILOT_ROUTES } from '@/config/pilot';
+
+const PILOT_AUTH_PATH = '/pilot/auth';
 
 type UserRole = 'student' | 'admin' | 'security' | null;
 
@@ -28,6 +30,12 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+function pilotDestination(role: Exclude<UserRole, null>): string {
+  if (role === 'admin') return PILOT_ROUTES.admin;
+  if (role === 'security') return PILOT_ROUTES.campus;
+  return PILOT_ROUTES.landing;
+}
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -71,11 +79,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  const redirectBasedOnRole = useCallback((role: UserRole, profileCompleted: boolean) => {
-    const currentPath = location.pathname;
+  const redirectBasedOnRole = useCallback((role: UserRole, profileCompletedValue: boolean) => {
+    if (!role) return;
 
-    if (role === 'student' && !profileCompleted) {
-      if (currentPath !== '/profile-completion') navigate('/profile-completion', { replace: true });
+    const currentPath = location.pathname;
+    const isPilotEntry = currentPath === PILOT_AUTH_PATH
+      || isPilotStudentPath(currentPath)
+      || isPilotSecurityPath(currentPath)
+      || isPilotAdminPath(currentPath);
+
+    if (role === 'student' && !profileCompletedValue) {
+      if (currentPath !== '/profile-completion') {
+        navigate('/profile-completion', {
+          replace: true,
+          state: isPilotEntry ? { from: PILOT_ROUTES.landing } : undefined,
+        });
+      }
+      return;
+    }
+
+    if (currentPath === PILOT_AUTH_PATH) {
+      navigate(pilotDestination(role), { replace: true });
       return;
     }
 
