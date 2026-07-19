@@ -35,6 +35,7 @@ assert(dashboard.includes("label: 'Support'"), 'The student navigation no longer
 assert(dashboard.includes('<StudentChat onNavigate='), 'Guided support routes into verified student workflows.');
 assert(dashboard.includes('role="tablist"') && dashboard.includes('aria-selected='), 'Student navigation exposes tab semantics.');
 assert(dashboard.includes('aria-label="Sign out of CCSF"'), 'The icon-only student sign-out control is labelled.');
+assert(dashboard.includes('useSearchParams') && dashboard.includes("next.set('tab', view)"), 'Student report, case, map and support links are directly addressable.');
 
 const studentSupport = read('src/components/student/StudentChat.tsx');
 for (const prohibited of ['generateCaseNumber', 'CCSF AI Support', 'Always Available', 'Math.random()', 'Case Status (']) {
@@ -42,7 +43,7 @@ for (const prohibited of ['generateCaseNumber', 'CCSF AI Support', 'Always Avail
 }
 assert(studentSupport.includes("from('campus_emergency_contacts')"), 'Student support uses the official emergency-contact source.');
 assert(studentSupport.includes('It is not a live chat and does not dispatch emergency services.'), 'Student support states its real operating boundary.');
-assert(studentSupport.includes("onNavigate?.(intent)"), 'Student support connects to report, case and map journeys.');
+assert(studentSupport.includes('onNavigate?.(intent)'), 'Student support connects to report, case and map journeys.');
 assert(studentSupport.includes('role="log"') && studentSupport.includes('aria-live="polite"'), 'Guided support output is announced accessibly.');
 
 const emergencyContact = read('src/components/student/CampusEmergencyContact.tsx');
@@ -77,6 +78,42 @@ assert(office.includes('aria-label="Search incident reports"'), 'Office report s
 assert(office.includes('aria-label="Filter reports by status"'), 'Office status filter is labelled.');
 assert(office.includes('aria-label="Filter reports by category"'), 'Office category filter is labelled.');
 assert(office.includes('role="status" aria-label="Loading incident reports"'), 'Office loading state is announced.');
+
+const staffChat = read('src/components/admin/StaffCommunication.tsx');
+assert(staffChat.includes("from('chat_rooms')") && staffChat.includes("from('chat_messages')"), 'Staff chat uses the persisted Supabase room and message sources.');
+assert(staffChat.includes("from('chat_room_members')") && staffChat.includes("from('message_reactions')"), 'Staff chat preserves real membership and reaction workflows.');
+assert(staffChat.includes("from('chat-media').remove([storagePath])"), 'Failed staff messages remove uploaded attachments.');
+assert(staffChat.includes('Staff communication unavailable') && staffChat.includes('Retry'), 'Staff chat has a recoverable load-failure state.');
+assert(staffChat.includes('aria-label="Create staff chat room"'), 'Staff room creation control is labelled.');
+assert(staffChat.includes('aria-label="Manage room members"') || staffChat.includes('Manage members'), 'Staff member management is explicit.');
+for (const unsupported of ['<Phone', '<Video', 'Chat Settings', 'DropdownMenuTrigger']) {
+  assert(!staffChat.includes(unsupported), `Staff chat contains no unsupported control: ${unsupported}.`);
+}
+
+const emojiPicker = read('src/components/admin/EmojiPicker.tsx');
+assert(emojiPicker.includes('aria-label="Insert emoji"'), 'Emoji insertion control is labelled.');
+assert(emojiPicker.includes('aria-label="Add message reaction"'), 'Reaction control is labelled.');
+assert(emojiPicker.includes('sm:group-focus-within:opacity-100'), 'Message reactions remain available to keyboard users.');
+
+const carousel = read('src/components/admin/CarouselManager.tsx');
+assert(carousel.includes('pendingStoragePath'), 'Carousel tracks pending uploads until the database entry is saved.');
+assert(carousel.includes("from('carousel-images').remove([storagePath])"), 'Carousel removes superseded, cancelled or failed Storage objects.');
+assert(carousel.includes('Image deleted with cleanup warning'), 'Carousel reports partial deletion cleanup failures.');
+assert(carousel.includes('sm:group-focus-within:opacity-100'), 'Carousel controls are visible on touch and keyboard focus.');
+assert(carousel.includes('grid-cols-1') && carousel.includes('lg:flex-row'), 'Carousel management has a phone-to-desktop responsive layout.');
+for (const prohibited of ['placehold.co', 'Math.random()', 'Uploading... {Math.round']) {
+  assert(!carousel.includes(prohibited), `Carousel contains no placeholder or simulated construct: ${prohibited}.`);
+}
+
+const judiciary = read('src/pages/Judiciary.tsx');
+assert(judiciary.includes("from('case_updates')") && judiciary.includes("from('incidents')"), 'Judiciary uses persisted case and incident records.');
+assert(!judiciary.includes('incident?.reporter_id === user?.id'), 'Staff judiciary no longer discards authorised campus records.');
+assert(judiciary.includes('Live judiciary updates are temporarily unavailable.'), 'Judiciary exposes Realtime failures.');
+assert(judiciary.includes('aria-label="Return to staff portal"'), 'Judiciary returns to the role-appropriate staff portal.');
+assert(judiciary.includes('Judiciary portal unavailable') && judiciary.includes('Retry'), 'Judiciary has a recoverable load-failure state.');
+
+const navigation = read('src/components/shared/Navigation.tsx');
+assert(navigation.includes('aria-label="Open portal navigation"'), 'The global portal menu is labelled.');
 
 const security = read('src/pages/Security.tsx');
 for (const component of ['CampusDashboard', 'AdminIncidents', 'ResolveCases', 'CampusAnalytics', 'CampusStudentsList', 'AdminAnnouncements', 'StaffCommunication', 'WifiAccessPointManager', 'OfficerSettings']) {
