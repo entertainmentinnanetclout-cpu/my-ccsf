@@ -164,13 +164,14 @@ assert(vercel.includes('"destination": "/index.html"'), 'Vercel rewrites direct 
 
 const pilotLayout = read('src/components/pilot/PilotInstitutionalLayout.tsx');
 const pilotAuthView = read('src/components/pilot/PilotAuthInstitutionalView.tsx');
+const authFrame = read('src/components/auth/InstitutionalAuthFrame.tsx');
 assert(
   pilotLayout.includes('Simulation only · No emergency dispatch'),
   'Every authenticated Pilot screen inherits a permanent no-dispatch banner.',
 );
 assert(
-  pilotAuthView.includes('{PILOT_WARNING}'),
-  'The Pilot authentication screen displays the canonical no-dispatch warning.',
+  pilotAuthView.includes('<InstitutionalAuthFrame') && authFrame.includes('PILOT_WARNING'),
+  'The shared Pilot authentication frame displays the canonical no-dispatch warning.',
 );
 
 if (failures.length) {
