@@ -1,0 +1,1 @@
+create policy "Super admins can update app settings" on public.app_settings for update to authenticated using (public.is_super_admin((select auth.uid()))) with check (public.is_super_admin((select auth.uid())));

@@ -1,0 +1,1 @@
+drop policy if exists "Authenticated users can insert location updates" on public.incident_location_updates;

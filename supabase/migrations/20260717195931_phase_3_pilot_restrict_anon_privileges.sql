@@ -1,0 +1,12 @@
+revoke select, insert, update, delete, truncate, references, trigger on table public.pilot_programs from anon;
+revoke select, insert, update, delete, truncate, references, trigger on table public.pilot_scenarios from anon;
+revoke select, insert, update, delete, truncate, references, trigger on table public.pilot_participants from anon;
+revoke select, insert, update, delete, truncate, references, trigger on table public.pilot_sessions from anon;
+revoke select, insert, update, delete, truncate, references, trigger on table public.pilot_reports from anon;
+revoke select, insert, update, delete, truncate, references, trigger on table public.pilot_report_events from anon;
+revoke select, insert, update, delete, truncate, references, trigger on table public.pilot_location_events from anon;
+revoke select, insert, update, delete, truncate, references, trigger on table public.pilot_attachments from anon;
+revoke select, insert, update, delete, truncate, references, trigger on table public.pilot_notifications from anon;
+revoke select, insert, update, delete, truncate, references, trigger on table public.pilot_feature_tests from anon;
+revoke select, insert, update, delete, truncate, references, trigger on table public.pilot_feedback from anon;
+revoke select, insert, update, delete, truncate, references, trigger on table public.pilot_audit_logs from anon;

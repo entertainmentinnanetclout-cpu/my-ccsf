@@ -1,0 +1,1 @@
+create policy "Super admins can delete incidents" on public.incidents for delete to authenticated using (public.is_super_admin((select auth.uid())));

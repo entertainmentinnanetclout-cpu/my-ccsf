@@ -1,0 +1,1 @@
+drop policy if exists "Authenticated users can upload incident media" on storage.objects; drop policy if exists "Authorized users can view incident media" on storage.objects; drop policy if exists "Admins can delete incident media" on storage.objects;

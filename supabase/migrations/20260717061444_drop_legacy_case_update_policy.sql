@@ -1,0 +1,1 @@
+drop policy if exists "Admins can update own case updates" on public.case_updates;

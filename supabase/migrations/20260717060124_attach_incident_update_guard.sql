@@ -1,0 +1,1 @@
+drop trigger if exists enforce_incident_update_permissions_trigger on public.incidents; create trigger enforce_incident_update_permissions_trigger before update on public.incidents for each row execute function public.enforce_incident_update_permissions();

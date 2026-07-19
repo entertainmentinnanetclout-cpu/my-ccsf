@@ -1,0 +1,1 @@
+create policy "Super admins can delete app settings" on public.app_settings for delete to authenticated using (public.is_super_admin((select auth.uid())));

@@ -1,0 +1,1 @@
+update storage.buckets set public = true where id = 'chat-media'; drop policy if exists "Staff can view private chat media" on storage.objects;

@@ -1,0 +1,1 @@
+drop policy if exists "Super admins can delete emergency contacts" on public.campus_emergency_contacts; create policy "Super admins can delete emergency contacts" on public.campus_emergency_contacts for delete to authenticated using (public.is_super_admin((select auth.uid())));

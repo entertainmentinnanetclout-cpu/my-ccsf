@@ -1,0 +1,1 @@
+drop policy if exists "Super admins can manage app settings" on public.app_settings;

@@ -1,0 +1,1 @@
+drop policy if exists "Authenticated users can upload media" on public.incident_media;

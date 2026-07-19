@@ -1,0 +1,1 @@
+create unique index if not exists campus_emergency_contacts_unique_active on public.campus_emergency_contacts (campus, service, phone_number) nulls not distinct where is_active; create index if not exists idx_emergency_contacts_campus_active on public.campus_emergency_contacts(campus, is_active, priority desc);

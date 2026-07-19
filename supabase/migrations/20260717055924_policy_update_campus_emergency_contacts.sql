@@ -1,0 +1,1 @@
+drop policy if exists "Super admins can update emergency contacts" on public.campus_emergency_contacts; create policy "Super admins can update emergency contacts" on public.campus_emergency_contacts for update to authenticated using (public.is_super_admin((select auth.uid()))) with check (public.is_super_admin((select auth.uid())));
