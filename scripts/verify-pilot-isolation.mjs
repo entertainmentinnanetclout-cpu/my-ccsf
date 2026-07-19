@@ -81,12 +81,22 @@ for (const status of ['received', 'assessing', 'assigned', 'in_progress', 'simul
 }
 
 const app = read('src/App.tsx');
-for (const route of ['/pilot', '/pilot/session/:sessionId', '/pilot/report/:reportId', '/pilot/resources', '/security/pilot', '/admin/pilot']) {
+for (const route of ['/pilot/auth', '/pilot', '/pilot/session/:sessionId', '/pilot/report/:reportId', '/pilot/resources', '/security/pilot', '/admin/pilot']) {
   assert(app.includes(`path="${route}"`), `Approved route ${route} is registered.`);
 }
+assert(app.includes('<Route path="/pilot/auth" element={<PilotAuth />} />'), 'Pilot authentication is rendered outside the official application layout.');
 assert(app.includes("allowedRoles={['student']}"), 'Student Pilot routes are role guarded.');
 assert(app.includes("allowedRoles={['security', 'admin']}"), 'Campus Pilot route is staff guarded.');
 assert(app.includes("allowedRoles={['admin']}"), 'Super-admin Pilot route is admin guarded.');
+
+const pilotAuth = read('src/pages/pilot/PilotAuth.tsx');
+assert(pilotAuth.includes('signInWithPassword'), 'Pilot authentication reuses existing Supabase accounts.');
+assert(pilotAuth.includes('pilotDestination'), 'Pilot authentication redirects by the existing account role.');
+assert(!pilotAuth.includes('signUp('), 'Pilot authentication does not create uninvited accounts.');
+assert(pilotAuth.includes('Student accounts must be invited'), 'Pilot authentication explains the student allowlist requirement.');
+
+const protectedRoute = read('src/components/ProtectedRoute.tsx');
+assert(protectedRoute.includes("? '/pilot/auth' : '/auth'"), 'Unauthenticated Pilot routes redirect to the dedicated Pilot login.');
 
 const coreService = read('src/services/pilot/pilotCoreService.ts');
 for (const functionSlug of ['pilot-create-session', 'pilot-submit-report']) {
@@ -124,6 +134,9 @@ assert(resources.includes('sm:flex-row') && resources.includes('flex-wrap'), 'Pi
 
 const indexHtml = read('index.html');
 assert(indexHtml.includes('width=device-width, initial-scale=1.0'), 'Application viewport metadata supports mobile rendering.');
+
+const vercel = read('vercel.json');
+assert(vercel.includes('"destination": "/index.html"'), 'Vercel rewrites direct Pilot deep links to the SPA entry point.');
 
 if (failures.length) {
   console.error(`Pilot isolation verification failed with ${failures.length} issue(s):`);
