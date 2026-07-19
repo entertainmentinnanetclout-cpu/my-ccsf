@@ -1,29 +1,27 @@
 import { FormEvent, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useTheme } from 'next-themes';
 import { Loader2, LockKeyhole } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { PILOT_ENABLED, PILOT_ROUTES } from '@/config/pilot';
+import { PILOT_ENABLED, PILOT_ROUTES, resolvePilotDestination } from '@/config/pilot';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { PilotAuthInstitutionalView } from '@/components/pilot/PilotAuthInstitutionalView';
 
-const PILOT_AUTH_PATH = '/pilot/auth';
 const PILOT_ACCESS_REQUIREMENT = 'Student accounts must be invited to an active Pilot programme.';
 
 type PilotAuthView = 'login' | 'forgot-password';
-type PilotRole = 'student' | 'security' | 'admin';
-
-function pilotDestination(role: PilotRole): string {
-  if (role === 'admin') return PILOT_ROUTES.admin;
-  if (role === 'security') return PILOT_ROUTES.campus;
-  return PILOT_ROUTES.landing;
-}
+type PilotRequestedLocation = string | {
+  pathname?: unknown;
+  search?: unknown;
+  hash?: unknown;
+};
 
 export default function PilotAuth() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { theme } = useTheme();
   const { toast } = useToast();
   const { user, userRole, loading: authLoading, profileCompleted } = useAuth();
@@ -31,20 +29,22 @@ export default function PilotAuth() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const requestedFrom = (location.state as { from?: PilotRequestedLocation } | null)?.from;
 
   useEffect(() => {
     if (!user || !userRole) return;
 
+    const destination = resolvePilotDestination(userRole, requestedFrom);
     if (userRole === 'student' && !profileCompleted) {
       navigate('/profile-completion', {
         replace: true,
-        state: { from: PILOT_ROUTES.landing },
+        state: { from: destination },
       });
       return;
     }
 
-    navigate(pilotDestination(userRole), { replace: true });
-  }, [user, userRole, profileCompleted, navigate]);
+    navigate(destination, { replace: true });
+  }, [user, userRole, profileCompleted, requestedFrom, navigate]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -64,7 +64,7 @@ export default function PilotAuth() {
     try {
       if (view === 'forgot-password') {
         const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
-          redirectTo: `${window.location.origin}${PILOT_AUTH_PATH}?reset=true`,
+          redirectTo: `${window.location.origin}${PILOT_ROUTES.auth}?reset=true`,
         });
         if (error) throw error;
         toast({ title: 'Recovery email sent', description: 'Use the link in your email, then return to the Pilot login.' });
