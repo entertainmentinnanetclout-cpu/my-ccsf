@@ -1,0 +1,1 @@
+create policy "Super admins can insert app settings" on public.app_settings for insert to authenticated with check (public.is_super_admin((select auth.uid())));

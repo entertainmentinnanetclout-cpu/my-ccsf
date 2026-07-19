@@ -1,0 +1,1 @@
+create table if not exists public.app_settings (key text primary key, value jsonb not null, description text, updated_by uuid, created_at timestamptz not null default now(), updated_at timestamptz not null default now());

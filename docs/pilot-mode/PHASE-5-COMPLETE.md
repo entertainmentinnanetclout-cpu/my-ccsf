@@ -55,15 +55,15 @@ The exact-file register permits documented technical deviations. Those operation
 
 This changes transport composition only. It does not weaken role, campus, ownership, Storage or audit controls.
 
-## Diagnostic-only deployments
+## Retired compatibility deployments
 
-Three JWT-protected diagnostic slugs were created while isolating connector restrictions:
+Three unused JWT-protected slugs remain unreferenced by the application:
 
 - `pilot-session-cleanup`;
 - `pilot-cleanup`;
 - `pilot-export-results`.
 
-They have no operational data workflow and are not referenced by the application. The current connector provides no Edge Function deletion action. They are recorded for later removal through Supabase CLI/dashboard.
+On 19 July 2026, Phase 1 release reconciliation replaced their diagnostic responders with explicit `410 Gone` responses and committed exact matching source/configuration. They remain candidates for deletion when that operation becomes available.
 
 ## Verification
 

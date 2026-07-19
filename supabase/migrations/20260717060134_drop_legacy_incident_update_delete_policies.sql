@@ -1,0 +1,1 @@
+drop policy if exists "Admins can update incidents" on public.incidents; drop policy if exists "Admins can delete incidents" on public.incidents;

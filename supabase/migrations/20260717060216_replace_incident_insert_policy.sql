@@ -1,0 +1,1 @@
+drop policy if exists "Authenticated users can submit incidents" on public.incidents; create policy "Authenticated users can submit incidents" on public.incidents for insert to authenticated with check (submitted_by = (select auth.uid()) and (reporter_id = (select auth.uid()) or reporter_id is null));

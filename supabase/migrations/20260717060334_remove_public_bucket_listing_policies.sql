@@ -1,0 +1,1 @@
+drop policy if exists "Anyone can view avatars" on storage.objects; drop policy if exists "Public can view carousel images" on storage.objects;

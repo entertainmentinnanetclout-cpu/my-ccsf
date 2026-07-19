@@ -1,0 +1,1 @@
+alter table public.campus_emergency_contacts enable row level security;

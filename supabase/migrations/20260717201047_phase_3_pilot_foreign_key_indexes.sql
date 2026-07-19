@@ -1,0 +1,17 @@
+create index if not exists idx_pilot_attachments_program_id on public.pilot_attachments(program_id);
+create index if not exists idx_pilot_attachments_session_id on public.pilot_attachments(session_id);
+create index if not exists idx_pilot_attachments_uploaded_by on public.pilot_attachments(uploaded_by);
+create index if not exists idx_pilot_feature_tests_report_id on public.pilot_feature_tests(report_id) where report_id is not null;
+create index if not exists idx_pilot_feature_tests_user_id on public.pilot_feature_tests(user_id);
+create index if not exists idx_pilot_feedback_report_id on public.pilot_feedback(report_id) where report_id is not null;
+create index if not exists idx_pilot_feedback_user_id on public.pilot_feedback(user_id);
+create index if not exists idx_pilot_location_events_program_id on public.pilot_location_events(program_id);
+create index if not exists idx_pilot_location_events_user_id on public.pilot_location_events(user_id);
+create index if not exists idx_pilot_notifications_program_id on public.pilot_notifications(program_id);
+create index if not exists idx_pilot_notifications_session_id on public.pilot_notifications(session_id) where session_id is not null;
+create index if not exists idx_pilot_participants_invited_by on public.pilot_participants(invited_by);
+create index if not exists idx_pilot_programs_created_by on public.pilot_programs(created_by);
+create index if not exists idx_pilot_report_events_session_id on public.pilot_report_events(session_id);
+create index if not exists idx_pilot_reports_scenario_id on public.pilot_reports(scenario_id) where scenario_id is not null;
+create index if not exists idx_pilot_scenarios_created_by on public.pilot_scenarios(created_by);
+create index if not exists idx_pilot_sessions_participant_id on public.pilot_sessions(participant_id);
