@@ -1,9 +1,16 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
-import { isPilotAdminPath, isPilotSecurityPath, isPilotStudentPath } from '@/config/pilot';
+import {
+  isApprovedPilotPath,
+  isPilotAdminPath,
+  isPilotSecurityPath,
+  isPilotStudentPath,
+  pilotDefaultDestination,
+  type PilotRole,
+} from '@/config/pilot';
 
-type UserRole = 'student' | 'admin' | 'security';
+type UserRole = PilotRole;
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -17,6 +24,7 @@ function isPilotProtectedPath(pathname: string): boolean {
 export const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
   const { user, userRole, loading } = useAuth();
   const location = useLocation();
+  const requestedPath = `${location.pathname}${location.search}${location.hash}`;
 
   if (loading) {
     return (
@@ -28,7 +36,7 @@ export const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) 
 
   if (!user) {
     const authPath = isPilotProtectedPath(location.pathname) ? '/pilot/auth' : '/auth';
-    return <Navigate to={authPath} state={{ from: location }} replace />;
+    return <Navigate to={authPath} state={{ from: requestedPath }} replace />;
   }
 
   if (!allowedRoles || allowedRoles.length === 0) {
@@ -37,6 +45,10 @@ export const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) 
 
   if (userRole && allowedRoles.includes(userRole as UserRole)) {
     return <>{children}</>;
+  }
+
+  if (userRole && isApprovedPilotPath(location.pathname)) {
+    return <Navigate to={pilotDefaultDestination(userRole as PilotRole)} replace />;
   }
 
   if (userRole === 'student') {
