@@ -40,7 +40,7 @@ Execution branch: `finalize/ccsf-release-readiness`
 
 ## Phase 0 — Governance and security baseline
 
-**Status:** In progress
+**Status:** Complete — PR checks passed
 
 ### Deliverables
 
@@ -62,6 +62,8 @@ Execution branch: `finalize/ccsf-release-readiness`
 Phase 0 PR approved and all required checks green.
 
 ## Phase 1 — Migration reconciliation and Supabase health
+
+**Status:** Implementation and live verification complete; awaiting merge-triggered branch resync
 
 **Depends on:** Phase 0
 
@@ -181,8 +183,8 @@ Formal go/no-go approval. Merge by reviewed PR only; tag the release and monitor
 
 ## Immediate next actions
 
-1. Finish Phase 0 documentation and CI validation.
-2. Reconcile the remote migration history into version-matched local files.
-3. Recover the complete approved logo asset package.
+1. Merge the verified Phase 0–1 reconciliation PR and confirm Supabase `main` becomes healthy.
+2. Recover the complete approved logo asset package.
+3. Execute the canonical CCSF branding inventory and replacement.
 4. Prove whether the three divergent branches contain any unique work worth carrying forward.
-5. Execute each later phase through a dedicated PR into this finalisation branch, then one controlled release PR into `main`.
+5. Continue later phases through controlled, verified PRs.

@@ -99,21 +99,21 @@ The application uses the existing `pilot_export_data` RPC under the authenticate
 
 An aggregate-only `security_invoker` view is also available as `pilot_aggregate_results`.
 
-## Diagnostic-only slugs
+## Retired compatibility slugs
 
-During deployment isolation, Supabase accepted JWT-protected diagnostic versions of:
+The unused JWT-protected slugs below remain unreferenced by `src/services/pilot`:
 
 - `pilot-session-cleanup`;
 - `pilot-cleanup`;
 - `pilot-export-results`.
 
-They contain no operational data workflow and are not referenced by `src/services/pilot`. The current connector exposes no Edge Function deletion action and rejected replacement no-op versions for the cleanup slugs.
+On 19 July 2026 their diagnostic responders were replaced with explicit `410 Gone` responses. Their exact deployed source is checked in under the matching `supabase/functions/<slug>/index.ts` path and all are configured with `verify_jwt = true`.
 
 Required control:
 
-- do not route browser traffic to these slugs;
-- remove them through Supabase CLI/dashboard when a deployment credential is available;
-- treat the active functional paths documented above as authoritative.
+- do not route application traffic to these retired slugs;
+- use the composed report cleanup and audited RPC workflows documented above;
+- remove the retired slugs when an Edge Function deletion workflow is available.
 
 ## Database migrations
 
