@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,8 +12,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { PILOT_ENABLED, PILOT_ROUTES } from '@/config/pilot';
 
 const Navigation = () => {
+  const location = useLocation();
   const { isSuperAdmin, isCampusAdmin, isStudent } = useAuth();
   const pilotPath = isSuperAdmin ? PILOT_ROUTES.admin : isCampusAdmin ? PILOT_ROUTES.campus : PILOT_ROUTES.landing;
+
+  if (location.pathname !== '/') return null;
 
   return (
     <div className="absolute right-4 top-4 z-[60]">
@@ -42,8 +45,18 @@ const Navigation = () => {
               </DropdownMenuItem>
             </>
           )}
-          <DropdownMenuSeparator />
-          <DropdownMenuItem asChild><Link to="/profile">Profile</Link></DropdownMenuItem>
+          {(isStudent || isCampusAdmin || isSuperAdmin) && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild><Link to="/profile">Profile</Link></DropdownMenuItem>
+            </>
+          )}
+          {!isStudent && !isCampusAdmin && !isSuperAdmin && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild><Link to="/auth">Institutional sign in</Link></DropdownMenuItem>
+            </>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
