@@ -66,7 +66,7 @@ Implemented:
 
 ## Automated verification
 
-GitHub Actions run **#551** passed:
+GitHub Actions run **#553** passed:
 
 - strict `npm ci`;
 - Pilot production-isolation verification;
@@ -83,6 +83,21 @@ GitHub Actions run **#551** passed:
 - approved Pilot Preview build.
 
 The permanent Phase 7 gate checks authentication ownership, deep-link safety, password recovery, canonical campuses, shared branding, PWA metadata, cache replacement, service-worker update controls, installation messaging, splash integrity, dark-mode hierarchy and complete mobile navigation.
+
+## Preview deployment verification
+
+Vercel Preview deployment `dpl_2iwxveZ7wTcoM49xZwR3K7fWRPQW` reached `READY` for the release-candidate branch and commit `44aaf4bbe87e7d85a209760b819281dc1ebebd02`.
+
+The protected branch alias serves the final Phase 7 manifest with:
+
+- the full official application name;
+- institutional navy theme and background colours;
+- `en-ZA` locale;
+- standard and maskable icons;
+- standalone display metadata;
+- Student Dashboard and Report an Incident shortcuts.
+
+Full authenticated role/device interaction remains intentionally reserved for Phase 8 UAT. No production domain was changed.
 
 ## Supabase state
 
