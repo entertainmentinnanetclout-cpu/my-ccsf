@@ -37,7 +37,9 @@ for (const table of ['pilot_reports', 'pilot_report_events', 'pilot_notification
   assert(campus.includes(`'${table}'`), `Campus-security Realtime includes ${table}.`);
 }
 assert(campus.includes("received: 'assessing'") && campus.includes("assigned: 'in_progress'") && campus.includes("in_progress: 'simulation_completed'"), 'Campus-security Pilot implements the controlled case lifecycle.');
-assert(campus.includes("actionMode === 'assign'") && campus.includes("transitionPilotReport(actionReport.id, 'assigned'"), 'Campus-security Pilot supports explicit officer assignment.');
+assert(campus.includes("actionMode === 'assign'") && campus.includes("transitionPilotReport(actionReport.id, 'assigned'") && campus.includes('userProfile.id'), 'Campus-security assignment uses the authenticated staff profile.');
+assert(campus.includes('Assign to me') && campus.includes('No profile UUID is required.'), 'Campus-security assignment presents an institutional accept-case workflow instead of raw identifiers.');
+assert(!campus.includes('Campus officer profile UUID') && !campus.includes('00000000-0000-0000-0000-000000000000'), 'Campus-security workflow exposes no raw UUID assignment control.');
 assert(campus.includes('addPilotReportNote') && campus.includes('createPilotNotification'), 'Campus-security Pilot supports timeline communication and student notifications.');
 assert(campus.includes('calculatePilotMetrics') && campus.includes('groupTests(data)'), 'Campus-security Pilot provides campus analytics.');
 assert(campus.includes('No production case is read, written or dispatched.'), 'Campus-security Pilot states production isolation.');
