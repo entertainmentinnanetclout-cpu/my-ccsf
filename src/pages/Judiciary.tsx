@@ -1,14 +1,14 @@
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { format } from 'date-fns';
 import { motion } from 'framer-motion';
-import { Shield, Home, Gavel, Calendar, Clock, User, FileText, AlertCircle, Loader2 } from 'lucide-react';
-import { InstitutionBrand } from '@/components/shared/InstitutionBrand';
+import { AlertCircle, Calendar, Clock, FileText, Gavel, Home, Loader2, RefreshCw, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { format } from 'date-fns';
+import { InstitutionBrand } from '@/components/shared/InstitutionBrand';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface CaseUpdate {
@@ -27,82 +27,97 @@ interface CaseUpdate {
 
 const Judiciary = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, userRole } = useAuth();
   const [caseUpdates, setCaseUpdates] = useState<CaseUpdate[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (user) {
-      fetchCaseUpdates();
-    }
-  }, [user]);
-
-  const fetchCaseUpdates = async () => {
+  const fetchCaseUpdates = useCallback(async () => {
+    if (!user) return;
     setLoading(true);
-    
-    // Fetch case updates for incidents the user reported
-    const { data: updates, error } = await supabase
+    setError(null);
+
+    const { data: updates, error: updatesError } = await supabase
       .from('case_updates')
-      .select(`
-        id,
-        incident_id,
-        title,
-        description,
-        update_type,
-        scheduled_date,
-        created_at
-      `)
+      .select('id, incident_id, title, description, update_type, scheduled_date, created_at')
       .order('created_at', { ascending: false });
 
-    if (!error && updates) {
-      // Fetch related incidents
-      const incidentIds = [...new Set(updates.map(u => u.incident_id))];
-      const { data: incidents } = await supabase
-        .from('incidents')
-        .select('id, title, status, reporter_id')
-        .in('id', incidentIds);
-
-      const incidentsMap = new Map(incidents?.map(i => [i.id, i]) || []);
-      
-      // Filter to only show updates for incidents the user reported
-      const userUpdates = updates
-        .filter(update => {
-          const incident = incidentsMap.get(update.incident_id);
-          return incident?.reporter_id === user?.id;
-        })
-        .map(update => ({
-          ...update,
-          incident: incidentsMap.get(update.incident_id) as { title: string; status: string } | undefined
-        }));
-
-      setCaseUpdates(userUpdates);
+    if (updatesError) {
+      setError('Judiciary case updates could not be loaded.');
+      setLoading(false);
+      return;
     }
+
+    const incidentIds = [...new Set((updates || []).map((update) => update.incident_id))];
+    if (incidentIds.length === 0) {
+      setCaseUpdates([]);
+      setLoading(false);
+      return;
+    }
+
+    const { data: incidents, error: incidentsError } = await supabase
+      .from('incidents')
+      .select('id, title, status')
+      .in('id', incidentIds);
+
+    if (incidentsError) {
+      setError('Related incident details could not be loaded.');
+      setLoading(false);
+      return;
+    }
+
+    const incidentMap = new Map((incidents || []).map((incident) => [incident.id, incident]));
+    setCaseUpdates((updates || []).map((update) => ({
+      ...update,
+      incident: incidentMap.get(update.incident_id),
+    })));
     setLoading(false);
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    void fetchCaseUpdates();
+
+    const channel = supabase
+      .channel(`judiciary-case-updates-${user.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'case_updates' }, () => void fetchCaseUpdates())
+      .subscribe((status) => {
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          setError('Live judiciary updates are temporarily unavailable.');
+        }
+      });
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [fetchCaseUpdates, user]);
+
+  const upcomingHearings = useMemo(() => caseUpdates.filter((update) =>
+    update.update_type === 'hearing'
+    && update.scheduled_date
+    && new Date(update.scheduled_date) > new Date()
+  ), [caseUpdates]);
+
+  const recentUpdates = useMemo(() => caseUpdates.filter((update) =>
+    update.update_type !== 'hearing' || !update.scheduled_date
+  ), [caseUpdates]);
 
   const getUpdateTypeColor = (type: string) => {
     switch (type) {
-      case 'hearing': return 'bg-primary/20 text-primary border-primary';
-      case 'resolution': return 'bg-success/20 text-success border-success';
-      case 'escalation': return 'bg-destructive/20 text-destructive border-destructive';
-      case 'note': return 'bg-muted text-muted-foreground border-muted';
-      default: return 'bg-muted text-muted-foreground border-muted';
+      case 'hearing': return 'border-primary bg-primary/20 text-primary';
+      case 'resolution': return 'border-success bg-success/20 text-success';
+      case 'escalation': return 'border-destructive bg-destructive/20 text-destructive';
+      default: return 'border-muted bg-muted text-muted-foreground';
     }
   };
 
   const getUpdateTypeIcon = (type: string) => {
-    switch (type) {
-      case 'hearing': return <Gavel className="h-4 w-4" />;
-      case 'resolution': return <FileText className="h-4 w-4" />;
-      default: return <Clock className="h-4 w-4" />;
-    }
+    if (type === 'hearing') return <Gavel className="h-4 w-4" aria-hidden="true" />;
+    if (type === 'resolution') return <FileText className="h-4 w-4" aria-hidden="true" />;
+    return <Clock className="h-4 w-4" aria-hidden="true" />;
   };
 
-  const upcomingHearings = caseUpdates.filter(
-    u => u.update_type === 'hearing' && u.scheduled_date && new Date(u.scheduled_date) > new Date()
-  );
-
-  const recentUpdates = caseUpdates.filter(u => u.update_type !== 'hearing' || !u.scheduled_date);
+  const staffHome = userRole === 'admin' ? '/admin' : '/security';
 
   return (
     <div className="min-h-screen bg-background">
@@ -110,24 +125,22 @@ const Judiciary = () => {
         initial={{ y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.5, ease: 'easeInOut' }}
-        className="sticky top-0 z-50 bg-primary border-b border-white/10 shadow-large"
+        className="sticky top-0 z-50 border-b border-white/10 bg-primary shadow-large"
       >
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <motion.div className="text-white" whileHover={{ scale: 1.05 }}>
-                <InstitutionBrand size="header" />
-              </motion.div>
-              <div>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-3">
+              <motion.div className="text-white" whileHover={{ scale: 1.05 }}><InstitutionBrand size="header" /></motion.div>
+              <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <Gavel className="h-5 w-5 text-white" />
-                  <h1 className="text-xl font-bold text-white">Campus Community Safety Forum</h1>
+                  <Gavel className="h-5 w-5 shrink-0 text-white" aria-hidden="true" />
+                  <h1 className="truncate text-base font-bold text-white sm:text-xl">Campus Community Safety Forum</h1>
                 </div>
-                <p className="text-sm text-white/90 font-semibold">Judiciary Portal</p>
+                <p className="text-xs font-semibold text-white/90 sm:text-sm">Judiciary Portal</p>
               </div>
             </div>
-            <Button variant="outline" size="icon" onClick={() => navigate('/')}>
-              <Home className="h-5 w-5" />
+            <Button variant="outline" size="icon" aria-label="Return to staff portal" onClick={() => navigate(staffHome)}>
+              <Home className="h-5 w-5" aria-hidden="true" />
             </Button>
           </div>
         </div>
@@ -136,132 +149,55 @@ const Judiciary = () => {
       <main className="container mx-auto px-4 py-6">
         {!user ? (
           <Card className="p-8 text-center">
-            <User className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <h3 className="font-semibold mb-2">Sign In Required</h3>
-            <p className="text-muted-foreground mb-4">Please sign in to view your case updates and hearings.</p>
+            <User className="mx-auto mb-4 h-12 w-12 text-muted-foreground" aria-hidden="true" />
+            <h2 className="mb-2 font-semibold">Sign In Required</h2>
+            <p className="mb-4 text-muted-foreground">Sign in with an authorised CCSF staff account.</p>
             <Button onClick={() => navigate('/auth')}>Sign In</Button>
           </Card>
         ) : loading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <div className="flex items-center justify-center py-12" role="status" aria-label="Loading judiciary case updates">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" aria-hidden="true" />
           </div>
+        ) : error ? (
+          <Card className="p-8 text-center" role="alert">
+            <AlertCircle className="mx-auto mb-3 h-10 w-10 text-destructive" aria-hidden="true" />
+            <h2 className="font-semibold">Judiciary portal unavailable</h2>
+            <p className="mt-1 text-sm text-muted-foreground">{error}</p>
+            <Button variant="outline" className="mt-4 gap-2" onClick={() => void fetchCaseUpdates()}>
+              <RefreshCw className="h-4 w-4" aria-hidden="true" /> Retry
+            </Button>
+          </Card>
         ) : (
           <Tabs defaultValue="updates" className="space-y-6">
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="updates" className="flex items-center gap-2">
-                <FileText className="h-4 w-4" />
-                Case Updates
-              </TabsTrigger>
-              <TabsTrigger value="hearings" className="flex items-center gap-2">
-                <Calendar className="h-4 w-4" />
-                Scheduled Hearings
-                {upcomingHearings.length > 0 && (
-                  <Badge variant="destructive" className="ml-1">{upcomingHearings.length}</Badge>
-                )}
-              </TabsTrigger>
+              <TabsTrigger value="updates" className="flex items-center gap-2"><FileText className="h-4 w-4" aria-hidden="true" />Case Updates</TabsTrigger>
+              <TabsTrigger value="hearings" className="flex items-center gap-2"><Calendar className="h-4 w-4" aria-hidden="true" />Scheduled Hearings{upcomingHearings.length > 0 && <Badge variant="destructive" className="ml-1">{upcomingHearings.length}</Badge>}</TabsTrigger>
             </TabsList>
 
             <TabsContent value="updates" className="space-y-4">
               {recentUpdates.length === 0 ? (
-                <Card className="p-8 text-center">
-                  <AlertCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <h3 className="font-semibold mb-2">No Case Updates</h3>
-                  <p className="text-muted-foreground">
-                    There are no updates for your reported incidents yet.
-                  </p>
-                </Card>
-              ) : (
-                recentUpdates.map((update, index) => (
-                  <motion.div
-                    key={update.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                  >
-                    <Card className="shadow-large">
-                      <CardHeader className="pb-2">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-center gap-2">
-                            {getUpdateTypeIcon(update.update_type)}
-                            <CardTitle className="text-base">{update.title}</CardTitle>
-                          </div>
-                          <Badge variant="outline" className={getUpdateTypeColor(update.update_type)}>
-                            {update.update_type.toUpperCase()}
-                          </Badge>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        {update.incident && (
-                          <p className="text-sm text-primary mb-2">
-                            Re: {update.incident.title}
-                          </p>
-                        )}
-                        {update.description && (
-                          <p className="text-sm text-muted-foreground mb-3">{update.description}</p>
-                        )}
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <Clock className="h-3 w-3" />
-                          {format(new Date(update.created_at), 'MMM d, yyyy h:mm a')}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                ))
-              )}
+                <Card className="p-8 text-center"><AlertCircle className="mx-auto mb-4 h-12 w-12 text-muted-foreground" aria-hidden="true" /><h2 className="mb-2 font-semibold">No Case Updates</h2><p className="text-muted-foreground">No judiciary updates are currently available within your authorised campus scope.</p></Card>
+              ) : recentUpdates.map((update, index) => (
+                <motion.div key={update.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }}>
+                  <Card className="shadow-large">
+                    <CardHeader className="pb-2"><div className="flex items-start justify-between gap-3"><div className="flex min-w-0 items-center gap-2">{getUpdateTypeIcon(update.update_type)}<CardTitle className="truncate text-base">{update.title}</CardTitle></div><Badge variant="outline" className={getUpdateTypeColor(update.update_type)}>{update.update_type.toUpperCase()}</Badge></div></CardHeader>
+                    <CardContent>{update.incident && <p className="mb-2 text-sm text-primary">Re: {update.incident.title}</p>}{update.description && <p className="mb-3 whitespace-pre-wrap text-sm text-muted-foreground">{update.description}</p>}<div className="flex items-center gap-2 text-xs text-muted-foreground"><Clock className="h-3 w-3" aria-hidden="true" />{format(new Date(update.created_at), 'MMM d, yyyy h:mm a')}</div></CardContent>
+                  </Card>
+                </motion.div>
+              ))}
             </TabsContent>
 
             <TabsContent value="hearings" className="space-y-4">
               {upcomingHearings.length === 0 ? (
-                <Card className="p-8 text-center">
-                  <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <h3 className="font-semibold mb-2">No Scheduled Hearings</h3>
-                  <p className="text-muted-foreground">
-                    You have no upcoming hearings scheduled.
-                  </p>
-                </Card>
-              ) : (
-                upcomingHearings.map((hearing, index) => (
-                  <motion.div
-                    key={hearing.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                  >
-                    <Card className="shadow-large border-l-4 border-l-primary">
-                      <CardHeader className="pb-2">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-center gap-2">
-                            <Gavel className="h-5 w-5 text-primary" />
-                            <CardTitle className="text-base">{hearing.title}</CardTitle>
-                          </div>
-                          <Badge className="bg-primary">HEARING</Badge>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        {hearing.incident && (
-                          <p className="text-sm text-primary mb-2">
-                            Case: {hearing.incident.title}
-                          </p>
-                        )}
-                        {hearing.description && (
-                          <p className="text-sm text-muted-foreground mb-3">{hearing.description}</p>
-                        )}
-                        <div className="flex items-center gap-4 p-3 bg-muted/50 rounded-lg">
-                          <Calendar className="h-5 w-5 text-primary" />
-                          <div>
-                            <p className="font-semibold">
-                              {format(new Date(hearing.scheduled_date!), 'EEEE, MMMM d, yyyy')}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              {format(new Date(hearing.scheduled_date!), 'h:mm a')}
-                            </p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                ))
-              )}
+                <Card className="p-8 text-center"><Calendar className="mx-auto mb-4 h-12 w-12 text-muted-foreground" aria-hidden="true" /><h2 className="mb-2 font-semibold">No Scheduled Hearings</h2><p className="text-muted-foreground">No upcoming hearings are currently scheduled within your authorised campus scope.</p></Card>
+              ) : upcomingHearings.map((hearing, index) => (
+                <motion.div key={hearing.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }}>
+                  <Card className="border-l-4 border-l-primary shadow-large">
+                    <CardHeader className="pb-2"><div className="flex items-start justify-between gap-3"><div className="flex min-w-0 items-center gap-2"><Gavel className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" /><CardTitle className="truncate text-base">{hearing.title}</CardTitle></div><Badge className="bg-primary">HEARING</Badge></div></CardHeader>
+                    <CardContent>{hearing.incident && <p className="mb-2 text-sm text-primary">Case: {hearing.incident.title}</p>}{hearing.description && <p className="mb-3 whitespace-pre-wrap text-sm text-muted-foreground">{hearing.description}</p>}<div className="flex items-center gap-4 rounded-lg bg-muted/50 p-3"><Calendar className="h-5 w-5 text-primary" aria-hidden="true" /><div><p className="font-semibold">{format(new Date(hearing.scheduled_date!), 'EEEE, MMMM d, yyyy')}</p><p className="text-sm text-muted-foreground">{format(new Date(hearing.scheduled_date!), 'h:mm a')}</p></div></div></CardContent>
+                  </Card>
+                </motion.div>
+              ))}
             </TabsContent>
           </Tabs>
         )}

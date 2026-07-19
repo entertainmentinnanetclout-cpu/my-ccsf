@@ -20,7 +20,8 @@ const [productionDashboard, pilotDashboard, sharedHome, carousel, migration] = a
   read('supabase/migrations/20260719180500_repair_student_carousel_sources.sql'),
 ]);
 
-requireText(productionDashboard, '<StudentDashboardHome campus={userCampusId || undefined} />', 'Production student dashboard does not use the shared home.');
+requireText(productionDashboard, '<StudentDashboardHome campus={campus || undefined} />', 'Production student dashboard does not use the shared home with the verified AuthContext campus.');
+requireText(productionDashboard, 'const { userProfile, signOut } = useAuth();', 'Production student dashboard does not consume the verified authentication profile.');
 requireText(pilotDashboard, '<StudentDashboardHome campus={participant.campus} />', 'Pilot student dashboard does not use the shared home.');
 requireText(sharedHome, '<CampusCarousel campus={campus} />', 'Shared student home is missing the campus carousel.');
 requireText(sharedHome, '<NewsFeed />', 'Shared student home is missing the news feed.');
@@ -28,6 +29,10 @@ requireText(sharedHome, "eq('key', 'welcome_banner_text')", 'Shared student home
 requireText(carousel, "image: '/og-image.png'", 'Campus carousel has no deployable institutional fallback.');
 requireText(carousel, ".in('campus', [campus, 'all'])", 'Campus carousel does not use the safely encoded campus filter.');
 requireText(migration, 'carousel_images_use_deployable_urls', 'Carousel migration does not prevent source-tree image paths.');
+
+if (productionDashboard.includes("from('profiles')")) {
+  failures.push('Production student dashboard duplicates the verified authentication-profile query.');
+}
 
 if (carousel.includes('placehold.co')) {
   failures.push('Campus carousel still depends on an external placeholder image.');

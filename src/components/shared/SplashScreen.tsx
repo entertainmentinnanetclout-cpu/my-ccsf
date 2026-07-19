@@ -1,578 +1,79 @@
-import { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Shield, Lock, Eye, AlertTriangle, Volume2, VolumeX } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
+import { CheckCircle2, ShieldCheck } from 'lucide-react';
 import { InstitutionBrand } from '@/components/shared/InstitutionBrand';
+import { BRAND } from '@/brand';
 
 interface SplashScreenProps {
   onComplete: () => void;
   minDuration?: number;
 }
 
-// High-quality safety/security themed video URLs (free stock videos)
-const SAFETY_VIDEOS = [
-  'https://cdn.pixabay.com/video/2020/05/26/40029-424930032_large.mp4', // Security camera footage style
-  'https://cdn.pixabay.com/video/2019/11/08/28922-372070036_large.mp4', // City surveillance 
-  'https://cdn.pixabay.com/video/2021/04/17/71354-540098154_large.mp4', // Security monitoring
-];
-
-// Create a simple startup sound using Web Audio API
-const playStartupSound = () => {
-  try {
-    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-    
-    const playTone = (frequency: number, startTime: number, duration: number, gain: number) => {
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-      
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-      
-      oscillator.type = 'sine';
-      oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime + startTime);
-      
-      gainNode.gain.setValueAtTime(0, audioContext.currentTime + startTime);
-      gainNode.gain.linearRampToValueAtTime(gain * 0.15, audioContext.currentTime + startTime + 0.05);
-      gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + startTime + duration);
-      
-      oscillator.start(audioContext.currentTime + startTime);
-      oscillator.stop(audioContext.currentTime + startTime + duration);
-    };
-
-    // Pleasant ascending chime sequence
-    playTone(523.25, 0, 0.4, 0.8);
-    playTone(659.25, 0.15, 0.4, 0.7);
-    playTone(783.99, 0.3, 0.5, 0.9);
-    playTone(1046.50, 0.5, 0.8, 0.6);
-    
-  } catch (e) {
-    console.log('Audio not available');
-  }
-};
-
-const SplashScreen = ({ onComplete, minDuration = 4500 }: SplashScreenProps) => {
+export default function SplashScreen({ onComplete, minDuration = 1200 }: SplashScreenProps) {
+  const reduceMotion = useReducedMotion();
   const [progress, setProgress] = useState(0);
-  const [isMuted, setIsMuted] = useState(true);
-  const [videoLoaded, setVideoLoaded] = useState(false);
-  const [currentVideoIndex] = useState(() => Math.floor(Math.random() * SAFETY_VIDEOS.length));
-  const audioPlayedRef = useRef(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
-    if (!audioPlayedRef.current) {
-      audioPlayedRef.current = true;
-      setTimeout(playStartupSound, 300);
-    }
+    const duration = reduceMotion ? Math.min(minDuration, 250) : minDuration;
+    const startedAt = performance.now();
+    let frame = 0;
 
-    const interval = setInterval(() => {
-      setProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          return 100;
-        }
-        return prev + 2;
-      });
-    }, minDuration / 50);
-
-    const timer = setTimeout(() => {
-      onComplete();
-    }, minDuration);
-
-    return () => {
-      clearInterval(interval);
-      clearTimeout(timer);
+    const update = (now: number) => {
+      const elapsed = now - startedAt;
+      setProgress(Math.min(100, Math.round((elapsed / duration) * 100)));
+      if (elapsed < duration) frame = window.requestAnimationFrame(update);
     };
-  }, [onComplete, minDuration]);
 
-  const handleVideoLoad = () => {
-    setVideoLoaded(true);
-  };
-
-  const toggleMute = () => {
-    setIsMuted(!isMuted);
-    if (videoRef.current) {
-      videoRef.current.muted = !isMuted;
-    }
-  };
-
-  const floatingIcons = [
-    { Icon: Shield, delay: 0, x: -140, y: -100 },
-    { Icon: Lock, delay: 0.3, x: 150, y: -80 },
-    { Icon: Eye, delay: 0.6, x: -120, y: 110 },
-    { Icon: AlertTriangle, delay: 0.9, x: 130, y: 90 },
-  ];
-
-  const securityStats = [
-    { label: 'Active Cameras', value: '247' },
-    { label: 'Response Time', value: '<2min' },
-    { label: 'Coverage', value: '100%' },
-  ];
+    frame = window.requestAnimationFrame(update);
+    const timer = window.setTimeout(onComplete, duration);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.clearTimeout(timer);
+    };
+  }, [minDuration, onComplete, reduceMotion]);
 
   return (
     <motion.div
-      className="fixed inset-0 z-[9999] flex flex-col items-center justify-center overflow-hidden"
+      className="fixed inset-0 z-[9999] flex min-h-screen items-center justify-center overflow-hidden border-t-4 border-t-[#F2A900] bg-[#002F6C] px-6 text-white"
       initial={{ opacity: 1 }}
-      exit={{ opacity: 0, scale: 1.05 }}
-      transition={{ duration: 0.6, ease: 'easeInOut' }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: reduceMotion ? 0 : 0.28 }}
+      role="status"
+      aria-live="polite"
+      aria-label="Starting My CCSF"
+      data-testid="institutional-splash"
     >
-      {/* HQ Video Background */}
-      <div className="absolute inset-0 overflow-hidden">
-        <video
-          ref={videoRef}
-          className="absolute inset-0 w-full h-full object-cover scale-110"
-          autoPlay
-          loop
-          muted={isMuted}
-          playsInline
-          onLoadedData={handleVideoLoad}
-          style={{
-            filter: 'brightness(0.3) saturate(0.8) contrast(1.1)',
-          }}
-        >
-          <source src={SAFETY_VIDEOS[currentVideoIndex]} type="video/mp4" />
-        </video>
-        
-        {/* Video overlay gradient */}
-        <div 
-          className="absolute inset-0"
-          style={{
-            background: `
-              radial-gradient(ellipse 80% 50% at 50% 0%, rgba(0, 47, 108, 0.25) 0%, transparent 60%),
-              radial-gradient(ellipse 60% 40% at 100% 100%, rgba(0, 35, 80, 0.3) 0%, transparent 50%),
-              radial-gradient(ellipse 50% 30% at 0% 100%, rgba(0, 40, 90, 0.2) 0%, transparent 50%),
-              linear-gradient(180deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.8) 100%)
-            `,
-          }}
-        />
-
-        {/* Scan line effect */}
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(242,169,0,0.16),transparent_34rem),linear-gradient(135deg,rgba(255,255,255,0.06),transparent_42%,rgba(242,169,0,0.08))]" />
+      <div className="relative w-full max-w-2xl text-center">
         <motion.div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px)',
-          }}
-        />
-
-        {/* Moving scan line */}
-        <motion.div
-          className="absolute left-0 right-0 h-[2px] pointer-events-none"
-          style={{
-            background: 'linear-gradient(90deg, transparent, rgba(0, 47, 108, 0.5), transparent)',
-            boxShadow: '0 0 20px rgba(0, 47, 108, 0.3)',
-          }}
-          animate={{
-            top: ['0%', '100%', '0%'],
-          }}
-          transition={{
-            duration: 8,
-            repeat: Infinity,
-            ease: 'linear',
-          }}
-        />
-      </div>
-
-      {/* Mute/Unmute control */}
-      <motion.button
-        className="absolute top-6 right-6 z-50 p-3 rounded-full bg-black/40 backdrop-blur-sm border border-white/10 hover:bg-black/60 transition-all"
-        initial={{ opacity: 0, scale: 0 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.5 }}
-        onClick={toggleMute}
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.95 }}
-      >
-        {isMuted ? (
-          <VolumeX className="h-5 w-5 text-white/70" />
-        ) : (
-          <Volume2 className="h-5 w-5 text-white" />
-        )}
-      </motion.button>
-
-      {/* HUD-style corners */}
-      <div className="absolute inset-0 pointer-events-none">
-        {/* Top left corner */}
-        <motion.div 
-          className="absolute top-4 left-4"
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.3 }}
+          initial={reduceMotion ? false : { opacity: 0, scale: 0.94, y: 12 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.45, ease: 'easeOut' }}
         >
-          <div className="w-24 h-24">
-            <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-primary to-transparent" />
-            <div className="absolute top-0 left-0 w-[2px] h-full bg-gradient-to-b from-primary to-transparent" />
-          </div>
-          <div className="mt-2 ml-1">
-            <p className="text-[10px] font-mono text-primary/80">CCSF_SECURE_v2.4</p>
-            <p className="text-[8px] font-mono text-muted-foreground">SYSTEM ONLINE</p>
-          </div>
+          <InstitutionBrand size="splash" themeOverride="dark" className="justify-center text-white" />
         </motion.div>
 
-        {/* Top right corner */}
-        <motion.div 
-          className="absolute top-4 right-4"
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.3 }}
-        >
-          <div className="w-24 h-24">
-            <div className="absolute top-0 right-0 w-full h-[2px] bg-gradient-to-l from-primary to-transparent" />
-            <div className="absolute top-0 right-0 w-[2px] h-full bg-gradient-to-b from-primary to-transparent" />
-          </div>
-          <div className="mt-2 mr-1 text-right">
-            <motion.p 
-              className="text-[10px] font-mono text-success"
-              animate={{ opacity: [1, 0.5, 1] }}
-              transition={{ duration: 1, repeat: Infinity }}
-            >
-              ● LIVE
-            </motion.p>
-            <p className="text-[8px] font-mono text-muted-foreground">
-              {new Date().toLocaleTimeString()}
-            </p>
-          </div>
-        </motion.div>
-
-        {/* Bottom corners */}
-        <motion.div 
-          className="absolute bottom-4 left-4"
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.4 }}
-        >
-          <div className="w-24 h-24">
-            <div className="absolute bottom-0 left-0 w-full h-[2px] bg-gradient-to-r from-primary to-transparent" />
-            <div className="absolute bottom-0 left-0 w-[2px] h-full bg-gradient-to-t from-primary to-transparent" />
-          </div>
-        </motion.div>
-
-        <motion.div 
-          className="absolute bottom-4 right-4"
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.4 }}
-        >
-          <div className="w-24 h-24">
-            <div className="absolute bottom-0 right-0 w-full h-[2px] bg-gradient-to-l from-primary to-transparent" />
-            <div className="absolute bottom-0 right-0 w-[2px] h-full bg-gradient-to-t from-primary to-transparent" />
-          </div>
-        </motion.div>
-      </div>
-
-      {/* Security stats HUD */}
-      <motion.div
-        className="absolute bottom-24 left-8 hidden md:flex flex-col gap-2"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.6 }}
-      >
-        {securityStats.map((stat, index) => (
-          <motion.div
-            key={stat.label}
-            className="flex items-center gap-3 text-left"
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.7 + index * 0.1 }}
-          >
-            <div className="w-1 h-6 bg-primary/50 rounded-full" />
-            <div>
-              <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">{stat.label}</p>
-              <p className="text-sm font-mono text-white font-bold">{stat.value}</p>
-            </div>
-          </motion.div>
-        ))}
-      </motion.div>
-
-      {/* Cyber grid overlay */}
-      <div 
-        className="absolute inset-0 pointer-events-none opacity-[0.02]"
-        style={{
-          backgroundImage: `
-            linear-gradient(rgba(0, 47, 108, 0.5) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(0, 47, 108, 0.5) 1px, transparent 1px)
-          `,
-          backgroundSize: '50px 50px',
-        }}
-      />
-
-      {/* Main content container */}
-      <div className="relative z-10" style={{ perspective: '1200px' }}>
-        {/* Floating security icons */}
-        {floatingIcons.map(({ Icon, delay, x, y }, index) => (
-          <motion.div
-            key={index}
-            className="absolute left-1/2 top-1/2"
-            initial={{ opacity: 0, scale: 0, x: 0, y: 0 }}
-            animate={{
-              opacity: [0, 0.7, 0.7, 0],
-              scale: [0.5, 1, 1, 0.8],
-              x: [0, x, x * 1.1, x * 0.7],
-              y: [0, y, y * 1.1, y * 0.7],
-            }}
-            transition={{
-              duration: 2.5,
-              delay,
-              repeat: Infinity,
-              repeatDelay: 0.3,
-              ease: 'easeOut',
-            }}
-          >
-            <Icon className="h-7 w-7 text-primary/60 drop-shadow-lg" />
-          </motion.div>
-        ))}
-
-        {/* Glowing ring around logo */}
-        <motion.div
-          className="absolute inset-0 -m-8"
-          style={{
-            borderRadius: '50%',
-            border: '2px solid rgba(0, 47, 108, 0.3)',
-          }}
-          animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.3, 0.6, 0.3],
-          }}
-          transition={{
-            duration: 2,
-            repeat: Infinity,
-            ease: 'easeInOut',
-          }}
-        />
-
-        <motion.div
-          className="absolute inset-0 -m-12"
-          style={{
-            borderRadius: '50%',
-            border: '1px solid rgba(0, 47, 108, 0.2)',
-          }}
-          animate={{
-            scale: [1.2, 1, 1.2],
-            opacity: [0.2, 0.4, 0.2],
-          }}
-          transition={{
-            duration: 2.5,
-            repeat: Infinity,
-            ease: 'easeInOut',
-            delay: 0.3,
-          }}
-        />
-
-        {/* Shield pulse animation - replaces simple 3D rotate */}
-        <motion.div
-          className="relative"
-          initial={{ scale: 0.3, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-        >
-          {/* Outer pulse rings */}
-          {[0, 1, 2].map((i) => (
-            <motion.div
-              key={i}
-              className="absolute inset-0 rounded-full"
-              style={{
-                border: '1px solid rgba(0, 47, 108, 0.3)',
-                borderRadius: '50%',
-              }}
-              initial={{ scale: 1, opacity: 0.6 }}
-              animate={{
-                scale: [1, 1.8 + i * 0.4],
-                opacity: [0.5, 0],
-              }}
-              transition={{
-                duration: 2,
-                repeat: Infinity,
-                delay: i * 0.6,
-                ease: 'easeOut',
-              }}
-            />
-          ))}
-
-          {/* Shield glow backdrop */}
-          <motion.div
-            className="absolute inset-0 rounded-full"
-            style={{
-              background: 'radial-gradient(circle, rgba(0, 47, 108, 0.4) 0%, transparent 70%)',
-              filter: 'blur(25px)',
-            }}
-            animate={{
-              scale: [1, 1.4, 1],
-              opacity: [0.5, 0.8, 0.5],
-            }}
-            transition={{
-              duration: 2.5,
-              repeat: Infinity,
-              ease: 'easeInOut',
-            }}
-          />
-
-          {/* Shield heartbeat pulse */}
-          <motion.div
-            className="relative z-10 text-white"
-            style={{
-              filter: 'drop-shadow(0 0 30px rgba(0, 47, 108, 0.6)) drop-shadow(0 0 60px rgba(0, 47, 108, 0.3))',
-            }}
-            animate={{
-              scale: [1, 1.08, 1, 1.05, 1],
-              filter: [
-                'drop-shadow(0 0 30px rgba(0, 47, 108, 0.6)) drop-shadow(0 0 60px rgba(0, 47, 108, 0.3))',
-                'drop-shadow(0 0 50px rgba(0, 47, 108, 0.9)) drop-shadow(0 0 80px rgba(0, 47, 108, 0.5))',
-                'drop-shadow(0 0 30px rgba(0, 47, 108, 0.6)) drop-shadow(0 0 60px rgba(0, 47, 108, 0.3))',
-                'drop-shadow(0 0 40px rgba(0, 47, 108, 0.7)) drop-shadow(0 0 70px rgba(0, 47, 108, 0.4))',
-                'drop-shadow(0 0 30px rgba(0, 47, 108, 0.6)) drop-shadow(0 0 60px rgba(0, 47, 108, 0.3))',
-              ],
-            }}
-            transition={{
-              duration: 2,
-              repeat: Infinity,
-              ease: 'easeInOut',
-            }}
-          >
-            <InstitutionBrand size="splash" className="justify-center" />
-          </motion.div>
-        </motion.div>
-      </div>
-
-      {/* App name with elegant typography */}
-      <motion.div
-        className="relative z-10 mt-12 text-center"
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4, duration: 0.6 }}
-      >
-        <motion.div
-          className="relative inline-block"
-        >
-          {/* Glitch effect layers */}
-          <motion.h1
-            className="text-5xl md:text-6xl font-bold tracking-tight absolute inset-0 text-primary/20"
-            animate={{
-              x: [-2, 2, -2],
-              opacity: [0.5, 0.3, 0.5],
-            }}
-            transition={{
-              duration: 0.1,
-              repeat: Infinity,
-              repeatDelay: 3,
-            }}
-          >
-            My CCSF
-          </motion.h1>
-          <motion.h1
-            className="text-5xl md:text-6xl font-bold tracking-tight absolute inset-0 text-primary/20"
-            animate={{
-              x: [2, -2, 2],
-              opacity: [0.5, 0.3, 0.5],
-            }}
-            transition={{
-              duration: 0.1,
-              repeat: Infinity,
-              repeatDelay: 3,
-              delay: 0.05,
-            }}
-          >
-            My CCSF
-          </motion.h1>
-          <h1
-            className="text-5xl md:text-6xl font-bold tracking-tight relative"
-            style={{
-              background: 'linear-gradient(135deg, #ffffff 0%, #e5e5e5 30%, #ffffff 50%, #a3a3a3 80%, #ffffff 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              textShadow: '0 0 60px rgba(255,255,255,0.15)',
-            }}
-          >
-            My CCSF
-          </h1>
-        </motion.div>
-        
-        <motion.div
-          className="mt-4 flex items-center justify-center gap-2"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.7 }}
-        >
-          <div className="h-[1px] w-12 bg-gradient-to-r from-transparent to-primary/50" />
-          <p className="text-muted-foreground text-sm tracking-[0.2em] uppercase font-light">
-            Campus Community Safety Forum
-          </p>
-          <div className="h-[1px] w-12 bg-gradient-to-l from-transparent to-primary/50" />
-        </motion.div>
-
-        <motion.p
-          className="mt-3 text-muted-foreground text-xs tracking-wider"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.9 }}
-        >
-          Tshwane University of Technology
-        </motion.p>
-      </motion.div>
-
-      {/* Premium progress bar */}
-      <motion.div
-        className="relative z-10 mt-10 w-64"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.8 }}
-      >
-        <div 
-          className="h-[3px] rounded-full overflow-hidden"
-          style={{
-            background: 'rgba(255,255,255,0.08)',
-            boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.3)',
-          }}
-        >
-          <motion.div
-            className="h-full rounded-full relative overflow-hidden"
-            style={{
-              background: 'linear-gradient(90deg, #001a3d 0%, #002F6C 50%, #1A4FA3 100%)',
-              boxShadow: '0 0 20px rgba(0, 47, 108, 0.5)',
-            }}
-            initial={{ width: 0 }}
-            animate={{ width: `${progress}%` }}
-            transition={{ duration: 0.1 }}
-          >
-            {/* Shimmer effect */}
-            <motion.div
-              className="absolute inset-0"
-              style={{
-                background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)',
-              }}
-              animate={{
-                x: ['-100%', '100%'],
-              }}
-              transition={{
-                duration: 1.5,
-                repeat: Infinity,
-                ease: 'easeInOut',
-              }}
-            />
-          </motion.div>
+        <div className="mx-auto mt-8 inline-flex items-center gap-2 rounded-full border border-[#F2A900]/45 bg-[#F2A900]/10 px-4 py-2 text-xs font-extrabold uppercase tracking-[0.16em] text-[#F2A900]">
+          <ShieldCheck className="h-4 w-4" aria-hidden="true" /> Official institutional application
         </div>
-        
-        <div className="mt-4 flex items-center justify-between">
-          <motion.p
-            className="text-muted-foreground text-xs font-mono"
-            animate={{ opacity: [0.5, 1, 0.5] }}
-            transition={{ duration: 2, repeat: Infinity }}
-          >
-            Initializing security protocols...
-          </motion.p>
-          <p className="text-primary text-xs font-mono font-bold">{Math.round(progress)}%</p>
-        </div>
-      </motion.div>
 
-      {/* Bottom tagline */}
-      <motion.div
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 text-center"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1.2 }}
-      >
-        <p className="text-muted-foreground text-[10px] font-mono tracking-widest uppercase">
-          Protecting • Monitoring • Responding
-        </p>
-      </motion.div>
+        <h1 className="mt-5 text-3xl font-extrabold tracking-tight sm:text-4xl">{BRAND.productName}</h1>
+        <p className="mt-2 text-sm font-semibold text-white/75 sm:text-base">{BRAND.productLongName} · {BRAND.institutionName}</p>
+
+        <div className="mx-auto mt-9 max-w-md">
+          <div className="h-1.5 overflow-hidden rounded-full bg-white/15" aria-hidden="true">
+            <motion.div className="h-full rounded-full bg-[#F2A900]" animate={{ width: `${progress}%` }} transition={{ duration: 0.08, ease: 'linear' }} />
+          </div>
+          <div className="mt-3 flex items-center justify-center gap-2 text-xs font-semibold text-white/65">
+            {progress >= 100 ? <CheckCircle2 className="h-4 w-4 text-[#F2A900]" aria-hidden="true" /> : <span className="h-2 w-2 animate-pulse rounded-full bg-[#F2A900]" aria-hidden="true" />}
+            {progress >= 100 ? 'Application ready' : 'Preparing secure portal access'}
+          </div>
+        </div>
+
+        <button type="button" onClick={onComplete} className="mt-8 text-xs font-semibold text-white/55 underline-offset-4 hover:text-white hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F2A900]">
+          Continue now
+        </button>
+      </div>
     </motion.div>
   );
-};
-
-export default SplashScreen;
+}

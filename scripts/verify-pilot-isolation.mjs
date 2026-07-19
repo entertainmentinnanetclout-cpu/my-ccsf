@@ -24,6 +24,7 @@ function assert(condition, message) {
 
 const browserPilotPaths = [
   'src/config/pilot.ts',
+  'src/config/pilotRoutes.ts',
   'src/contexts/PilotModeContext.tsx',
   'src/components/pilot',
   'src/hooks/pilot',
@@ -73,12 +74,25 @@ assert(!/pilot-session-cleanup|pilot-cleanup|pilot-export-results/.test(browserS
 
 const config = read('src/config/pilot.ts');
 assert(config.includes("VITE_PILOT_MODE_ENABLED === 'true'"), 'Pilot feature activation is fail-closed.');
+assert(!config.includes('git-fea-'), 'Pilot activation does not trust broad Preview hostname patterns.');
 assert(config.includes('Demo Mode: No emergency service has been dispatched.'), 'Required no-dispatch warning is present.');
 assert(config.includes("PILOT_LOCATION_STORAGE_KEY = 'pilot_location_tracking'"), 'Pilot tracking uses a separate browser-storage key.');
 assert(config.includes("PILOT_ATTACHMENT_BUCKET = 'pilot-report-attachments'"), 'Pilot attachments use the private Pilot bucket.');
 for (const status of ['received', 'assessing', 'assigned', 'in_progress', 'simulation_completed']) {
   assert(config.includes(`'${status}'`), `Pilot status sequence includes ${status}.`);
 }
+
+const routeConfig = read('src/config/pilotRoutes.ts');
+for (const route of ['/pilot/auth', '/pilot', '/pilot/resources', '/security/pilot', '/admin/pilot']) {
+  assert(routeConfig.includes(`'${route}'`), `Pilot route contract contains ${route}.`);
+}
+assert(routeConfig.includes("pathname.startsWith('/pilot/session/')"), 'Pilot session deep links are explicitly recognised.');
+assert(routeConfig.includes("pathname.startsWith('/pilot/report/')"), 'Pilot report deep links are explicitly recognised.');
+assert(routeConfig.includes('resolvePilotDestination'), 'Role-safe deep-link resolution is centralised.');
+
+const viteConfig = read('vite.config.ts');
+assert(viteConfig.includes('feature/ccsf-phases-3-8-release-candidate'), 'Only the approved release-candidate Preview branch auto-enables Pilot Mode.');
+assert(viteConfig.includes('vercelEnvironment === "preview"'), 'Automatic Pilot enablement requires a Vercel Preview deployment.');
 
 const app = read('src/App.tsx');
 for (const route of ['/pilot/auth', '/pilot', '/pilot/session/:sessionId', '/pilot/report/:reportId', '/pilot/resources', '/security/pilot', '/admin/pilot']) {
@@ -91,12 +105,13 @@ assert(app.includes("allowedRoles={['admin']}"), 'Super-admin Pilot route is adm
 
 const pilotAuth = read('src/pages/pilot/PilotAuth.tsx');
 assert(pilotAuth.includes('signInWithPassword'), 'Pilot authentication reuses existing Supabase accounts.');
-assert(pilotAuth.includes('pilotDestination'), 'Pilot authentication redirects by the existing account role.');
+assert(pilotAuth.includes('resolvePilotDestination'), 'Pilot authentication redirects by role while preserving approved deep links.');
 assert(!pilotAuth.includes('signUp('), 'Pilot authentication does not create uninvited accounts.');
 assert(pilotAuth.includes('Student accounts must be invited'), 'Pilot authentication explains the student allowlist requirement.');
 
 const protectedRoute = read('src/components/ProtectedRoute.tsx');
 assert(protectedRoute.includes("? '/pilot/auth' : '/auth'"), 'Unauthenticated Pilot routes redirect to the dedicated Pilot login.');
+assert(protectedRoute.includes('location.search') && protectedRoute.includes('location.hash'), 'Pilot deep-link query and hash state are retained.');
 
 const coreService = read('src/services/pilot/pilotCoreService.ts');
 for (const functionSlug of ['pilot-create-session', 'pilot-submit-report']) {

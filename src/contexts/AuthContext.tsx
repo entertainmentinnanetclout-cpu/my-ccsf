@@ -1,12 +1,9 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { User, Session } from '@supabase/supabase-js';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { isPilotAdminPath, isPilotSecurityPath, isPilotStudentPath, PILOT_ROUTES } from '@/config/pilot';
+import type { PilotRole } from '@/config/pilotRoutes';
 
-const PILOT_AUTH_PATH = '/pilot/auth';
-
-type UserRole = 'student' | 'admin' | 'security' | null;
+type UserRole = PilotRole | null;
 
 interface UserProfile {
   id: string;
@@ -22,7 +19,9 @@ interface AuthContextType {
   userRole: UserRole;
   userProfile: UserProfile | null;
   loading: boolean;
+  authError: string | null;
   signOut: () => Promise<void>;
+  refreshIdentity: () => Promise<void>;
   isSuperAdmin: boolean;
   isCampusAdmin: boolean;
   isStudent: boolean;
@@ -31,10 +30,12 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-function pilotDestination(role: Exclude<UserRole, null>): string {
-  if (role === 'admin') return PILOT_ROUTES.admin;
-  if (role === 'security') return PILOT_ROUTES.campus;
-  return PILOT_ROUTES.landing;
+function resolveRole(roles: Array<{ role: PilotRole }>): UserRole {
+  const values = roles.map((item) => item.role);
+  if (values.includes('admin')) return 'admin';
+  if (values.includes('security')) return 'security';
+  if (values.includes('student')) return 'student';
+  return null;
 }
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -43,118 +44,124 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [userRole, setUserRole] = useState<UserRole>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
-  const location = useLocation();
+  const [authError, setAuthError] = useState<string | null>(null);
+  const identityRequestRef = useRef(0);
 
-  const fetchUserRoleAndProfile = useCallback(async (userId: string) => {
+  const clearIdentity = useCallback(() => {
+    setUserRole(null);
+    setUserProfile(null);
+    setAuthError(null);
+  }, []);
+
+  const fetchUserRoleAndProfile = useCallback(async (activeUser: User) => {
+    const requestId = ++identityRequestRef.current;
+    setLoading(true);
+
     try {
-      const { data: roleData } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId);
+      const [roleResponse, profileResponse] = await Promise.all([
+        supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', activeUser.id),
+        supabase
+          .from('profiles')
+          .select('id, full_name, campus, email, profile_completed')
+          .eq('id', activeUser.id)
+          .maybeSingle(),
+      ]);
 
-      let dbRole: UserRole = null;
-      if (roleData && roleData.length > 0) {
-        const roles = roleData.map((item) => item.role);
-        if (roles.includes('admin')) dbRole = 'admin';
-        else if (roles.includes('security')) dbRole = 'security';
-        else if (roles.includes('student')) dbRole = 'student';
+      if (roleResponse.error) throw roleResponse.error;
+      if (profileResponse.error) throw profileResponse.error;
+      if (requestId !== identityRequestRef.current) return;
+
+      const role = resolveRole((roleResponse.data ?? []) as Array<{ role: PilotRole }>);
+      if (!role) {
+        setUserRole(null);
+        setUserProfile(null);
+        setAuthError('This account does not have an authorised CCSF portal role. Contact a CCSF administrator for access.');
+        return;
       }
-      setUserRole(dbRole);
 
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('id, full_name, campus, email, profile_completed')
-        .eq('id', userId)
-        .maybeSingle();
-
-      if (profileData) {
-        setUserProfile({ ...profileData, profile_completed: profileData.profile_completed ?? false });
-      }
-
-      return { role: dbRole, profileCompleted: profileData?.profile_completed ?? false };
+      const profile = profileResponse.data;
+      setUserRole(role);
+      setUserProfile({
+        id: activeUser.id,
+        full_name: profile?.full_name ?? null,
+        campus: profile?.campus ?? null,
+        email: profile?.email ?? activeUser.email ?? '',
+        profile_completed: profile?.profile_completed ?? false,
+      });
+      setAuthError(null);
     } catch (error) {
-      console.error('Error fetching user role/profile:', error);
-      return { role: null, profileCompleted: false };
+      if (requestId !== identityRequestRef.current) return;
+      console.error('Unable to load CCSF account identity:', error);
+      setUserRole(null);
+      setUserProfile(null);
+      setAuthError('Your CCSF role and profile could not be verified. Check your connection and retry.');
+    } finally {
+      if (requestId === identityRequestRef.current) setLoading(false);
     }
   }, []);
 
-  const redirectBasedOnRole = useCallback((role: UserRole, profileCompletedValue: boolean) => {
-    if (!role) return;
+  const applySession = useCallback(async (nextSession: Session | null) => {
+    setSession(nextSession);
+    setUser(nextSession?.user ?? null);
 
-    const currentPath = location.pathname;
-    const isPilotEntry = currentPath === PILOT_AUTH_PATH
-      || isPilotStudentPath(currentPath)
-      || isPilotSecurityPath(currentPath)
-      || isPilotAdminPath(currentPath);
-
-    if (role === 'student' && !profileCompletedValue) {
-      if (currentPath !== '/profile-completion') {
-        navigate('/profile-completion', {
-          replace: true,
-          state: isPilotEntry ? { from: PILOT_ROUTES.landing } : undefined,
-        });
-      }
+    if (!nextSession?.user) {
+      identityRequestRef.current += 1;
+      clearIdentity();
+      setLoading(false);
       return;
     }
 
-    if (currentPath === PILOT_AUTH_PATH) {
-      navigate(pilotDestination(role), { replace: true });
-      return;
-    }
-
-    if (role === 'admin') {
-      const allowed = currentPath.startsWith('/admin') || isPilotSecurityPath(currentPath) || currentPath.startsWith('/profile') || currentPath === '/office' || currentPath === '/judiciary';
-      if (!allowed) navigate('/admin', { replace: true });
-    } else if (role === 'security') {
-      const allowed = currentPath.startsWith('/security') || currentPath.startsWith('/profile') || currentPath === '/office' || currentPath === '/judiciary';
-      if (!allowed || isPilotAdminPath(currentPath)) navigate('/security', { replace: true });
-    } else if (role === 'student') {
-      const allowed = currentPath.startsWith('/dashboard') || currentPath.startsWith('/profile') || isPilotStudentPath(currentPath);
-      if (!allowed || isPilotSecurityPath(currentPath) || isPilotAdminPath(currentPath)) navigate('/dashboard', { replace: true });
-    }
-  }, [location.pathname, navigate]);
+    await fetchUserRoleAndProfile(nextSession.user);
+  }, [clearIdentity, fetchUserRoleAndProfile]);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
-      setSession(nextSession);
-      setUser(nextSession?.user ?? null);
+    let active = true;
 
-      if (nextSession?.user) {
-        setTimeout(() => {
-          fetchUserRoleAndProfile(nextSession.user.id).then(({ role, profileCompleted }) => {
-            setLoading(false);
-            if (role && event === 'SIGNED_IN') redirectBasedOnRole(role, profileCompleted);
-          });
-        }, 0);
-      } else {
-        setUserRole(null);
-        setUserProfile(null);
-        setLoading(false);
-      }
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      queueMicrotask(() => {
+        if (active) void applySession(nextSession);
+      });
     });
 
-    supabase.auth.getSession().then(({ data: { session: existingSession } }) => {
-      setSession(existingSession);
-      setUser(existingSession?.user ?? null);
-      if (existingSession?.user) {
-        fetchUserRoleAndProfile(existingSession.user.id).then(() => setLoading(false));
-      } else {
+    void supabase.auth.getSession()
+      .then(({ data, error }) => {
+        if (!active) return;
+        if (error) throw error;
+        return applySession(data.session);
+      })
+      .catch((error) => {
+        if (!active) return;
+        console.error('Unable to restore CCSF session:', error);
+        setAuthError('Your saved session could not be restored. Sign in again.');
         setLoading(false);
-      }
-    });
+      });
 
-    return () => subscription.unsubscribe();
-  }, [fetchUserRoleAndProfile, redirectBasedOnRole]);
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
+  }, [applySession]);
+
+  const refreshIdentity = useCallback(async () => {
+    if (!user) {
+      setAuthError('Sign in before retrying account verification.');
+      return;
+    }
+    await fetchUserRoleAndProfile(user);
+  }, [fetchUserRoleAndProfile, user]);
 
   const signOut = useCallback(async () => {
-    await supabase.auth.signOut();
-    setUser(null);
+    const { error } = await supabase.auth.signOut();
+    identityRequestRef.current += 1;
     setSession(null);
-    setUserRole(null);
-    setUserProfile(null);
-    navigate('/auth');
-  }, [navigate]);
+    setUser(null);
+    clearIdentity();
+    setLoading(false);
+    if (error) throw error;
+  }, [clearIdentity]);
 
   const isSuperAdmin = userRole === 'admin';
   const isCampusAdmin = userRole === 'security';
@@ -168,7 +175,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       userRole,
       userProfile,
       loading,
+      authError,
       signOut,
+      refreshIdentity,
       isSuperAdmin,
       isCampusAdmin,
       isStudent,

@@ -125,6 +125,8 @@ export const MyCaseReports = () => {
       setCaseUpdates(data || []);
     } catch (error) {
       console.error('Error fetching case updates:', error);
+      setCaseUpdates([]);
+      toast({ title: 'Case timeline unavailable', description: 'Status updates could not be loaded. Retry by reopening the case.', variant: 'destructive' });
     } finally {
       setLoadingUpdates(false);
     }
@@ -216,7 +218,16 @@ export const MyCaseReports = () => {
                 <Card 
                   className="hover:shadow-lg transition-all cursor-pointer h-full border-l-4"
                   style={{ borderLeftColor: status.bgColor }}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Open case ${incident.title}, status ${status.label}`}
                   onClick={() => handleViewDetails(incident)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      handleViewDetails(incident);
+                    }
+                  }}
                 >
                   <CardHeader className="pb-2">
                     <div className="flex items-start justify-between gap-2">

@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,14 +12,19 @@ import { useAuth } from '@/contexts/AuthContext';
 import { PILOT_ENABLED, PILOT_ROUTES } from '@/config/pilot';
 
 const Navigation = () => {
+  const location = useLocation();
   const { isSuperAdmin, isCampusAdmin, isStudent } = useAuth();
   const pilotPath = isSuperAdmin ? PILOT_ROUTES.admin : isCampusAdmin ? PILOT_ROUTES.campus : PILOT_ROUTES.landing;
+
+  if (location.pathname !== '/') return null;
 
   return (
     <div className="absolute right-4 top-4 z-[60]">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="icon"><Menu className="h-4 w-4" /></Button>
+          <Button variant="outline" size="icon" aria-label="Open portal navigation">
+            <Menu className="h-4 w-4" aria-hidden="true" />
+          </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem asChild><Link to="/">Home</Link></DropdownMenuItem>
@@ -36,12 +41,22 @@ const Navigation = () => {
             <>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
-                <Link to={pilotPath} className="font-semibold"><ShieldCheck className="mr-2 h-4 w-4" /> Controlled Pilot Mode</Link>
+                <Link to={pilotPath} className="font-semibold"><ShieldCheck className="mr-2 h-4 w-4" aria-hidden="true" /> Controlled Pilot Mode</Link>
               </DropdownMenuItem>
             </>
           )}
-          <DropdownMenuSeparator />
-          <DropdownMenuItem asChild><Link to="/profile">Profile</Link></DropdownMenuItem>
+          {(isStudent || isCampusAdmin || isSuperAdmin) && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild><Link to="/profile">Profile</Link></DropdownMenuItem>
+            </>
+          )}
+          {!isStudent && !isCampusAdmin && !isSuperAdmin && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild><Link to="/auth">Institutional sign in</Link></DropdownMenuItem>
+            </>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
     </div>

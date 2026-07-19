@@ -18,6 +18,10 @@ import type { Database } from '@/integrations/supabase/types';
 
 type IncidentCategory = Database['public']['Enums']['incident_category'];
 
+const MAX_EVIDENCE_FILES = 3;
+const MAX_EVIDENCE_BYTES = 10 * 1024 * 1024;
+const ALLOWED_EVIDENCE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'video/mp4']);
+
 // Reverse geocode using free Nominatim API (OpenStreetMap)
 const reverseGeocode = async (lat: number, lng: number): Promise<string> => {
   try {
@@ -146,9 +150,25 @@ export const ReportIncident = () => {
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      setFiles(Array.from(e.target.files));
+    const selected = Array.from(e.target.files || []);
+    if (selected.length > MAX_EVIDENCE_FILES) {
+      toast({ title: 'Too many evidence files', description: `Select no more than ${MAX_EVIDENCE_FILES} files.`, variant: 'destructive' });
+      e.target.value = '';
+      return;
     }
+
+    const invalid = selected.find((file) => !ALLOWED_EVIDENCE_TYPES.has(file.type) || file.size > MAX_EVIDENCE_BYTES);
+    if (invalid) {
+      toast({
+        title: 'Evidence file not accepted',
+        description: `${invalid.name} must be JPG, PNG, WebP or MP4 and no larger than 10 MB.`,
+        variant: 'destructive',
+      });
+      e.target.value = '';
+      return;
+    }
+
+    setFiles(selected);
   };
 
   const clearSignature = () => {
@@ -226,33 +246,45 @@ export const ReportIncident = () => {
 
       if (error) throw error;
 
-      // Upload media files if any
+      const failedEvidence: string[] = [];
       if (files.length > 0 && incident) {
         for (let i = 0; i < files.length; i++) {
           const file = files[i];
-          const fileExt = file.name.split('.').pop();
-          const fileName = `${incident.id}/${Date.now()}-${i}.${fileExt}`;
+          const extension = file.name.split('.').pop()?.toLowerCase() || 'bin';
+          const fileName = `${incident.id}/${crypto.randomUUID()}.${extension}`;
 
           const { error: uploadError } = await supabase.storage
             .from('incident-media')
-            .upload(fileName, file);
+            .upload(fileName, file, { contentType: file.type, upsert: false });
 
-          if (!uploadError) {
-            await supabase.from('incident_media').insert({
-              incident_id: incident.id,
-              media_url: fileName,
-              media_type: file.type,
-              file_size: file.size,
-            });
+          if (uploadError) {
+            failedEvidence.push(file.name);
+            setUploadProgress(((i + 1) / files.length) * 100);
+            continue;
+          }
+
+          const { error: metadataError } = await supabase.from('incident_media').insert({
+            incident_id: incident.id,
+            media_url: fileName,
+            media_type: file.type,
+            file_size: file.size,
+          });
+
+          if (metadataError) {
+            failedEvidence.push(file.name);
+            await supabase.storage.from('incident-media').remove([fileName]);
           }
 
           setUploadProgress(((i + 1) / files.length) * 100);
         }
       }
 
-      toast({ 
-        title: 'Report submitted successfully!',
-        description: 'Your incident has been recorded and will be reviewed by campus security.',
+      toast({
+        title: failedEvidence.length ? 'Report submitted with evidence warning' : 'Report submitted successfully!',
+        description: failedEvidence.length
+          ? `The report was recorded, but these files were not attached: ${failedEvidence.join(', ')}. Open My Cases before retrying or contact campus security.`
+          : 'Your incident has been recorded and will be reviewed by campus security.',
+        variant: failedEvidence.length ? 'destructive' : 'default',
       });
       
       // Reset form
@@ -396,9 +428,10 @@ export const ReportIncident = () => {
             <div className="space-y-2">
               <Label>Photos/Evidence</Label>
               <div className="flex items-center gap-2">
-                <Input type="file" multiple accept="image/*,video/*" onChange={handleFileChange} className="flex-1" />
+                <Input id="incident-evidence" type="file" multiple accept="image/jpeg,image/png,image/webp,video/mp4" onChange={handleFileChange} className="flex-1" aria-describedby="incident-evidence-help" />
                 <Camera className="h-5 w-5 text-muted-foreground" />
               </div>
+              <p id="incident-evidence-help" className="text-xs text-muted-foreground">Up to 3 JPG, PNG, WebP or MP4 files; 10 MB maximum per file.</p>
               {files.length > 0 && (
                 <p className="text-sm text-muted-foreground">
                   {files.length} file(s) selected ({files.map(f => f.name).join(', ')})
@@ -422,6 +455,7 @@ export const ReportIncident = () => {
                 <p className="text-sm text-muted-foreground">Your identity will not be associated with this report</p>
               </div>
               <Switch
+                aria-label="Report anonymously"
                 checked={formData.isAnonymous}
                 onCheckedChange={(checked) => {
                   setFormData({ ...formData, isAnonymous: checked });

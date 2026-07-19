@@ -164,7 +164,7 @@ const Office = () => {
                 </Button>
               </motion.div>
               <motion.div whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.95 }}>
-                <Button variant="outline" size="icon" onClick={() => navigate('/')}>
+                <Button variant="outline" size="icon" onClick={() => navigate('/')} aria-label="Return to portal home">
                   <Home className="h-5 w-5" />
                 </Button>
               </motion.div>
@@ -213,6 +213,7 @@ const Office = () => {
                       <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                       <Input
                         placeholder="Search reports..."
+                        aria-label="Search incident reports"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="pl-10"
@@ -220,7 +221,7 @@ const Office = () => {
                     </div>
                   </div>
                   <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-full md:w-[180px]">
+                    <SelectTrigger className="w-full md:w-[180px]" aria-label="Filter reports by status">
                       <SelectValue placeholder="Filter by status" />
                     </SelectTrigger>
                     <SelectContent>
@@ -232,7 +233,7 @@ const Office = () => {
                     </SelectContent>
                   </Select>
                   <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                    <SelectTrigger className="w-full md:w-[180px]">
+                    <SelectTrigger className="w-full md:w-[180px]" aria-label="Filter reports by category">
                       <SelectValue placeholder="Filter by category" />
                     </SelectTrigger>
                     <SelectContent>
@@ -257,8 +258,8 @@ const Office = () => {
               className="space-y-4"
             >
               {loading ? (
-                <div className="flex items-center justify-center py-12">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <div className="flex items-center justify-center py-12" role="status" aria-label="Loading incident reports">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" aria-hidden="true" />
                 </div>
               ) : filteredIncidents.length === 0 ? (
                 <Card className="p-8 text-center">

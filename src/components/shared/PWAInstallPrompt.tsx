@@ -1,200 +1,145 @@
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Download, X, Zap, Bell, Wifi } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { useEffect, useMemo, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Download, RefreshCw, ShieldCheck, Smartphone, X, Zap } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 import { BRAND } from '@/brand';
+import { Button } from '@/components/ui/button';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
-const PWAInstallPrompt = () => {
+const DISMISS_KEY = 'ccsf-pwa-install-dismissed-at';
+const DISMISS_DAYS = 7;
+
+function isStandalone() {
+  return window.matchMedia('(display-mode: standalone)').matches
+    || ('standalone' in navigator && Boolean((navigator as Navigator & { standalone?: boolean }).standalone));
+}
+
+function isIOSDevice() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent)
+    || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+
+export default function PWAInstallPrompt() {
+  const location = useLocation();
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showPrompt, setShowPrompt] = useState(false);
-  const [isInstalled, setIsInstalled] = useState(false);
+  const [installed, setInstalled] = useState(() => isStandalone());
+  const isIOS = useMemo(() => isIOSDevice(), []);
+  const authSurface = location.pathname === '/auth' || location.pathname === '/pilot/auth';
 
   useEffect(() => {
-    // Check if app is already installed
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-      setIsInstalled(true);
-      return;
-    }
+    if (installed || authSurface) return;
 
-    // Check if user dismissed the prompt recently
-    const dismissedAt = localStorage.getItem('pwa-prompt-dismissed');
-    if (dismissedAt) {
-      const dismissedTime = parseInt(dismissedAt, 10);
-      const daysSinceDismissed = (Date.now() - dismissedTime) / (1000 * 60 * 60 * 24);
-      if (daysSinceDismissed < 7) {
-        return;
-      }
-    }
+    const dismissedAt = Number(localStorage.getItem(DISMISS_KEY) ?? 0);
+    const dismissedRecently = dismissedAt > 0
+      && (Date.now() - dismissedAt) < DISMISS_DAYS * 24 * 60 * 60 * 1000;
+    if (dismissedRecently) return;
 
-    const handler = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
-      // Show prompt after a delay for better UX
-      setTimeout(() => setShowPrompt(true), 3000);
+    let timer: number | null = null;
+    const schedule = () => {
+      if (timer !== null) window.clearTimeout(timer);
+      timer = window.setTimeout(() => setShowPrompt(true), 4500);
+    };
+    const handleBeforeInstall = (event: Event) => {
+      event.preventDefault();
+      setDeferredPrompt(event as BeforeInstallPromptEvent);
+      schedule();
+    };
+    const handleInstalled = () => {
+      setInstalled(true);
+      setShowPrompt(false);
+      setDeferredPrompt(null);
+      localStorage.removeItem(DISMISS_KEY);
     };
 
-    window.addEventListener('beforeinstallprompt', handler);
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+    window.addEventListener('appinstalled', handleInstalled);
+    if (isIOS) schedule();
 
-    // Check if it's iOS
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    if (isIOS && !window.matchMedia('(display-mode: standalone)').matches) {
-      setTimeout(() => setShowPrompt(true), 3000);
-    }
+    return () => {
+      if (timer !== null) window.clearTimeout(timer);
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+      window.removeEventListener('appinstalled', handleInstalled);
+    };
+  }, [authSurface, installed, isIOS]);
 
-    return () => window.removeEventListener('beforeinstallprompt', handler);
-  }, []);
-
-  const handleInstall = async () => {
-    if (deferredPrompt) {
-      await deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') {
-        setIsInstalled(true);
-      }
-      setDeferredPrompt(null);
-    }
+  const dismiss = () => {
+    localStorage.setItem(DISMISS_KEY, String(Date.now()));
     setShowPrompt(false);
   };
 
-  const handleDismiss = () => {
-    localStorage.setItem('pwa-prompt-dismissed', Date.now().toString());
+  const install = async () => {
+    if (!deferredPrompt) return;
+    await deferredPrompt.prompt();
+    const choice = await deferredPrompt.userChoice;
+    if (choice.outcome === 'dismissed') localStorage.setItem(DISMISS_KEY, String(Date.now()));
+    setDeferredPrompt(null);
     setShowPrompt(false);
   };
 
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-
-  if (isInstalled || !showPrompt) return null;
+  if (installed || authSurface || !showPrompt || (!isIOS && !deferredPrompt)) return null;
 
   const features = [
-    { icon: Zap, text: 'Fast & responsive' },
-    { icon: Bell, text: 'Push notifications' },
-    { icon: Wifi, text: 'Works offline' },
+    { icon: Zap, text: 'Faster launch' },
+    { icon: RefreshCw, text: 'Update ready' },
+    { icon: ShieldCheck, text: 'CCSF identity' },
   ];
 
   return (
     <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0, y: 100 }}
+      <motion.aside
+        initial={{ opacity: 0, y: 80 }}
         animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: 100 }}
+        exit={{ opacity: 0, y: 80 }}
         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
         className="fixed bottom-4 left-4 right-4 z-[100] md:left-auto md:right-4 md:w-96"
+        role="dialog"
+        aria-modal="false"
+        aria-labelledby="pwa-install-title"
+        data-testid="pwa-install-prompt"
       >
-        <div 
-          className="relative overflow-hidden rounded-2xl border border-border/50 p-6"
-          style={{
-            background: 'linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--card)/0.95) 100%)',
-            boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25), 0 0 0 1px rgba(255,255,255,0.1) inset',
-          }}
-        >
-          {/* Close button */}
-          <button
-            onClick={handleDismiss}
-            className="absolute top-3 right-3 p-1.5 rounded-full bg-muted/50 hover:bg-muted transition-colors"
-          >
-            <X className="h-4 w-4 text-muted-foreground" />
+        <div className="relative overflow-hidden rounded-2xl border border-[#F2A900]/45 bg-card p-6 shadow-2xl">
+          <button type="button" onClick={dismiss} className="absolute right-3 top-3 rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-muted" aria-label="Dismiss installation prompt">
+            <X className="h-4 w-4" aria-hidden="true" />
           </button>
 
-          {/* Icon */}
-          <motion.div
-            className="flex items-center justify-center w-14 h-14 rounded-2xl mb-4"
-            style={{
-              background: 'linear-gradient(135deg, hsl(213 100% 21%) 0%, hsl(217 67% 30%) 100%)',
-              boxShadow: '0 10px 30px -5px hsl(213 100% 21% / 0.4)',
-            }}
-            animate={{
-              scale: [1, 1.05, 1],
-            }}
-            transition={{
-              duration: 2,
-              repeat: Infinity,
-              ease: 'easeInOut',
-            }}
-          >
-            <img
-              src={BRAND.assets.ccsfLogo}
-              alt="Campus Community Safety Forum"
-              className="h-11 w-11 object-contain"
-            />
-          </motion.div>
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#002F6C] shadow-lg">
+            <img src={BRAND.assets.ccsfLogo} alt="" aria-hidden="true" className="h-11 w-11 object-contain" />
+          </div>
 
-          {/* Content */}
-          <h3 className="text-lg font-semibold text-foreground mb-1">
-            Install My CCSF
-          </h3>
-          <p className="text-sm text-muted-foreground mb-4">
-            {isIOS 
-              ? 'Tap the share button and select "Add to Home Screen"'
-              : 'Add to your home screen for quick access'
-            }
+          <h2 id="pwa-install-title" className="mt-4 text-lg font-bold">Install {BRAND.productName}</h2>
+          <p className="mt-1 text-sm leading-6 text-muted-foreground">
+            {isIOS
+              ? 'Add the official CCSF application to your Home Screen using the browser Share menu.'
+              : 'Install the official CCSF application for faster access and controlled cache updates.'}
           </p>
 
-          {/* Features */}
-          <div className="flex gap-4 mb-5">
-            {features.map(({ icon: Icon, text }, index) => (
-              <motion.div
-                key={text}
-                className="flex flex-col items-center gap-1"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 + index * 0.1 }}
-              >
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Icon className="h-4 w-4 text-primary" />
-                </div>
-                <span className="text-xs text-muted-foreground whitespace-nowrap">{text}</span>
-              </motion.div>
+          <div className="mt-4 grid grid-cols-3 gap-2">
+            {features.map(({ icon: Icon, text }) => (
+              <div key={text} className="rounded-xl bg-muted/55 px-2 py-3 text-center">
+                <Icon className="mx-auto h-4 w-4 text-primary" aria-hidden="true" />
+                <span className="mt-1 block text-[11px] font-semibold text-muted-foreground">{text}</span>
+              </div>
             ))}
           </div>
 
-          {/* Actions */}
-          {!isIOS && (
-            <div className="flex gap-3">
-              <Button
-                variant="outline"
-                onClick={handleDismiss}
-                className="flex-1"
-              >
-                Maybe later
-              </Button>
-              <Button
-                onClick={handleInstall}
-                className="flex-1 gap-2"
-                style={{
-                  background: 'linear-gradient(135deg, hsl(213 100% 21%) 0%, hsl(217 67% 30%) 100%)',
-                }}
-              >
-                <Download className="h-4 w-4" />
-                Install
-              </Button>
+          {isIOS ? (
+            <div className="mt-5 flex items-start gap-3 rounded-xl border border-border bg-muted/45 p-4">
+              <Smartphone className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+              <p className="text-xs leading-5 text-muted-foreground">Open Share, choose <strong>Add to Home Screen</strong>, confirm the My CCSF name and select Add.</p>
+            </div>
+          ) : (
+            <div className="mt-5 flex gap-3">
+              <Button variant="outline" onClick={dismiss} className="flex-1">Later</Button>
+              <Button onClick={() => void install()} className="flex-1"><Download className="mr-2 h-4 w-4" aria-hidden="true" />Install</Button>
             </div>
           )}
-
-          {isIOS && (
-            <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
-              <div className="text-2xl">📤</div>
-              <p className="text-xs text-muted-foreground">
-                Tap the <strong>Share</strong> button below, then scroll and tap <strong>"Add to Home Screen"</strong>
-              </p>
-            </div>
-          )}
-
-          {/* Decorative gradient */}
-          <div 
-            className="absolute -top-20 -right-20 w-40 h-40 rounded-full opacity-10 pointer-events-none"
-            style={{
-              background: 'radial-gradient(circle, hsl(213 100% 21%) 0%, transparent 70%)',
-            }}
-          />
         </div>
-      </motion.div>
+      </motion.aside>
     </AnimatePresence>
   );
-};
-
-export default PWAInstallPrompt;
+}

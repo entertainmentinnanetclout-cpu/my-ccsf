@@ -19,7 +19,6 @@ jobs:
       VITE_SUPABASE_URL: https://lfelzsubrlqwcsnetpov.supabase.co
       VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_mk06MWImT-q1YuV_zFYsDg_r61IHhuO
       VITE_VAPID_PUBLIC_KEY: ''
-      VITE_PILOT_MODE_ENABLED: 'true'
 
     steps:
       - name: Check out repository
@@ -28,16 +27,34 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --no-audit --no-fund --loglevel=error
 
       - name: Verify Pilot production isolation
         run: npm run test:pilot-isolation
 
-      - name: Verify canonical CCSF and TUT branding
+      - name: Verify Phase 3 activation and routing
+        run: npm run test:phase3-routing
+
+      - name: Verify core product hardening
+        run: npm run test:phase4-product
+
+      - name: Verify Phase 4 student and Phase 5 campus-security parity
+        run: npm run test:phase4-5-parity
+
+      - name: Verify Phase 6 super-admin parity
+        run: npm run test:phase6-parity
+
+      - name: Verify Phase 7 authentication, PWA and institutional consistency
+        run: npm run test:phase7-consistency
+
+      - name: Verify Phase 8 end-to-end UAT release gate
+        run: npm run test:phase8-release
+
+      - name: Verify transparent canonical CCSF and TUT branding
         run: npm run test:branding
 
       - name: Verify production and Pilot student-home parity
@@ -49,5 +66,16 @@ jobs:
       - name: Lint application
         run: npm run lint
 
-      - name: Build production application
+      - name: Build fail-closed production application
         run: npm run build
+        env:
+          VITE_PILOT_MODE_ENABLED: 'false'
+          VERCEL_ENV: production
+          VERCEL_GIT_COMMIT_REF: main
+
+      - name: Build approved Pilot Preview application
+        run: npm run build
+        env:
+          VITE_PILOT_MODE_ENABLED: ''
+          VERCEL_ENV: preview
+          VERCEL_GIT_COMMIT_REF: feature/ccsf-phases-3-8-release-candidate

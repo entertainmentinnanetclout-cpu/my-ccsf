@@ -1,216 +1,191 @@
-// Service Worker for My CCSF PWA
-// Handles push notifications and offline caching
+// My CCSF service worker — institutional PWA shell and push notifications.
 
-const CACHE_NAME = 'my-ccsf-v3';
-const STATIC_CACHE = 'my-ccsf-static-v3';
-const DYNAMIC_CACHE = 'my-ccsf-dynamic-v3';
+const CACHE_PREFIX = 'my-ccsf';
+const CACHE_VERSION = 'phase7-2026-07-19-v4';
+const STATIC_CACHE = `${CACHE_PREFIX}-static-${CACHE_VERSION}`;
+const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${CACHE_VERSION}`;
+const OFFLINE_SHELL = '/index.html';
 
-// Static assets to cache on install
-const STATIC_ASSETS = [
+const PRECACHE_ASSETS = [
   '/',
-  '/index.html',
+  OFFLINE_SHELL,
   '/manifest.json',
-  '/favicon.png',
+  '/favicon.ico',
+  '/favicon-32x32.png',
   '/app-icon-192.png',
   '/app-icon-512.png',
+  '/maskable-icon-512.png',
+  '/apple-touch-icon.png',
 ];
 
-// Install event - cache static assets
+function isSameOrigin(url) {
+  return url.origin === self.location.origin;
+}
+
+function isCacheableResponse(response) {
+  return response && response.ok && response.type === 'basic';
+}
+
+async function putIfCacheable(cacheName, request, response) {
+  if (!isCacheableResponse(response)) return;
+  const cache = await caches.open(cacheName);
+  await cache.put(request, response.clone());
+}
+
 self.addEventListener('install', (event) => {
-  console.log('[SW] Installing Service Worker...');
-  event.waitUntil(
-    caches.open(STATIC_CACHE)
-      .then((cache) => {
-        console.log('[SW] Caching static assets');
-        return cache.addAll(STATIC_ASSETS);
-      })
-      .then(() => self.skipWaiting())
-  );
+  event.waitUntil((async () => {
+    const cache = await caches.open(STATIC_CACHE);
+    await Promise.allSettled(PRECACHE_ASSETS.map(async (asset) => {
+      const response = await fetch(asset, { cache: 'reload' });
+      if (isCacheableResponse(response)) await cache.put(asset, response);
+    }));
+  })());
 });
 
-// Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[SW] Service Worker activated');
-  event.waitUntil(
-    caches.keys()
-      .then((cacheNames) => {
-        return Promise.all(
-          cacheNames
-            .filter((name) => name !== STATIC_CACHE && name !== DYNAMIC_CACHE)
-            .map((name) => {
-              console.log('[SW] Deleting old cache:', name);
-              return caches.delete(name);
-            })
-        );
-      })
-      .then(() => clients.claim())
-  );
+  event.waitUntil((async () => {
+    const cacheNames = await caches.keys();
+    await Promise.all(cacheNames
+      .filter((name) => name.startsWith(`${CACHE_PREFIX}-`) && ![STATIC_CACHE, RUNTIME_CACHE].includes(name))
+      .map((name) => caches.delete(name)));
+
+    if (self.registration.navigationPreload) {
+      await self.registration.navigationPreload.enable();
+    }
+    await self.clients.claim();
+  })());
 });
 
-// Fetch event - serve from cache, fallback to network
-self.addEventListener('fetch', (event) => {
-  const { request } = event;
-  const url = new URL(request.url);
+async function networkFirstNavigation(event) {
+  const preload = await event.preloadResponse;
+  if (preload) {
+    await putIfCacheable(RUNTIME_CACHE, OFFLINE_SHELL, preload);
+    return preload;
+  }
 
-  // Skip non-GET requests
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 5000);
+  try {
+    const response = await fetch(event.request, { signal: controller.signal, cache: 'no-store' });
+    await putIfCacheable(RUNTIME_CACHE, OFFLINE_SHELL, response);
+    return response;
+  } catch {
+    return (await caches.match(OFFLINE_SHELL))
+      || (await caches.match('/'))
+      || new Response('My CCSF is temporarily offline. Reconnect and retry.', {
+        status: 503,
+        headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+      });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function staleWhileRevalidate(request, event) {
+  const cached = await caches.match(request);
+  const network = fetch(request)
+    .then(async (response) => {
+      await putIfCacheable(RUNTIME_CACHE, request, response);
+      return response;
+    });
+
+  if (cached) {
+    event.waitUntil(network.catch(() => undefined));
+    return cached;
+  }
+
+  try {
+    return await network;
+  } catch {
+    if (request.destination === 'image') {
+      return new Response(
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 100"><rect fill="#f3f4f6" width="160" height="100"/><text x="80" y="54" text-anchor="middle" fill="#64748b" font-family="sans-serif" font-size="12">Image unavailable offline</text></svg>',
+        { status: 200, headers: { 'Content-Type': 'image/svg+xml', 'Cache-Control': 'no-store' } },
+      );
+    }
+    return new Response('Resource unavailable offline.', { status: 503 });
+  }
+}
+
+self.addEventListener('fetch', (event) => {
+  const request = event.request;
   if (request.method !== 'GET') return;
 
-  // Skip API requests (let them go to network)
-  if (url.pathname.startsWith('/api') || 
-      url.hostname.includes('supabase') ||
-      url.hostname.includes('googleapis')) {
-    return;
-  }
+  const url = new URL(request.url);
+  if (!isSameOrigin(url)) return;
+  if (url.pathname === '/sw.js') return;
+  if (url.pathname.startsWith('/api/')) return;
 
-  // For navigation requests (HTML pages), use network-first strategy
   if (request.mode === 'navigate') {
-    event.respondWith(
-      fetch(request)
-        .then((response) => {
-          // Clone and cache the response
-          const responseClone = response.clone();
-          caches.open(DYNAMIC_CACHE).then((cache) => {
-            cache.put(request, responseClone);
-          });
-          return response;
-        })
-        .catch(() => {
-          // If network fails, try cache
-          return caches.match(request)
-            .then((cached) => cached || caches.match('/index.html'));
-        })
-    );
+    event.respondWith(networkFirstNavigation(event));
     return;
   }
 
-  // For static assets, use cache-first strategy
-  event.respondWith(
-    caches.match(request)
-      .then((cached) => {
-        if (cached) {
-          // Return cached version and update cache in background
-          fetch(request).then((response) => {
-            if (response.ok) {
-              caches.open(DYNAMIC_CACHE).then((cache) => {
-                cache.put(request, response);
-              });
-            }
-          }).catch(() => {});
-          return cached;
-        }
-
-        // Not in cache, fetch from network
-        return fetch(request)
-          .then((response) => {
-            // Cache successful responses
-            if (response.ok && response.type === 'basic') {
-              const responseClone = response.clone();
-              caches.open(DYNAMIC_CACHE).then((cache) => {
-                cache.put(request, responseClone);
-              });
-            }
-            return response;
-          })
-          .catch(() => {
-            // Return offline fallback for images
-            if (request.destination === 'image') {
-              return new Response(
-                '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="#f3f4f6" width="100" height="100"/><text x="50" y="55" text-anchor="middle" fill="#9ca3af" font-size="12">Offline</text></svg>',
-                { headers: { 'Content-Type': 'image/svg+xml' } }
-              );
-            }
-          });
-      })
-  );
+  const cacheableDestination = ['script', 'style', 'font', 'image', 'manifest'].includes(request.destination);
+  if (cacheableDestination) event.respondWith(staleWhileRevalidate(request, event));
 });
 
-// Push notification handler
 self.addEventListener('push', (event) => {
-  console.log('[SW] Push notification received');
-  
-  let data = { title: 'My CCSF Alert', body: 'New notification' };
-  
+  let data = { title: 'My CCSF Alert', body: 'A new CCSF notification is available.', data: {} };
   try {
-    if (event.data) {
-      data = event.data.json();
-    }
-  } catch (e) {
-    console.error('[SW] Error parsing push data:', e);
+    if (event.data) data = { ...data, ...event.data.json() };
+  } catch {
+    // Keep the safe default payload.
   }
 
   const options = {
     body: data.body,
-    icon: '/favicon.png',
-    badge: '/favicon.png',
+    icon: '/app-icon-192.png',
+    badge: '/favicon-32x32.png',
     vibrate: [100, 50, 100],
     data: data.data || {},
     actions: [
-      { action: 'view', title: 'View' },
-      { action: 'dismiss', title: 'Dismiss' }
+      { action: 'view', title: 'Open My CCSF' },
+      { action: 'dismiss', title: 'Dismiss' },
     ],
-    tag: data.tag || 'default',
+    tag: data.tag || 'ccsf-notification',
     renotify: true,
   };
 
-  event.waitUntil(
-    self.registration.showNotification(data.title, options)
-  );
+  event.waitUntil(self.registration.showNotification(data.title, options));
 });
 
-// Notification click handler
 self.addEventListener('notificationclick', (event) => {
-  console.log('[SW] Notification clicked:', event.action);
   event.notification.close();
+  if (event.action === 'dismiss') return;
 
-  if (event.action === 'dismiss') {
+  let urlToOpen = '/';
+  try {
+    const requested = new URL(event.notification.data?.url || '/', self.location.origin);
+    if (requested.origin === self.location.origin) urlToOpen = `${requested.pathname}${requested.search}${requested.hash}`;
+  } catch {
+    urlToOpen = '/';
+  }
+
+  event.waitUntil((async () => {
+    const clientList = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const client of clientList) {
+      if (client.url.startsWith(self.location.origin) && 'focus' in client) {
+        if ('navigate' in client) await client.navigate(urlToOpen);
+        return client.focus();
+      }
+    }
+    return self.clients.openWindow ? self.clients.openWindow(urlToOpen) : undefined;
+  })());
+});
+
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SKIP_WAITING') {
+    self.skipWaiting();
     return;
   }
 
-  const urlToOpen = event.notification.data?.url || '/';
-
-  event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true })
-      .then((clientList) => {
-        // Focus existing window if available
-        for (const client of clientList) {
-          if (client.url.includes(self.location.origin) && 'focus' in client) {
-            client.navigate(urlToOpen);
-            return client.focus();
-          }
-        }
-        // Open new window
-        if (clients.openWindow) {
-          return clients.openWindow(urlToOpen);
-        }
-      })
-  );
-});
-
-// Background sync for offline form submissions
-self.addEventListener('sync', (event) => {
-  console.log('[SW] Background sync:', event.tag);
-  
-  if (event.tag === 'sync-incidents') {
-    event.waitUntil(syncPendingIncidents());
+  if (event.data?.type === 'GET_VERSION') {
+    event.source?.postMessage({ type: 'CCSF_SW_VERSION', version: CACHE_VERSION });
+    return;
   }
-});
 
-async function syncPendingIncidents() {
-  // Get pending incidents from IndexedDB and sync them
-  console.log('[SW] Syncing pending incidents...');
-}
-
-// Message handler for communication with main app
-self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'SKIP_WAITING') {
-    self.skipWaiting();
-  }
-  
-  if (event.data && event.data.type === 'CACHE_URLS') {
-    event.waitUntil(
-      caches.open(DYNAMIC_CACHE).then((cache) => {
-        return cache.addAll(event.data.urls);
-      })
-    );
+  if (event.data?.type === 'CLEAR_RUNTIME_CACHE') {
+    event.waitUntil(caches.delete(RUNTIME_CACHE));
   }
 });

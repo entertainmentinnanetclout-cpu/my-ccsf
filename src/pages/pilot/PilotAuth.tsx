@@ -1,50 +1,64 @@
-import { FormEvent, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useTheme } from 'next-themes';
+import { type FormEvent, useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Loader2, LockKeyhole } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { PILOT_ENABLED, PILOT_ROUTES } from '@/config/pilot';
+import {
+  PILOT_ENABLED,
+  PILOT_POST_PROFILE_REDIRECT_KEY,
+  PILOT_ROUTES,
+  resolvePilotDestination,
+} from '@/config/pilot';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { PilotAuthInstitutionalView } from '@/components/pilot/PilotAuthInstitutionalView';
+import { InstitutionalAccessError, InstitutionalLoadingState } from '@/components/auth/InstitutionalAccessState';
 
-const PILOT_AUTH_PATH = '/pilot/auth';
 const PILOT_ACCESS_REQUIREMENT = 'Student accounts must be invited to an active Pilot programme.';
 
 type PilotAuthView = 'login' | 'forgot-password';
-type PilotRole = 'student' | 'security' | 'admin';
-
-function pilotDestination(role: PilotRole): string {
-  if (role === 'admin') return PILOT_ROUTES.admin;
-  if (role === 'security') return PILOT_ROUTES.campus;
-  return PILOT_ROUTES.landing;
-}
+type PilotRequestedLocation = string | {
+  pathname?: unknown;
+  search?: unknown;
+  hash?: unknown;
+};
 
 export default function PilotAuth() {
   const navigate = useNavigate();
-  const { theme } = useTheme();
+  const location = useLocation();
   const { toast } = useToast();
-  const { user, userRole, loading: authLoading, profileCompleted } = useAuth();
+  const {
+    user,
+    userRole,
+    loading: authLoading,
+    authError,
+    refreshIdentity,
+    signOut,
+    profileCompleted,
+  } = useAuth();
   const [view, setView] = useState<PilotAuthView>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const requestedFrom = (location.state as { from?: PilotRequestedLocation } | null)?.from;
 
   useEffect(() => {
     if (!user || !userRole) return;
 
+    const destination = resolvePilotDestination(userRole, requestedFrom);
     if (userRole === 'student' && !profileCompleted) {
+      sessionStorage.setItem(PILOT_POST_PROFILE_REDIRECT_KEY, destination);
       navigate('/profile-completion', {
         replace: true,
-        state: { from: PILOT_ROUTES.landing },
+        state: { from: destination },
       });
       return;
     }
 
-    navigate(pilotDestination(userRole), { replace: true });
-  }, [user, userRole, profileCompleted, navigate]);
+    sessionStorage.removeItem(PILOT_POST_PROFILE_REDIRECT_KEY);
+    navigate(destination, { replace: true });
+  }, [user, userRole, profileCompleted, requestedFrom, navigate]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -64,10 +78,10 @@ export default function PilotAuth() {
     try {
       if (view === 'forgot-password') {
         const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
-          redirectTo: `${window.location.origin}${PILOT_AUTH_PATH}?reset=true`,
+          redirectTo: `${window.location.origin}/auth?reset=true`,
         });
         if (error) throw error;
-        toast({ title: 'Recovery email sent', description: 'Use the link in your email, then return to the Pilot login.' });
+        toast({ title: 'Recovery email sent', description: 'Use the official CCSF recovery page to set your new password, then return to Pilot Mode.' });
         setView('login');
         return;
       }
@@ -80,10 +94,10 @@ export default function PilotAuth() {
         throw error;
       }
 
-      toast({ title: 'Pilot login successful', description: 'Your Pilot access and role are being verified.' });
+      toast({ title: 'Pilot sign-in successful', description: 'Your Pilot access and institutional role are being verified.' });
     } catch (error) {
       toast({
-        title: view === 'login' ? 'Pilot login failed' : 'Recovery request failed',
+        title: view === 'login' ? 'Pilot sign-in failed' : 'Recovery request failed',
         description: error instanceof Error ? error.message : 'Please try again.',
         variant: 'destructive',
       });
@@ -92,11 +106,15 @@ export default function PilotAuth() {
     }
   };
 
-  if (authLoading) {
+  if (authLoading) return <InstitutionalLoadingState label="Verifying your CCSF Pilot identity…" />;
+
+  if (user && authError) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <Loader2 className="h-9 w-9 animate-spin text-[#002F6C]" />
-      </div>
+      <InstitutionalAccessError
+        description={authError}
+        onRetry={() => void refreshIdentity()}
+        onSignOut={() => void signOut()}
+      />
     );
   }
 
@@ -109,7 +127,7 @@ export default function PilotAuth() {
             <CardTitle>Pilot Mode is disabled</CardTitle>
             <CardDescription>This deployment has not been authorised for controlled Pilot testing.</CardDescription>
           </CardHeader>
-          <CardContent><Button className="w-full" onClick={() => navigate('/auth')}>Open official portal login</Button></CardContent>
+          <CardContent><Button className="w-full" onClick={() => navigate('/auth')}>Open official portal sign in</Button></CardContent>
         </Card>
       </div>
     );
@@ -118,7 +136,6 @@ export default function PilotAuth() {
   return (
     <div data-access-requirement={PILOT_ACCESS_REQUIREMENT}>
       <PilotAuthInstitutionalView
-        theme={theme}
         view={view}
         email={email}
         password={password}
@@ -127,7 +144,7 @@ export default function PilotAuth() {
         onPasswordChange={setPassword}
         onSubmit={handleSubmit}
         onToggleView={() => setView((current) => current === 'login' ? 'forgot-password' : 'login')}
-        onOfficialPortal={() => navigate('/')}
+        onOfficialPortal={() => navigate('/auth')}
       />
     </div>
   );

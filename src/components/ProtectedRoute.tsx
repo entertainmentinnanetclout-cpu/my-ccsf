@@ -1,9 +1,17 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2 } from 'lucide-react';
-import { isPilotAdminPath, isPilotSecurityPath, isPilotStudentPath } from '@/config/pilot';
+import { InstitutionalAccessError, InstitutionalLoadingState } from '@/components/auth/InstitutionalAccessState';
+import {
+  isApprovedPilotPath,
+  isPilotAdminPath,
+  isPilotSecurityPath,
+  isPilotStudentPath,
+  pilotDefaultDestination,
+  type PilotRole,
+} from '@/config/pilot';
+import { officialDefaultDestination } from '@/config/officialRoutes';
 
-type UserRole = 'student' | 'admin' | 'security';
+type UserRole = PilotRole;
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -15,37 +23,34 @@ function isPilotProtectedPath(pathname: string): boolean {
 }
 
 export const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
-  const { user, userRole, loading } = useAuth();
+  const { user, userRole, loading, authError, refreshIdentity, signOut } = useAuth();
   const location = useLocation();
+  const requestedPath = `${location.pathname}${location.search}${location.hash}`;
 
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
+  if (loading) return <InstitutionalLoadingState />;
 
   if (!user) {
     const authPath = isPilotProtectedPath(location.pathname) ? '/pilot/auth' : '/auth';
-    return <Navigate to={authPath} state={{ from: location }} replace />;
+    return <Navigate to={authPath} state={{ from: requestedPath }} replace />;
   }
 
-  if (!allowedRoles || allowedRoles.length === 0) {
+  if (authError || !userRole) {
+    return (
+      <InstitutionalAccessError
+        description={authError ?? 'Your CCSF portal role could not be resolved.'}
+        onRetry={() => void refreshIdentity()}
+        onSignOut={() => void signOut()}
+      />
+    );
+  }
+
+  if (!allowedRoles || allowedRoles.length === 0 || allowedRoles.includes(userRole)) {
     return <>{children}</>;
   }
 
-  if (userRole && allowedRoles.includes(userRole as UserRole)) {
-    return <>{children}</>;
+  if (isApprovedPilotPath(location.pathname)) {
+    return <Navigate to={pilotDefaultDestination(userRole)} replace />;
   }
 
-  if (userRole === 'student') {
-    return <Navigate to="/dashboard" replace />;
-  } else if (userRole === 'security') {
-    return <Navigate to="/security" replace />;
-  } else if (userRole === 'admin') {
-    return <Navigate to="/admin" replace />;
-  }
-
-  return <Navigate to="/auth" replace />;
+  return <Navigate to={officialDefaultDestination(userRole)} replace />;
 };
