@@ -1,171 +1,189 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { type FormEvent, useEffect, useMemo, useState } from 'react';
+import { ArrowLeft, Loader2, MapPin } from 'lucide-react';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { z } from 'zod';
+import { InstitutionalAuthFrame } from '@/components/auth/InstitutionalAuthFrame';
+import { InstitutionalLoadingState } from '@/components/auth/InstitutionalAccessState';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { motion } from 'framer-motion';
-import { Shield, AlertCircle, Loader2, MapPin, ArrowLeft } from 'lucide-react';
-import { InstitutionBrand } from '@/components/shared/InstitutionBrand';
-import { z } from 'zod';
+import { CAMPUS_LABELS, PILOT_CAMPUS_VALUES } from '@/config/pilot';
+import { resolveOfficialDestination } from '@/config/officialRoutes';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import type { CampusLocation } from '@/types/pilot';
 
-// Campus options with display names and DB values
-const campusOptions = [
-  { value: 'pretoria_west_main', label: 'Pretoria West (Main Campus)' },
-  { value: 'arcadia', label: 'Arcadia Campus' },
-  { value: 'arts', label: 'Arts Campus' },
-  { value: 'giyani', label: 'Giyani Campus' },
-  { value: 'mbombela', label: 'Mbombela Campus' },
-  { value: 'emalahleni', label: 'Emalahleni Campus' },
-  { value: 'polokwane', label: 'Polokwane Campus' },
-  { value: 'garankuwa', label: 'Ga-Rankuwa Campus' },
-  { value: 'soshanguve_south', label: 'Soshanguve South Campus' },
-  { value: 'soshanguve_north', label: 'Soshanguve North Campus' },
-] as const;
-
-// Validation schema
-const signupSchema = z.object({
-  email: z.string().trim().email('Invalid email address').max(255),
-  password: z.string().min(6, 'Password must be at least 6 characters').max(100),
-  fullName: z.string().trim().min(2, 'Name must be at least 2 characters').max(100),
-  studentNumber: z.string().trim().max(20).optional(),
-  campus: z.string().min(1, 'Please select your campus'),
-});
+type AuthView = 'login' | 'signup' | 'forgot-password' | 'update-password';
+type RequestedLocation = string | { pathname?: unknown; search?: unknown; hash?: unknown };
 
 const loginSchema = z.object({
-  email: z.string().trim().email('Invalid email address'),
-  password: z.string().min(1, 'Password is required'),
+  email: z.string().trim().email('Enter a valid email address.'),
+  password: z.string().min(1, 'Password is required.'),
 });
 
-const resetSchema = z.object({
-  email: z.string().trim().email('Invalid email address'),
+const signupSchema = z.object({
+  email: z.string().trim().email('Enter a valid email address.').max(255),
+  password: z.string().min(8, 'Password must contain at least 8 characters.').max(100),
+  confirmPassword: z.string(),
+  fullName: z.string().trim().min(2, 'Enter your full name.').max(100),
+  studentNumber: z.string().trim().max(20, 'Student number is too long.'),
+  campus: z.string().min(1, 'Select your campus.'),
+}).refine((values) => values.password === values.confirmPassword, {
+  path: ['confirmPassword'],
+  message: 'Passwords do not match.',
 });
 
-type AuthView = 'login' | 'signup' | 'forgot-password';
+const recoverySchema = z.object({ email: z.string().trim().email('Enter a valid email address.') });
+const updatePasswordSchema = z.object({
+  password: z.string().min(8, 'Password must contain at least 8 characters.').max(100),
+  confirmPassword: z.string(),
+}).refine((values) => values.password === values.confirmPassword, {
+  path: ['confirmPassword'],
+  message: 'Passwords do not match.',
+});
 
-const Auth = () => {
-  const [view, setView] = useState<AuthView>('login');
+export default function Auth() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { toast } = useToast();
+  const { user, userRole, loading: authLoading, profileCompleted } = useAuth();
+  const requestedFrom = (location.state as { from?: RequestedLocation } | null)?.from;
+  const resetRequested = searchParams.get('reset') === 'true';
+  const [view, setView] = useState<AuthView>(resetRequested ? 'update-password' : 'login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [studentNumber, setStudentNumber] = useState('');
-  const [campus, setCampus] = useState('');
+  const [campus, setCampus] = useState<CampusLocation | ''>('');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const { toast } = useToast();
-  const navigate = useNavigate();
-  const { user, userRole, loading: authLoading, profileCompleted } = useAuth();
 
-  // Redirect if already logged in
   useEffect(() => {
-    if (user && userRole) {
-      if (userRole === 'student') {
-        if (!profileCompleted) {
-          navigate('/profile-completion', { replace: true });
-        } else {
-          navigate('/dashboard', { replace: true });
-        }
-      } else if (userRole === 'security') {
-        navigate('/security', { replace: true });
-      } else if (userRole === 'admin') {
-        navigate('/admin', { replace: true });
-      }
-    }
-  }, [user, userRole, navigate, profileCompleted]);
+    if (resetRequested) setView('update-password');
+  }, [resetRequested]);
 
-  const validateForm = () => {
+  useEffect(() => {
+    if (!user || !userRole || view === 'update-password') return;
+    const destination = resolveOfficialDestination(userRole, requestedFrom);
+    if (userRole === 'student' && !profileCompleted) {
+      navigate('/profile-completion', { replace: true, state: { from: destination } });
+      return;
+    }
+    navigate(destination, { replace: true });
+  }, [user, userRole, profileCompleted, requestedFrom, navigate, view]);
+
+  const heading = useMemo(() => {
+    if (view === 'signup') return { title: 'Create a student account', description: 'Register for official CCSF student services.' };
+    if (view === 'forgot-password') return { title: 'Recover your account', description: 'Receive a secure password-recovery link.' };
+    if (view === 'update-password') return { title: 'Set a new password', description: 'Choose a new password for your CCSF account.' };
+    return { title: 'Official portal sign in', description: 'Use your authorised CCSF credentials.' };
+  }, [view]);
+
+  const switchView = (next: AuthView) => {
+    setView(next);
+    setErrors({});
+    setPassword('');
+    setConfirmPassword('');
+    if (next !== 'update-password' && resetRequested) {
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete('reset');
+      setSearchParams(nextParams, { replace: true });
+    }
+  };
+
+  const validate = () => {
     try {
-      if (view === 'login') {
-        loginSchema.parse({ email, password });
-      } else if (view === 'signup') {
-        signupSchema.parse({ email, password, fullName, studentNumber, campus });
-      } else {
-        resetSchema.parse({ email });
-      }
+      if (view === 'login') loginSchema.parse({ email, password });
+      if (view === 'signup') signupSchema.parse({ email, password, confirmPassword, fullName, studentNumber, campus });
+      if (view === 'forgot-password') recoverySchema.parse({ email });
+      if (view === 'update-password') updatePasswordSchema.parse({ password, confirmPassword });
       setErrors({});
       return true;
     } catch (error) {
       if (error instanceof z.ZodError) {
-        const newErrors: Record<string, string> = {};
-        error.errors.forEach((err) => {
-          if (err.path[0]) {
-            newErrors[err.path[0] as string] = err.message;
-          }
-        });
-        setErrors(newErrors);
+        const nextErrors: Record<string, string> = {};
+        for (const issue of error.errors) {
+          const field = issue.path[0];
+          if (typeof field === 'string' && !nextErrors[field]) nextErrors[field] = issue.message;
+        }
+        setErrors(nextErrors);
       }
       return false;
     }
   };
 
-  const handleAuth = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!validateForm()) {
-      return;
-    }
-    
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!validate()) return;
     setLoading(true);
 
     try {
+      const normalizedEmail = email.trim().toLowerCase();
+
       if (view === 'login') {
-        const { error } = await supabase.auth.signInWithPassword({
-          email: email.trim(),
-          password,
-        });
+        const { error } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password });
         if (error) {
-          if (error.message.includes('Invalid login credentials')) {
-            throw new Error('Invalid email or password. Please try again.');
-          }
+          if (error.message.includes('Invalid login credentials')) throw new Error('Invalid email or password.');
           throw error;
         }
-        toast({
-          title: 'Welcome back!',
-          description: 'You have successfully signed in.',
-        });
-      } else if (view === 'signup') {
-        const { error } = await supabase.auth.signUp({
-          email: email.trim(),
+        toast({ title: 'Sign-in successful', description: 'Your CCSF role and portal access are being verified.' });
+        return;
+      }
+
+      if (view === 'signup') {
+        const { data, error } = await supabase.auth.signUp({
+          email: normalizedEmail,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/dashboard`,
+            emailRedirectTo: `${window.location.origin}/auth?verified=true`,
             data: {
               full_name: fullName.trim(),
               student_number: studentNumber.trim(),
-              campus: campus,
+              campus,
               role: 'student',
             },
           },
         });
         if (error) {
-          if (error.message.includes('User already registered')) {
-            throw new Error('An account with this email already exists. Please sign in instead.');
-          }
+          if (error.message.includes('User already registered')) throw new Error('An account with this email already exists. Sign in instead.');
           throw error;
         }
         toast({
-          title: 'Account created!',
-          description: 'Welcome to Campus Protection Services. Please check your email to verify your account.',
+          title: data.session ? 'Account created' : 'Verify your email',
+          description: data.session
+            ? 'Your student account is being prepared.'
+            : 'Open the verification link sent to your email, then return to the official portal.',
         });
-      } else if (view === 'forgot-password') {
-        const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        return;
+      }
+
+      if (view === 'forgot-password') {
+        const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
           redirectTo: `${window.location.origin}/auth?reset=true`,
         });
         if (error) throw error;
-        toast({
-          title: 'Reset email sent',
-          description: 'Check your email for a password reset link.',
-        });
-        setView('login');
+        toast({ title: 'Recovery email sent', description: 'Use the secure link in your email to set a new password.' });
+        switchView('login');
+        return;
       }
-    } catch (error: any) {
+
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) throw error;
+      toast({ title: 'Password updated', description: 'Your new password is active.' });
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete('reset');
+      setSearchParams(nextParams, { replace: true });
+      if (userRole) navigate(resolveOfficialDestination(userRole, requestedFrom), { replace: true });
+      else switchView('login');
+    } catch (error) {
       toast({
-        title: 'Error',
-        description: error.message,
+        title: view === 'login' ? 'Sign-in failed' : view === 'signup' ? 'Account creation failed' : 'Account recovery failed',
+        description: error instanceof Error ? error.message : 'The request could not be completed. Try again.',
         variant: 'destructive',
       });
     } finally {
@@ -173,241 +191,103 @@ const Auth = () => {
     }
   };
 
-  const switchView = (newView: AuthView) => {
-    setView(newView);
-    setErrors({});
-  };
-
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-16 w-16 animate-spin text-white" />
-      </div>
-    );
-  }
+  if (authLoading) return <InstitutionalLoadingState label="Restoring your CCSF session…" />;
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'linear-gradient(135deg, hsl(213 100% 21%) 0%, hsl(217 67% 30%) 50%, hsl(213 100% 16%) 100%)' }}>
-      <motion.div
-        initial={{ opacity: 0, y: 25 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: 'easeInOut' }}
-        className="w-full max-w-md"
-      >
-        <motion.div
-          className="text-center mb-8"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
-        >
-          <motion.div
-            className="mx-auto mb-4 flex justify-center text-white"
-            initial={{ scale: 0.9 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.3, type: 'spring', stiffness: 200 }}
-          >
-            <InstitutionBrand size="auth" />
-          </motion.div>
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <Shield className="h-8 w-8 text-foreground drop-shadow-lg" />
-            <h1 className="text-3xl font-bold text-foreground">Campus Protection Services</h1>
+    <InstitutionalAuthFrame
+      mode="official"
+      eyebrow="Official CCSF Portal"
+      title="One institutional account for every CCSF portal"
+      description="Students, campus-security teams and super-admins use the same secure identity service. Your verified role determines the portal and information available to you."
+    >
+      <Button variant="ghost" className="mb-6 -ml-3" onClick={() => navigate('/')}>
+        <ArrowLeft className="mr-2 h-4 w-4" aria-hidden="true" /> Public home
+      </Button>
+
+      <Card className="border-0 bg-transparent shadow-none">
+        <CardHeader className="px-0 pt-0">
+          <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-[#002F6C] dark:text-[#F2A900]">Secure institutional access</p>
+          <CardTitle className="mt-2 text-2xl sm:text-3xl">{heading.title}</CardTitle>
+          <CardDescription className="text-sm leading-6">{heading.description}</CardDescription>
+        </CardHeader>
+        <CardContent className="px-0">
+          <form className="space-y-5" onSubmit={handleSubmit} noValidate>
+            {view === 'signup' && (
+              <>
+                <Field label="Full name" error={errors.fullName}>
+                  <Input id="official-full-name" autoComplete="name" value={fullName} onChange={(event) => setFullName(event.target.value)} className="h-12" aria-invalid={Boolean(errors.fullName)} />
+                </Field>
+                <Field label="Student number" error={errors.studentNumber} optional>
+                  <Input id="official-student-number" autoComplete="off" value={studentNumber} onChange={(event) => setStudentNumber(event.target.value)} className="h-12" aria-invalid={Boolean(errors.studentNumber)} />
+                </Field>
+                <Field label="Campus" error={errors.campus}>
+                  <Select value={campus} onValueChange={(value) => setCampus(value as CampusLocation)}>
+                    <SelectTrigger id="official-campus" className="h-12" aria-invalid={Boolean(errors.campus)}><SelectValue placeholder="Select your campus" /></SelectTrigger>
+                    <SelectContent>{PILOT_CAMPUS_VALUES.map((value) => <SelectItem key={value} value={value}><span className="flex items-center gap-2"><MapPin className="h-4 w-4" aria-hidden="true" />{CAMPUS_LABELS[value]}</span></SelectItem>)}</SelectContent>
+                  </Select>
+                </Field>
+              </>
+            )}
+
+            {view !== 'update-password' && (
+              <Field label="Email address" error={errors.email}>
+                <Input id="official-email" type="email" inputMode="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} className="h-12" aria-invalid={Boolean(errors.email)} />
+              </Field>
+            )}
+
+            {(view === 'login' || view === 'signup' || view === 'update-password') && (
+              <Field label={view === 'update-password' ? 'New password' : 'Password'} error={errors.password}>
+                <Input id="official-password" type="password" autoComplete={view === 'login' ? 'current-password' : 'new-password'} value={password} onChange={(event) => setPassword(event.target.value)} className="h-12" aria-invalid={Boolean(errors.password)} />
+              </Field>
+            )}
+
+            {(view === 'signup' || view === 'update-password') && (
+              <Field label="Confirm password" error={errors.confirmPassword}>
+                <Input id="official-confirm-password" type="password" autoComplete="new-password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} className="h-12" aria-invalid={Boolean(errors.confirmPassword)} />
+              </Field>
+            )}
+
+            <Button type="submit" className="h-12 w-full bg-gradient-to-r from-[#002F6C] to-[#0055A5] text-base font-bold text-white shadow-lg" disabled={loading}>
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
+              {view === 'login' && 'Sign in to CCSF'}
+              {view === 'signup' && 'Create student account'}
+              {view === 'forgot-password' && 'Send recovery email'}
+              {view === 'update-password' && 'Update password'}
+            </Button>
+          </form>
+
+          <div className="mt-4 flex flex-col items-center gap-1 text-sm">
+            {view === 'login' && <Button variant="link" onClick={() => switchView('forgot-password')}>Forgot your password?</Button>}
+            {view === 'login' && <Button variant="link" onClick={() => switchView('signup')}>Create a student account</Button>}
+            {view === 'signup' && <Button variant="link" onClick={() => switchView('login')}>Already registered? Sign in</Button>}
+            {view === 'forgot-password' && <Button variant="link" onClick={() => switchView('login')}>Back to sign in</Button>}
           </div>
-          <p className="text-foreground/80">Report incidents, stay safe</p>
-        </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.4, duration: 0.3 }}
-        >
-          <Card className="shadow-large border-0 bg-card/95 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle>
-                {view === 'login' && 'Sign In'}
-                {view === 'signup' && 'Create Account'}
-                {view === 'forgot-password' && 'Reset Password'}
-              </CardTitle>
-              <CardDescription>
-                {view === 'login' && 'Enter your credentials to access your account'}
-                {view === 'signup' && 'Fill in your details to create a new student account'}
-                {view === 'forgot-password' && 'Enter your email to receive a password reset link'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {view === 'forgot-password' && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => switchView('login')}
-                  className="mb-4 -ml-2"
-                >
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back to Sign In
-                </Button>
-              )}
-              
-              <form onSubmit={handleAuth} className="space-y-4">
-                {view === 'signup' && (
-                  <>
-                    <div className="space-y-2">
-                      <Label htmlFor="fullName">Full Name *</Label>
-                      <Input
-                        id="fullName"
-                        type="text"
-                        placeholder="John Doe"
-                        value={fullName}
-                        onChange={(e) => setFullName(e.target.value)}
-                        className={errors.fullName ? 'border-destructive' : ''}
-                      />
-                      {errors.fullName && (
-                        <p className="text-sm text-destructive">{errors.fullName}</p>
-                      )}
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="studentNumber">Student Number</Label>
-                      <Input
-                        id="studentNumber"
-                        type="text"
-                        placeholder="2024XXXXX"
-                        value={studentNumber}
-                        onChange={(e) => setStudentNumber(e.target.value)}
-                        className={errors.studentNumber ? 'border-destructive' : ''}
-                      />
-                      {errors.studentNumber && (
-                        <p className="text-sm text-destructive">{errors.studentNumber}</p>
-                      )}
-                    </div>
+          <div className="mt-6 rounded-2xl border border-border bg-muted/45 p-4 text-xs leading-5 text-muted-foreground">
+            Student self-registration creates a student account only. Campus-security and super-admin access must be assigned through authorised CCSF administration.
+          </div>
+        </CardContent>
+      </Card>
+    </InstitutionalAuthFrame>
+  );
+}
 
-                    <div className="space-y-2">
-                      <Label htmlFor="campus">Campus *</Label>
-                      <Select value={campus} onValueChange={setCampus}>
-                        <SelectTrigger className={errors.campus ? 'border-destructive' : ''}>
-                          <SelectValue placeholder="Select your campus">
-                            {campus && (
-                              <span className="flex items-center gap-2">
-                                <MapPin className="h-4 w-4" />
-                                {campusOptions.find(c => c.value === campus)?.label}
-                              </span>
-                            )}
-                          </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          {campusOptions.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              <span className="flex items-center gap-2">
-                                <MapPin className="h-4 w-4" />
-                                {option.label}
-                              </span>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {errors.campus && (
-                        <p className="text-sm text-destructive">{errors.campus}</p>
-                      )}
-                    </div>
-                  </>
-                )}
-
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email *</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="student@tut.ac.za"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className={errors.email ? 'border-destructive' : ''}
-                  />
-                  {errors.email && (
-                    <p className="text-sm text-destructive">{errors.email}</p>
-                  )}
-                </div>
-
-                {view !== 'forgot-password' && (
-                  <div className="space-y-2">
-                    <Label htmlFor="password">Password *</Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className={errors.password ? 'border-destructive' : ''}
-                      minLength={6}
-                    />
-                    {errors.password && (
-                      <p className="text-sm text-destructive">{errors.password}</p>
-                    )}
-                    {view === 'signup' && (
-                      <p className="text-xs text-muted-foreground">Must be at least 6 characters</p>
-                    )}
-                  </div>
-                )}
-
-                {view === 'login' && (
-                  <div className="text-right">
-                    <button
-                      type="button"
-                      onClick={() => switchView('forgot-password')}
-                      className="text-sm text-primary hover:underline"
-                    >
-                      Forgot password?
-                    </button>
-                  </div>
-                )}
-
-                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                  <Button
-                    type="submit"
-                    className="w-full"
-                    disabled={loading || authLoading}
-                  >
-                    {loading ? (
-                      <span className="flex items-center gap-2">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Processing...
-                      </span>
-                    ) : (
-                      <>
-                        {view === 'login' && 'Sign In'}
-                        {view === 'signup' && 'Create Account'}
-                        {view === 'forgot-password' && 'Send Reset Link'}
-                      </>
-                    )}
-                  </Button>
-                </motion.div>
-
-                {view !== 'forgot-password' && (
-                  <div className="text-center text-sm">
-                    <button
-                      type="button"
-                      onClick={() => switchView(view === 'login' ? 'signup' : 'login')}
-                      className="text-primary hover:underline"
-                    >
-                      {view === 'login'
-                        ? "Don't have an account? Sign up"
-                        : 'Already have an account? Sign in'}
-                    </button>
-                  </div>
-                )}
-              </form>
-
-              <div className="mt-6 p-4 bg-muted/50 rounded-lg">
-                <div className="flex gap-2 text-sm text-muted-foreground">
-                  <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
-                  <p>
-                    For security purposes, all actions are logged. Anonymous reporting is available after sign-in.
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-      </motion.div>
+function Field({
+  label,
+  error,
+  optional = false,
+  children,
+}: {
+  label: string;
+  error?: string;
+  optional?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-2">
+      <Label>{label}{optional ? ' (optional)' : ''}</Label>
+      {children}
+      {error && <p className="text-sm font-medium text-destructive" role="alert">{error}</p>}
     </div>
   );
-};
-
-export default Auth;
+}
