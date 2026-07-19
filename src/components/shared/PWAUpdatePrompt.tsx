@@ -16,6 +16,11 @@ export default function PWAUpdatePrompt() {
     };
 
     window.addEventListener(PWA_UPDATE_EVENT, handleUpdate);
+    if ('serviceWorker' in navigator) {
+      void navigator.serviceWorker.getRegistration('/').then((current) => {
+        if (current?.waiting) setRegistration(current);
+      });
+    }
     return () => window.removeEventListener(PWA_UPDATE_EVENT, handleUpdate);
   }, []);
 
