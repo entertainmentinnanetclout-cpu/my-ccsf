@@ -1,5 +1,8 @@
 # Phase 2.5 complete — supplied logo and student home parity
 
+Merged: PR #25 (`8920e3d8514cd140dcfec0481b6d960d2d062c9a`)  
+Database migration: `20260719180500_repair_student_carousel_sources`
+
 ## Outcome
 
 The user-supplied `Campus safety forum logo design(1).png` is now the single CCSF source of truth. No generated CCSF placeholder remains in production assets, and the application still pairs the CCSF mark with the existing light- and dark-theme TUT logos without changing the application colour system.
