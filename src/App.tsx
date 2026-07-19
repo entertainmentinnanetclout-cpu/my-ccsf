@@ -24,6 +24,7 @@ import Profile from './pages/Profile';
 import ProfileCompletion from './pages/ProfileCompletion';
 import Judiciary from './pages/Judiciary';
 import Security from './pages/Security';
+import PilotAuth from './pages/pilot/PilotAuth';
 import PilotLanding from './pages/pilot/PilotLanding';
 import PilotSession from './pages/pilot/PilotSession';
 import PilotReportTracking from './pages/pilot/PilotReportTracking';
@@ -41,6 +42,8 @@ const App = () => (
           <AuthProvider>
             <PilotModeProvider>
               <Routes>
+                <Route path="/pilot/auth" element={<PilotAuth />} />
+
                 <Route element={<Layout />}>
                   <Route path="/" element={<Index />} />
                   <Route path="/auth" element={<Auth />} />
