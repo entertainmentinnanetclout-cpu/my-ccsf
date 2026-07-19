@@ -18,7 +18,7 @@ Execution branch: `finalize/ccsf-release-readiness`
 
 - Open pull requests: **0**
 - Current `main`: `3d2ddc37402e01fb7b0176b22ec0956367c34f3f`
-- Supabase branch state: **MIGRATIONS_FAILED**
+- Supabase migration drift: **Resolved** — branch action reports all migrations up to date; status `FUNCTIONS_DEPLOYED`, preview `ACTIVE_HEALTHY`
 - Failure reason: production migration versions exist remotely but are absent from `supabase/migrations`
 - Security adviser: leaked-password protection disabled (warning)
 - Performance adviser: informational unused-index notices only; retain until representative Pilot traffic exists
@@ -63,7 +63,7 @@ Phase 0 PR approved and all required checks green.
 
 ## Phase 1 — Migration reconciliation and Supabase health
 
-**Status:** Implementation and live verification complete; awaiting merge-triggered branch resync
+**Status:** Complete — merged, migrations current, functions deployed, preview healthy
 
 **Depends on:** Phase 0
 
@@ -183,8 +183,7 @@ Formal go/no-go approval. Merge by reviewed PR only; tag the release and monitor
 
 ## Immediate next actions
 
-1. Merge the verified Phase 0–1 reconciliation PR and confirm Supabase `main` becomes healthy.
-2. Recover the complete approved logo asset package.
-3. Execute the canonical CCSF branding inventory and replacement.
-4. Prove whether the three divergent branches contain any unique work worth carrying forward.
-5. Continue later phases through controlled, verified PRs.
+1. Recover the complete approved logo asset package.
+2. Execute the canonical CCSF branding inventory and replacement.
+3. Prove whether the three divergent branches contain any unique work worth carrying forward.
+4. Continue later phases through controlled, verified PRs.
