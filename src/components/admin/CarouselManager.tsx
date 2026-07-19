@@ -44,7 +44,7 @@ const CAMPUSES = [
 
 const CATEGORIES = ['Campus', 'Residence', 'Campus Entrance'] as const;
 const MAX_IMAGES_PER_CAMPUS = 30;
-const MAX_IMAGE_BYTES = 15 * 1024 * 1024;
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
 interface CarouselImage {
@@ -187,7 +187,7 @@ export const CarouselManager = () => {
       return;
     }
     if (file.size > MAX_IMAGE_BYTES) {
-      toast({ title: 'File too large', description: 'Maximum image size is 15 MB.', variant: 'destructive' });
+      toast({ title: 'File too large', description: 'Maximum image size is 5 MB.', variant: 'destructive' });
       return;
     }
 
@@ -432,7 +432,7 @@ export const CarouselManager = () => {
                 <div className="group relative"><div className="aspect-video overflow-hidden rounded-lg bg-muted"><img src={formData.image_url} alt="Carousel preview" className="h-full w-full object-cover" onError={() => toast({ title: 'Preview unavailable', description: 'Choose a different image before saving.', variant: 'destructive' })} /></div><Button type="button" variant="secondary" size="sm" className="absolute bottom-2 right-2" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>Change</Button></div>
               ) : (
                 <button type="button" onClick={() => fileInputRef.current?.click()} disabled={isUploading} className="flex aspect-video w-full flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed border-muted-foreground/30 text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                  {isUploading ? <><Loader2 className="h-8 w-8 animate-spin text-primary" /><span className="text-sm">Uploading image…</span></> : <><Upload className="h-8 w-8" /><span className="text-sm">Choose JPG, PNG or WebP (max 15 MB)</span></>}
+                  {isUploading ? <><Loader2 className="h-8 w-8 animate-spin text-primary" /><span className="text-sm">Uploading image…</span></> : <><Upload className="h-8 w-8" /><span className="text-sm">Choose JPG, PNG or WebP (max 5 MB)</span></>}
                 </button>
               )}
             </div>
