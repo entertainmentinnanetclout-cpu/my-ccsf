@@ -2,8 +2,10 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { isPilotAdminPath, isPilotSecurityPath, isPilotStudentPath, PILOT_ROUTES } from '@/config/pilot';
 
-// Use actual database role names
+const PILOT_AUTH_PATH = '/pilot/auth';
+
 type UserRole = 'student' | 'admin' | 'security' | null;
 
 interface UserProfile {
@@ -29,6 +31,12 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+function pilotDestination(role: Exclude<UserRole, null>): string {
+  if (role === 'admin') return PILOT_ROUTES.admin;
+  if (role === 'security') return PILOT_ROUTES.campus;
+  return PILOT_ROUTES.landing;
+}
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -40,29 +48,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchUserRoleAndProfile = useCallback(async (userId: string) => {
     try {
-      // Fetch all roles from user_roles table
       const { data: roleData } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', userId);
 
-      // Prioritize roles: admin > security > student
       let dbRole: UserRole = null;
       if (roleData && roleData.length > 0) {
-        const roles = roleData.map(r => r.role);
-        if (roles.includes('admin')) {
-          dbRole = 'admin';
-        } else if (roles.includes('security')) {
-          dbRole = 'security';
-        } else if (roles.includes('student')) {
-          dbRole = 'student';
-        }
+        const roles = roleData.map((item) => item.role);
+        if (roles.includes('admin')) dbRole = 'admin';
+        else if (roles.includes('security')) dbRole = 'security';
+        else if (roles.includes('student')) dbRole = 'student';
       }
-
-
       setUserRole(dbRole);
 
-      // Fetch profile data including profile_completed status
       const { data: profileData } = await supabase
         .from('profiles')
         .select('id, full_name, campus, email, profile_completed')
@@ -70,10 +69,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .maybeSingle();
 
       if (profileData) {
-        setUserProfile({
-          ...profileData,
-          profile_completed: profileData.profile_completed ?? false
-        });
+        setUserProfile({ ...profileData, profile_completed: profileData.profile_completed ?? false });
       }
 
       return { role: dbRole, profileCompleted: profileData?.profile_completed ?? false };
@@ -83,67 +79,66 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  const redirectBasedOnRole = useCallback((role: UserRole, profileCompleted: boolean) => {
-    const currentPath = location.pathname;
+  const redirectBasedOnRole = useCallback((role: UserRole, profileCompletedValue: boolean) => {
+    if (!role) return;
 
-    // Students with incomplete profiles go to profile completion
-    if (role === 'student' && !profileCompleted) {
+    const currentPath = location.pathname;
+    const isPilotEntry = currentPath === PILOT_AUTH_PATH
+      || isPilotStudentPath(currentPath)
+      || isPilotSecurityPath(currentPath)
+      || isPilotAdminPath(currentPath);
+
+    if (role === 'student' && !profileCompletedValue) {
       if (currentPath !== '/profile-completion') {
-        navigate('/profile-completion', { replace: true });
+        navigate('/profile-completion', {
+          replace: true,
+          state: isPilotEntry ? { from: PILOT_ROUTES.landing } : undefined,
+        });
       }
       return;
     }
 
-    // Redirect to correct portal based on role
+    if (currentPath === PILOT_AUTH_PATH) {
+      navigate(pilotDestination(role), { replace: true });
+      return;
+    }
+
     if (role === 'admin') {
-      if (!currentPath.startsWith('/admin')) {
-        navigate('/admin', { replace: true });
-      }
+      const allowed = currentPath.startsWith('/admin') || isPilotSecurityPath(currentPath) || currentPath.startsWith('/profile') || currentPath === '/office' || currentPath === '/judiciary';
+      if (!allowed) navigate('/admin', { replace: true });
     } else if (role === 'security') {
-      if (!currentPath.startsWith('/security') && !currentPath.startsWith('/admin')) {
-        navigate('/security', { replace: true });
-      }
+      const allowed = currentPath.startsWith('/security') || currentPath.startsWith('/profile') || currentPath === '/office' || currentPath === '/judiciary';
+      if (!allowed || isPilotAdminPath(currentPath)) navigate('/security', { replace: true });
     } else if (role === 'student') {
-      if (!currentPath.startsWith('/dashboard') && !currentPath.startsWith('/profile')) {
-        navigate('/dashboard', { replace: true });
-      }
+      const allowed = currentPath.startsWith('/dashboard') || currentPath.startsWith('/profile') || isPilotStudentPath(currentPath);
+      if (!allowed || isPilotSecurityPath(currentPath) || isPilotAdminPath(currentPath)) navigate('/dashboard', { replace: true });
     }
   }, [location.pathname, navigate]);
 
   useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          // Use setTimeout to prevent potential deadlock
-          setTimeout(() => {
-            fetchUserRoleAndProfile(session.user.id).then(({ role, profileCompleted }) => {
-              setLoading(false);
-              if (role && event === 'SIGNED_IN') {
-                redirectBasedOnRole(role, profileCompleted);
-              }
-            });
-          }, 0);
-        } else {
-          setUserRole(null);
-          setUserProfile(null);
-          setLoading(false);
-        }
-      }
-    );
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      setSession(nextSession);
+      setUser(nextSession?.user ?? null);
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        fetchUserRoleAndProfile(session.user.id).then(() => {
-          setLoading(false);
-        });
+      if (nextSession?.user) {
+        setTimeout(() => {
+          fetchUserRoleAndProfile(nextSession.user.id).then(({ role, profileCompleted }) => {
+            setLoading(false);
+            if (role && event === 'SIGNED_IN') redirectBasedOnRole(role, profileCompleted);
+          });
+        }, 0);
+      } else {
+        setUserRole(null);
+        setUserProfile(null);
+        setLoading(false);
+      }
+    });
+
+    supabase.auth.getSession().then(({ data: { session: existingSession } }) => {
+      setSession(existingSession);
+      setUser(existingSession?.user ?? null);
+      if (existingSession?.user) {
+        fetchUserRoleAndProfile(existingSession.user.id).then(() => setLoading(false));
       } else {
         setLoading(false);
       }
@@ -161,24 +156,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     navigate('/auth');
   }, [navigate]);
 
-  // Helper booleans for convenience
   const isSuperAdmin = userRole === 'admin';
   const isCampusAdmin = userRole === 'security';
   const isStudent = userRole === 'student';
   const profileCompleted = userProfile?.profile_completed ?? false;
 
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      session, 
-      userRole, 
+    <AuthContext.Provider value={{
+      user,
+      session,
+      userRole,
       userProfile,
-      loading, 
+      loading,
       signOut,
       isSuperAdmin,
       isCampusAdmin,
       isStudent,
-      profileCompleted
+      profileCompleted,
     }}>
       {children}
     </AuthContext.Provider>
@@ -187,8 +181,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (context === undefined) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 };

@@ -178,6 +178,33 @@ export type Database = {
           },
         ]
       }
+      app_settings: {
+        Row: {
+          created_at: string
+          description: string | null
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+          value: Json
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Relationships: []
+      }
       bento_layouts: {
         Row: {
           created_at: string
@@ -199,6 +226,54 @@ export type Database = {
           layout?: Json
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      campus_emergency_contacts: {
+        Row: {
+          availability: string | null
+          campus: Database["public"]["Enums"]["campus_location"] | null
+          created_at: string
+          extension: string | null
+          id: string
+          is_active: boolean
+          label: string
+          last_verified_at: string | null
+          phone_number: string
+          priority: number
+          service: string
+          updated_at: string
+          verified_by: string | null
+        }
+        Insert: {
+          availability?: string | null
+          campus?: Database["public"]["Enums"]["campus_location"] | null
+          created_at?: string
+          extension?: string | null
+          id?: string
+          is_active?: boolean
+          label: string
+          last_verified_at?: string | null
+          phone_number: string
+          priority?: number
+          service: string
+          updated_at?: string
+          verified_by?: string | null
+        }
+        Update: {
+          availability?: string | null
+          campus?: Database["public"]["Enums"]["campus_location"] | null
+          created_at?: string
+          extension?: string | null
+          id?: string
+          is_active?: boolean
+          label?: string
+          last_verified_at?: string | null
+          phone_number?: string
+          priority?: number
+          service?: string
+          updated_at?: string
+          verified_by?: string | null
         }
         Relationships: []
       }
@@ -637,6 +712,7 @@ export type Database = {
           resolved_by: string | null
           signature_data: string | null
           status: Database["public"]["Enums"]["incident_status"]
+          submitted_by: string | null
           title: string
           updated_at: string
         }
@@ -657,6 +733,7 @@ export type Database = {
           resolved_by?: string | null
           signature_data?: string | null
           status?: Database["public"]["Enums"]["incident_status"]
+          submitted_by?: string | null
           title: string
           updated_at?: string
         }
@@ -677,6 +754,7 @@ export type Database = {
           resolved_by?: string | null
           signature_data?: string | null
           status?: Database["public"]["Enums"]["incident_status"]
+          submitted_by?: string | null
           title?: string
           updated_at?: string
         }
@@ -777,6 +855,900 @@ export type Database = {
           },
           {
             foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pilot_attachments: {
+        Row: {
+          checksum: string | null
+          created_at: string
+          id: string
+          mime_type: string
+          original_filename: string | null
+          program_id: string
+          report_id: string
+          session_id: string
+          size_bytes: number
+          storage_path: string
+          uploaded_by: string
+        }
+        Insert: {
+          checksum?: string | null
+          created_at?: string
+          id?: string
+          mime_type: string
+          original_filename?: string | null
+          program_id: string
+          report_id: string
+          session_id: string
+          size_bytes: number
+          storage_path: string
+          uploaded_by?: string
+        }
+        Update: {
+          checksum?: string | null
+          created_at?: string
+          id?: string
+          mime_type?: string
+          original_filename?: string | null
+          program_id?: string
+          report_id?: string
+          session_id?: string
+          size_bytes?: number
+          storage_path?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pilot_attachments_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "pilot_programs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pilot_attachments_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "pilot_reports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pilot_attachments_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "pilot_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pilot_attachments_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pilot_audit_logs: {
+        Row: {
+          action: string
+          actor_campus: Database["public"]["Enums"]["campus_location"] | null
+          actor_id: string
+          actor_role: Database["public"]["Enums"]["user_role"]
+          affected_count: number
+          created_at: string
+          entity_id: string | null
+          entity_type: string
+          id: string
+          metadata: Json
+          program_id: string | null
+          reason: string | null
+        }
+        Insert: {
+          action: string
+          actor_campus?: Database["public"]["Enums"]["campus_location"] | null
+          actor_id: string
+          actor_role: Database["public"]["Enums"]["user_role"]
+          affected_count?: number
+          created_at?: string
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          metadata?: Json
+          program_id?: string | null
+          reason?: string | null
+        }
+        Update: {
+          action?: string
+          actor_campus?: Database["public"]["Enums"]["campus_location"] | null
+          actor_id?: string
+          actor_role?: Database["public"]["Enums"]["user_role"]
+          affected_count?: number
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          metadata?: Json
+          program_id?: string | null
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pilot_audit_logs_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "pilot_programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pilot_feature_tests: {
+        Row: {
+          created_at: string
+          duration_ms: number | null
+          error_code: string | null
+          feature_key: string
+          id: string
+          metadata: Json
+          outcome: Database["public"]["Enums"]["pilot_test_outcome"]
+          program_id: string
+          report_id: string | null
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration_ms?: number | null
+          error_code?: string | null
+          feature_key: string
+          id?: string
+          metadata?: Json
+          outcome: Database["public"]["Enums"]["pilot_test_outcome"]
+          program_id: string
+          report_id?: string | null
+          session_id: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          duration_ms?: number | null
+          error_code?: string | null
+          feature_key?: string
+          id?: string
+          metadata?: Json
+          outcome?: Database["public"]["Enums"]["pilot_test_outcome"]
+          program_id?: string
+          report_id?: string | null
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pilot_feature_tests_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "pilot_programs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pilot_feature_tests_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "pilot_reports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pilot_feature_tests_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "pilot_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pilot_feature_tests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pilot_feedback: {
+        Row: {
+          clarity_rating: number | null
+          comments: string | null
+          confidence_rating: number | null
+          created_at: string
+          ease_of_use_rating: number | null
+          id: string
+          program_id: string
+          report_id: string | null
+          session_id: string
+          updated_at: string
+          user_id: string
+          would_use_in_emergency: boolean | null
+        }
+        Insert: {
+          clarity_rating?: number | null
+          comments?: string | null
+          confidence_rating?: number | null
+          created_at?: string
+          ease_of_use_rating?: number | null
+          id?: string
+          program_id: string
+          report_id?: string | null
+          session_id: string
+          updated_at?: string
+          user_id?: string
+          would_use_in_emergency?: boolean | null
+        }
+        Update: {
+          clarity_rating?: number | null
+          comments?: string | null
+          confidence_rating?: number | null
+          created_at?: string
+          ease_of_use_rating?: number | null
+          id?: string
+          program_id?: string
+          report_id?: string | null
+          session_id?: string
+          updated_at?: string
+          user_id?: string
+          would_use_in_emergency?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pilot_feedback_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "pilot_programs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pilot_feedback_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "pilot_reports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pilot_feedback_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "pilot_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pilot_feedback_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pilot_location_events: {
+        Row: {
+          accuracy: number | null
+          altitude: number | null
+          captured_at: string
+          created_at: string
+          heading: number | null
+          id: string
+          latitude: number
+          longitude: number
+          program_id: string
+          report_id: string
+          session_id: string
+          source: Database["public"]["Enums"]["pilot_location_source"]
+          speed: number | null
+          user_id: string
+        }
+        Insert: {
+          accuracy?: number | null
+          altitude?: number | null
+          captured_at?: string
+          created_at?: string
+          heading?: number | null
+          id?: string
+          latitude: number
+          longitude: number
+          program_id: string
+          report_id: string
+          session_id: string
+          source: Database["public"]["Enums"]["pilot_location_source"]
+          speed?: number | null
+          user_id: string
+        }
+        Update: {
+          accuracy?: number | null
+          altitude?: number | null
+          captured_at?: string
+          created_at?: string
+          heading?: number | null
+          id?: string
+          latitude?: number
+          longitude?: number
+          program_id?: string
+          report_id?: string
+          session_id?: string
+          source?: Database["public"]["Enums"]["pilot_location_source"]
+          speed?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pilot_location_events_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "pilot_programs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pilot_location_events_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "pilot_reports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pilot_location_events_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "pilot_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pilot_location_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pilot_notifications: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          is_read: boolean
+          message: string
+          notification_type: Database["public"]["Enums"]["pilot_notification_type"]
+          program_id: string
+          read_at: string | null
+          report_id: string | null
+          session_id: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          is_read?: boolean
+          message: string
+          notification_type: Database["public"]["Enums"]["pilot_notification_type"]
+          program_id: string
+          read_at?: string | null
+          report_id?: string | null
+          session_id?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          notification_type?: Database["public"]["Enums"]["pilot_notification_type"]
+          program_id?: string
+          read_at?: string | null
+          report_id?: string | null
+          session_id?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pilot_notifications_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "pilot_programs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pilot_notifications_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "pilot_reports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pilot_notifications_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "pilot_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pilot_notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pilot_participants: {
+        Row: {
+          campus: Database["public"]["Enums"]["campus_location"]
+          consent_version: string | null
+          consented_at: string | null
+          created_at: string
+          id: string
+          invited_at: string
+          invited_by: string
+          program_id: string
+          status: Database["public"]["Enums"]["pilot_participant_status"]
+          updated_at: string
+          user_id: string
+          withdrawal_reason: string | null
+          withdrawn_at: string | null
+        }
+        Insert: {
+          campus: Database["public"]["Enums"]["campus_location"]
+          consent_version?: string | null
+          consented_at?: string | null
+          created_at?: string
+          id?: string
+          invited_at?: string
+          invited_by?: string
+          program_id: string
+          status?: Database["public"]["Enums"]["pilot_participant_status"]
+          updated_at?: string
+          user_id: string
+          withdrawal_reason?: string | null
+          withdrawn_at?: string | null
+        }
+        Update: {
+          campus?: Database["public"]["Enums"]["campus_location"]
+          consent_version?: string | null
+          consented_at?: string | null
+          created_at?: string
+          id?: string
+          invited_at?: string
+          invited_by?: string
+          program_id?: string
+          status?: Database["public"]["Enums"]["pilot_participant_status"]
+          updated_at?: string
+          user_id?: string
+          withdrawal_reason?: string | null
+          withdrawn_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pilot_participants_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pilot_participants_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "pilot_programs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pilot_participants_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pilot_programs: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          eligible_campuses: Database["public"]["Enums"]["campus_location"][]
+          ends_at: string | null
+          id: string
+          name: string
+          retention_days: number
+          starts_at: string | null
+          status: Database["public"]["Enums"]["pilot_program_status"]
+          updated_at: string
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          eligible_campuses: Database["public"]["Enums"]["campus_location"][]
+          ends_at?: string | null
+          id?: string
+          name: string
+          retention_days?: number
+          starts_at?: string | null
+          status?: Database["public"]["Enums"]["pilot_program_status"]
+          updated_at?: string
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          eligible_campuses?: Database["public"]["Enums"]["campus_location"][]
+          ends_at?: string | null
+          id?: string
+          name?: string
+          retention_days?: number
+          starts_at?: string | null
+          status?: Database["public"]["Enums"]["pilot_program_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pilot_programs_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pilot_report_events: {
+        Row: {
+          actor_id: string
+          actor_role: Database["public"]["Enums"]["user_role"]
+          created_at: string
+          event_type: Database["public"]["Enums"]["pilot_event_type"]
+          from_status: Database["public"]["Enums"]["pilot_report_status"] | null
+          id: string
+          metadata: Json
+          notes: string | null
+          program_id: string
+          report_id: string
+          session_id: string
+          to_status: Database["public"]["Enums"]["pilot_report_status"] | null
+        }
+        Insert: {
+          actor_id: string
+          actor_role: Database["public"]["Enums"]["user_role"]
+          created_at?: string
+          event_type: Database["public"]["Enums"]["pilot_event_type"]
+          from_status?: Database["public"]["Enums"]["pilot_report_status"] | null
+          id?: string
+          metadata?: Json
+          notes?: string | null
+          program_id: string
+          report_id: string
+          session_id: string
+          to_status?: Database["public"]["Enums"]["pilot_report_status"] | null
+        }
+        Update: {
+          actor_id?: string
+          actor_role?: Database["public"]["Enums"]["user_role"]
+          created_at?: string
+          event_type?: Database["public"]["Enums"]["pilot_event_type"]
+          from_status?: Database["public"]["Enums"]["pilot_report_status"] | null
+          id?: string
+          metadata?: Json
+          notes?: string | null
+          program_id?: string
+          report_id?: string
+          session_id?: string
+          to_status?: Database["public"]["Enums"]["pilot_report_status"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pilot_report_events_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "pilot_programs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pilot_report_events_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "pilot_reports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pilot_report_events_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "pilot_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pilot_reports: {
+        Row: {
+          assigned_to: string | null
+          campus: Database["public"]["Enums"]["campus_location"]
+          category: Database["public"]["Enums"]["incident_category"]
+          created_at: string
+          deleted_at: string | null
+          description: string
+          id: string
+          is_anonymous: boolean
+          location_accuracy: number | null
+          location_description: string | null
+          location_lat: number | null
+          location_lng: number | null
+          participant_id: string
+          program_id: string
+          reference_number: string
+          scenario_id: string | null
+          session_id: string
+          simulation_completed_at: string | null
+          status: Database["public"]["Enums"]["pilot_report_status"]
+          submitted_at: string
+          submitted_by: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          campus: Database["public"]["Enums"]["campus_location"]
+          category: Database["public"]["Enums"]["incident_category"]
+          created_at?: string
+          deleted_at?: string | null
+          description: string
+          id?: string
+          is_anonymous?: boolean
+          location_accuracy?: number | null
+          location_description?: string | null
+          location_lat?: number | null
+          location_lng?: number | null
+          participant_id: string
+          program_id: string
+          reference_number?: string
+          scenario_id?: string | null
+          session_id: string
+          simulation_completed_at?: string | null
+          status?: Database["public"]["Enums"]["pilot_report_status"]
+          submitted_at?: string
+          submitted_by?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          campus?: Database["public"]["Enums"]["campus_location"]
+          category?: Database["public"]["Enums"]["incident_category"]
+          created_at?: string
+          deleted_at?: string | null
+          description?: string
+          id?: string
+          is_anonymous?: boolean
+          location_accuracy?: number | null
+          location_description?: string | null
+          location_lat?: number | null
+          location_lng?: number | null
+          participant_id?: string
+          program_id?: string
+          reference_number?: string
+          scenario_id?: string | null
+          session_id?: string
+          simulation_completed_at?: string | null
+          status?: Database["public"]["Enums"]["pilot_report_status"]
+          submitted_at?: string
+          submitted_by?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pilot_reports_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pilot_reports_participant_id_fkey"
+            columns: ["participant_id"]
+            isOneToOne: false
+            referencedRelation: "pilot_participants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pilot_reports_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "pilot_programs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pilot_reports_scenario_id_fkey"
+            columns: ["scenario_id"]
+            isOneToOne: false
+            referencedRelation: "pilot_scenarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pilot_reports_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "pilot_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pilot_reports_submitted_by_fkey"
+            columns: ["submitted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pilot_scenarios: {
+        Row: {
+          created_at: string
+          created_by: string
+          display_order: number
+          expected_category: Database["public"]["Enums"]["incident_category"] | null
+          id: string
+          instructions: string
+          is_active: boolean
+          program_id: string
+          requires_attachment: boolean
+          requires_live_tracking: boolean
+          requires_location: boolean
+          requires_notification: boolean
+          requires_resource_download: boolean
+          scenario_type: Database["public"]["Enums"]["pilot_scenario_type"]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string
+          display_order?: number
+          expected_category?: Database["public"]["Enums"]["incident_category"] | null
+          id?: string
+          instructions: string
+          is_active?: boolean
+          program_id: string
+          requires_attachment?: boolean
+          requires_live_tracking?: boolean
+          requires_location?: boolean
+          requires_notification?: boolean
+          requires_resource_download?: boolean
+          scenario_type: Database["public"]["Enums"]["pilot_scenario_type"]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          display_order?: number
+          expected_category?: Database["public"]["Enums"]["incident_category"] | null
+          id?: string
+          instructions?: string
+          is_active?: boolean
+          program_id?: string
+          requires_attachment?: boolean
+          requires_live_tracking?: boolean
+          requires_location?: boolean
+          requires_notification?: boolean
+          requires_resource_download?: boolean
+          scenario_type?: Database["public"]["Enums"]["pilot_scenario_type"]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pilot_scenarios_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pilot_scenarios_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "pilot_programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pilot_sessions: {
+        Row: {
+          browser_name: string | null
+          browser_version: string | null
+          campus: Database["public"]["Enums"]["campus_location"]
+          completed_at: string | null
+          created_at: string
+          device_type: string | null
+          expires_at: string
+          id: string
+          last_activity_at: string
+          network_type: string | null
+          operating_system: string | null
+          participant_id: string
+          program_id: string
+          started_at: string
+          status: Database["public"]["Enums"]["pilot_session_status"]
+          updated_at: string
+          user_id: string
+          viewport_height: number | null
+          viewport_width: number | null
+        }
+        Insert: {
+          browser_name?: string | null
+          browser_version?: string | null
+          campus: Database["public"]["Enums"]["campus_location"]
+          completed_at?: string | null
+          created_at?: string
+          device_type?: string | null
+          expires_at?: string
+          id?: string
+          last_activity_at?: string
+          network_type?: string | null
+          operating_system?: string | null
+          participant_id: string
+          program_id: string
+          started_at?: string
+          status?: Database["public"]["Enums"]["pilot_session_status"]
+          updated_at?: string
+          user_id?: string
+          viewport_height?: number | null
+          viewport_width?: number | null
+        }
+        Update: {
+          browser_name?: string | null
+          browser_version?: string | null
+          campus?: Database["public"]["Enums"]["campus_location"]
+          completed_at?: string | null
+          created_at?: string
+          device_type?: string | null
+          expires_at?: string
+          id?: string
+          last_activity_at?: string
+          network_type?: string | null
+          operating_system?: string | null
+          participant_id?: string
+          program_id?: string
+          started_at?: string
+          status?: Database["public"]["Enums"]["pilot_session_status"]
+          updated_at?: string
+          user_id?: string
+          viewport_height?: number | null
+          viewport_width?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pilot_sessions_participant_id_fkey"
+            columns: ["participant_id"]
+            isOneToOne: false
+            referencedRelation: "pilot_participants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pilot_sessions_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "pilot_programs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pilot_sessions_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -1011,7 +1983,24 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      pilot_aggregate_results: {
+        Row: {
+          campus: Database["public"]["Enums"]["campus_location"] | null
+          category: Database["public"]["Enums"]["incident_category"] | null
+          program_id: string | null
+          report_count: number | null
+          status: Database["public"]["Enums"]["pilot_report_status"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pilot_reports_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "pilot_programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       assign_campus_admin: {
@@ -1057,6 +2046,119 @@ export type Database = {
       is_campus_admin: { Args: { _user_id: string }; Returns: boolean }
       is_head_admin: { Args: { _user_id: string }; Returns: boolean }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
+      pilot_add_report_note: {
+        Args: { p_notes: string; p_report_id: string }
+        Returns: Database["public"]["Tables"]["pilot_report_events"]["Row"]
+      }
+      pilot_cleanup_plan: {
+        Args: { p_entity_id: string; p_kind: string; p_reason: string }
+        Returns: Json
+      }
+      pilot_complete_cleanup: {
+        Args: { p_actor_id: string; p_entity_id: string; p_kind: string; p_reason: string }
+        Returns: Json
+      }
+      pilot_complete_entity_cleanup: {
+        Args: { p_actor_id: string; p_entity_id: string; p_reason: string }
+        Returns: Json
+      }
+      pilot_complete_session_cleanup: {
+        Args: { p_actor_id: string; p_reason: string; p_session_id: string }
+        Returns: Json
+      }
+      pilot_entity_cleanup_plan: { Args: { p_entity_id: string; p_reason: string }; Returns: Json }
+      pilot_execute_expired_cleanup: { Args: never; Returns: Json }
+      pilot_execute_program_cleanup: {
+        Args: { p_program_id: string; p_reason: string }
+        Returns: Json
+      }
+      pilot_finalize_delete_report: {
+        Args: { p_actor_id: string; p_reason: string; p_report_id: string }
+        Returns: Json
+      }
+      pilot_finalize_delete_session: {
+        Args: { p_actor_id: string; p_reason: string; p_session_id: string }
+        Returns: Json
+      }
+      pilot_finalize_purge_campus: {
+        Args: {
+          p_actor_id: string
+          p_campus: Database["public"]["Enums"]["campus_location"]
+          p_program_id: string
+          p_reason: string
+        }
+        Returns: Json
+      }
+      pilot_finalize_purge_expired: {
+        Args: { p_actor_id: string; p_session_ids: string[] }
+        Returns: Json
+      }
+      pilot_finalize_purge_program: {
+        Args: { p_actor_id: string; p_program_id: string; p_reason: string }
+        Returns: Json
+      }
+      pilot_finish_workflow: { Args: { p_id: string; p_reason: string }; Returns: Json }
+      pilot_safe_results: {
+        Args: { p_campus?: Database["public"]["Enums"]["campus_location"]; p_program_id: string }
+        Returns: Json
+      }
+      pilot_session_cleanup_plan: { Args: { p_reason: string; p_session_id: string }; Returns: Json }
+      pilot_staff_message: {
+        Args: {
+          p_content: string
+          p_kind: Database["public"]["Enums"]["pilot_notification_type"]
+          p_report_id: string
+          p_title: string
+        }
+        Returns: Database["public"]["Tables"]["pilot_notifications"]["Row"]
+      }
+      pilot_consent_participation: {
+        Args: { p_consent_version: string; p_participant_id: string }
+        Returns: Database["public"]["Tables"]["pilot_participants"]["Row"]
+      }
+      pilot_create_notification: {
+        Args: {
+          p_message: string
+          p_report_id: string
+          p_title: string
+          p_type: Database["public"]["Enums"]["pilot_notification_type"]
+        }
+        Returns: Database["public"]["Tables"]["pilot_notifications"]["Row"]
+      }
+      pilot_delete_report: { Args: { p_reason: string; p_report_id: string }; Returns: Json }
+      pilot_delete_session: { Args: { p_reason: string; p_session_id: string }; Returns: Json }
+      pilot_export_data: {
+        Args: {
+          p_campus?: Database["public"]["Enums"]["campus_location"]
+          p_identified?: boolean
+          p_program_id: string
+        }
+        Returns: Json
+      }
+      pilot_mark_notification_read: {
+        Args: { p_notification_id: string }
+        Returns: Database["public"]["Tables"]["pilot_notifications"]["Row"]
+      }
+      pilot_purge_campus: {
+        Args: {
+          p_campus: Database["public"]["Enums"]["campus_location"]
+          p_program_id: string
+          p_reason: string
+        }
+        Returns: Json
+      }
+      pilot_purge_expired: { Args: never; Returns: Json }
+      pilot_purge_program: { Args: { p_program_id: string; p_reason: string }; Returns: Json }
+      pilot_transition_report: {
+        Args: {
+          p_assigned_to?: string
+          p_notes?: string
+          p_report_id: string
+          p_to_status: Database["public"]["Enums"]["pilot_report_status"]
+        }
+        Returns: Database["public"]["Tables"]["pilot_reports"]["Row"]
+      }
+      pilot_withdraw_session: { Args: { p_reason: string; p_session_id: string }; Returns: Json }
       remove_campus_admin: {
         Args: {
           p_campus: Database["public"]["Enums"]["campus_location"]
@@ -1100,6 +2202,25 @@ export type Database = {
         | "Cyber related crime (bullying etc.)"
         | "Vandalism"
       incident_status: "pending" | "assigned" | "resolved" | "rejected"
+      pilot_event_type:
+        | "report_created" | "status_changed" | "assigned" | "note_added"
+        | "location_started" | "location_stopped" | "attachment_added"
+        | "notification_created" | "simulation_completed" | "report_deleted"
+      pilot_location_source: "initial_fix" | "live_tracking" | "manual_pin" | "resumed_tracking"
+      pilot_notification_type:
+        | "report_received" | "status_changed" | "assigned" | "simulation_completed"
+        | "action_required" | "session_expiring" | "programme_message"
+      pilot_participant_status:
+        | "invited" | "consented" | "active" | "completed" | "declined" | "withdrawn" | "removed"
+      pilot_program_status: "draft" | "active" | "paused" | "completed" | "archived"
+      pilot_report_status:
+        | "received" | "assessing" | "assigned" | "in_progress"
+        | "simulation_completed" | "cancelled" | "withdrawn" | "expired"
+      pilot_scenario_type:
+        | "standard_report" | "emergency_simulation" | "location_test" | "live_tracking_test"
+        | "attachment_test" | "notification_test" | "resource_download" | "end_to_end"
+      pilot_session_status: "in_progress" | "completed" | "abandoned" | "withdrawn" | "expired"
+      pilot_test_outcome: "passed" | "failed" | "skipped" | "denied" | "abandoned"
       residence_name:
         | "zeddishoef"
         | "headhoff"
@@ -1279,6 +2400,26 @@ export const Constants = {
         "Vandalism",
       ],
       incident_status: ["pending", "assigned", "resolved", "rejected"],
+      pilot_event_type: [
+        "report_created", "status_changed", "assigned", "note_added", "location_started",
+        "location_stopped", "attachment_added", "notification_created", "simulation_completed", "report_deleted",
+      ],
+      pilot_location_source: ["initial_fix", "live_tracking", "manual_pin", "resumed_tracking"],
+      pilot_notification_type: [
+        "report_received", "status_changed", "assigned", "simulation_completed",
+        "action_required", "session_expiring", "programme_message",
+      ],
+      pilot_participant_status: ["invited", "consented", "active", "completed", "declined", "withdrawn", "removed"],
+      pilot_program_status: ["draft", "active", "paused", "completed", "archived"],
+      pilot_report_status: [
+        "received", "assessing", "assigned", "in_progress", "simulation_completed", "cancelled", "withdrawn", "expired",
+      ],
+      pilot_scenario_type: [
+        "standard_report", "emergency_simulation", "location_test", "live_tracking_test",
+        "attachment_test", "notification_test", "resource_download", "end_to_end",
+      ],
+      pilot_session_status: ["in_progress", "completed", "abandoned", "withdrawn", "expired"],
+      pilot_test_outcome: ["passed", "failed", "skipped", "denied", "abandoned"],
       residence_name: [
         "zeddishoef",
         "headhoff",

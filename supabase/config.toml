@@ -1,4 +1,34 @@
 project_id = "lfelzsubrlqwcsnetpov"
 
 [functions.send-push-notification]
-verify_jwt = false
+verify_jwt = true
+
+[functions.create-campus-admin]
+verify_jwt = true
+
+[functions.reset-staff-password]
+verify_jwt = true
+
+[functions.pilot-create-session]
+verify_jwt = true
+
+[functions.pilot-submit-report]
+verify_jwt = true
+
+[functions.pilot-transition-status]
+verify_jwt = true
+
+[functions.pilot-create-notification]
+verify_jwt = true
+
+[functions.pilot-delete-report]
+verify_jwt = true
+
+[functions.pilot-delete-session]
+verify_jwt = true
+
+[functions.pilot-purge-data]
+verify_jwt = true
+
+[functions.pilot-export-results]
+verify_jwt = true

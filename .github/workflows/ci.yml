@@ -1,0 +1,47 @@
+name: Pilot QA and Production Build Verification
+
+on:
+  push:
+    branches:
+      - main
+      - 'feature/**'
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  qa:
+    runs-on: ubuntu-latest
+    env:
+      VITE_SUPABASE_URL: https://lfelzsubrlqwcsnetpov.supabase.co
+      VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_mk06MWImT-q1YuV_zFYsDg_r61IHhuO
+      VITE_VAPID_PUBLIC_KEY: ''
+      VITE_PILOT_MODE_ENABLED: 'true'
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify Pilot production isolation
+        run: npm run test:pilot-isolation
+
+      - name: Type-check application
+        run: npm run typecheck
+
+      - name: Lint application
+        run: npm run lint
+
+      - name: Build production application
+        run: npm run build

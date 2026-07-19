@@ -9,7 +9,9 @@ import React from 'react';
 const queryClient = new QueryClient();
 
 import { AuthProvider } from './contexts/AuthContext';
+import { PilotModeProvider } from './contexts/PilotModeContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { PilotRouteGuard } from './components/pilot/PilotRouteGuard';
 import Layout from './components/shared/Layout';
 import PWAInstallPrompt from './components/shared/PWAInstallPrompt';
 import Index from './pages/Index';
@@ -22,9 +24,13 @@ import Profile from './pages/Profile';
 import ProfileCompletion from './pages/ProfileCompletion';
 import Judiciary from './pages/Judiciary';
 import Security from './pages/Security';
-
-// PRODUCTION MODE: Authentication required for all protected routes
-const DEV_MODE = false;
+import PilotAuth from './pages/pilot/PilotAuth';
+import PilotLanding from './pages/pilot/PilotLanding';
+import PilotSession from './pages/pilot/PilotSession';
+import PilotReportTracking from './pages/pilot/PilotReportTracking';
+import PilotResources from './pages/pilot/PilotResources';
+import CampusPilotPage from './pages/pilot/CampusPilotPage';
+import SuperAdminPilotPage from './pages/pilot/SuperAdminPilotPage';
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -34,19 +40,52 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <AuthProvider>
-            <>
+            <PilotModeProvider>
               <Routes>
+                <Route path="/pilot/auth" element={<PilotAuth />} />
+
                 <Route element={<Layout />}>
-                  {/* Public routes */}
                   <Route path="/" element={<Index />} />
                   <Route path="/auth" element={<Auth />} />
-                  
-                  {/* Protected routes with role-based access */}
+
                   <Route path="/dashboard" element={
                     <ProtectedRoute allowedRoles={['student']}>
                       <Dashboard />
                     </ProtectedRoute>
                   } />
+
+                  <Route path="/pilot" element={
+                    <ProtectedRoute allowedRoles={['student']}>
+                      <PilotRouteGuard allowedRoles={['student']}><PilotLanding /></PilotRouteGuard>
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/pilot/session/:sessionId" element={
+                    <ProtectedRoute allowedRoles={['student']}>
+                      <PilotRouteGuard allowedRoles={['student']}><PilotSession /></PilotRouteGuard>
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/pilot/report/:reportId" element={
+                    <ProtectedRoute allowedRoles={['student']}>
+                      <PilotRouteGuard allowedRoles={['student']}><PilotReportTracking /></PilotRouteGuard>
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/pilot/resources" element={
+                    <ProtectedRoute allowedRoles={['student']}>
+                      <PilotRouteGuard allowedRoles={['student']}><PilotResources /></PilotRouteGuard>
+                    </ProtectedRoute>
+                  } />
+
+                  <Route path="/security/pilot" element={
+                    <ProtectedRoute allowedRoles={['security', 'admin']}>
+                      <PilotRouteGuard allowedRoles={['security', 'admin']}><CampusPilotPage /></PilotRouteGuard>
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/admin/pilot" element={
+                    <ProtectedRoute allowedRoles={['admin']}>
+                      <PilotRouteGuard allowedRoles={['admin']}><SuperAdminPilotPage /></PilotRouteGuard>
+                    </ProtectedRoute>
+                  } />
+
                   <Route path="/security/*" element={
                     <ProtectedRoute allowedRoles={['security', 'admin']}>
                       <Security />
@@ -77,12 +116,12 @@ const App = () => (
                       <Judiciary />
                     </ProtectedRoute>
                   } />
-                  
+
                   <Route path="*" element={<NotFound />} />
                 </Route>
               </Routes>
-            </>
-            <PWAInstallPrompt />
+              <PWAInstallPrompt />
+            </PilotModeProvider>
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>

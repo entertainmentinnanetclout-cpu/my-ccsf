@@ -62,7 +62,7 @@ const Dashboard = () => {
         .eq('key', 'welcome_banner_text')
         .maybeSingle();
 
-      if (data?.value) {
+      if (typeof data?.value === 'string' && data.value.trim()) {
         setWelcomeMessage(data.value);
       }
     };

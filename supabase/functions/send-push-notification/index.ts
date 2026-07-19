@@ -1,159 +1,137 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import webpush from "npm:web-push@3.6.7";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
+  status,
+  headers: { ...corsHeaders, "Content-Type": "application/json" },
+});
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
+
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader?.startsWith("Bearer ")) return json({ error: "Unauthorized" }, 401);
+
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const vapidPublicKey = Deno.env.get("VAPID_PUBLIC_KEY");
+  const vapidPrivateKey = Deno.env.get("VAPID_PRIVATE_KEY");
+  const vapidSubject = Deno.env.get("VAPID_SUBJECT");
+
+  const callerClient = createClient(supabaseUrl, anonKey, {
+    global: { headers: { Authorization: authHeader } },
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const adminClient = createClient(supabaseUrl, serviceKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+
+  const { data: { user: caller }, error: callerError } = await callerClient.auth.getUser();
+  if (callerError || !caller) return json({ error: "Unauthorized" }, 401);
+
+  const { data: roleData } = await adminClient
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", caller.id)
+    .in("role", ["admin", "security"]);
+  if (!roleData?.length) return json({ error: "Only authorised staff can send push notifications" }, 403);
+
+  let body: Record<string, unknown>;
+  try {
+    body = await req.json();
+  } catch {
+    return json({ error: "Invalid JSON body" }, 400);
   }
 
-  try {
-    // Verify caller is authenticated and is admin/security staff
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+  const title = typeof body.title === "string" ? body.title.trim() : "";
+  const message = typeof body.message === "string" ? body.message.trim() : "";
+  const url = typeof body.url === "string" ? body.url : "/dashboard";
+  const type = typeof body.type === "string" ? body.type : "general";
+  const userId = typeof body.userId === "string" ? body.userId : null;
+  const userIds = Array.isArray(body.userIds)
+    ? body.userIds.filter((value): value is string => typeof value === "string").slice(0, 500)
+    : [];
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  if ((!userId && userIds.length === 0) || !title || !message) {
+    return json({ error: "userId or userIds, title and message are required" }, 400);
+  }
+  if (title.length > 200 || message.length > 1000) {
+    return json({ error: "Notification content exceeds the allowed length" }, 400);
+  }
 
-    // Verify the caller's identity
-    const anonClient = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
+  if (!vapidPublicKey || !vapidPrivateKey || !vapidSubject) {
+    return json({
+      success: false,
+      delivery_status: "not_configured",
+      sent: 0,
+      failed: 0,
+      message: "Web Push delivery is not configured. Set VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY and VAPID_SUBJECT.",
+    }, 503);
+  }
 
-    const { data: { user: caller }, error: userError } = await anonClient.auth.getUser();
-    if (userError || !caller) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+  webpush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey);
 
-    // Check caller has admin or security role
-    const adminClient = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
+  let subscriptionQuery = adminClient
+    .from("push_subscriptions")
+    .select("id, endpoint, p256dh, auth, user_id");
+  subscriptionQuery = userIds.length > 0
+    ? subscriptionQuery.in("user_id", userIds)
+    : subscriptionQuery.eq("user_id", userId!);
 
-    const { data: roleData } = await adminClient
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', caller.id)
-      .in('role', ['admin', 'security'])
-      .maybeSingle();
+  const { data: subscriptions, error: subscriptionError } = await subscriptionQuery;
+  if (subscriptionError) {
+    console.error("Unable to fetch push subscriptions", subscriptionError);
+    return json({ error: "Unable to fetch push subscriptions" }, 500);
+  }
+  if (!subscriptions?.length) {
+    return json({ success: true, delivery_status: "no_subscriptions", sent: 0, failed: 0 });
+  }
 
-    if (!roleData) {
-      return new Response(
-        JSON.stringify({ error: "Only admin/security staff can send push notifications" }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+  const payload = JSON.stringify({
+    title,
+    body: message,
+    icon: "/app-icon-192.png",
+    badge: "/app-icon-192.png",
+    tag: type,
+    data: { url, type },
+    vibrate: [200, 100, 200],
+    requireInteraction: type === "chat",
+  });
 
-    const { userId, userIds, title, message, url, type } = await req.json();
-
-    if ((!userId && !userIds) || !title || !message) {
-      return new Response(
-        JSON.stringify({ error: 'Missing required fields: userId/userIds, title, message' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Validate input lengths
-    if (typeof title !== 'string' || title.length > 200) {
-      return new Response(
-        JSON.stringify({ error: 'Title must be a string under 200 characters' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-    if (typeof message !== 'string' || message.length > 1000) {
-      return new Response(
-        JSON.stringify({ error: 'Message must be a string under 1000 characters' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Get push subscriptions for user(s)
-    let query = adminClient.from('push_subscriptions').select('*');
-    
-    if (userIds && Array.isArray(userIds)) {
-      query = query.in('user_id', userIds);
-    } else if (userId) {
-      query = query.eq('user_id', userId);
-    }
-
-    const { data: subscriptions, error: subError } = await query;
-
-    if (subError) {
-      console.error('Error fetching subscriptions:', subError);
-      return new Response(
-        JSON.stringify({ error: 'Failed to fetch subscriptions' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    if (!subscriptions || subscriptions.length === 0) {
-      return new Response(
-        JSON.stringify({ success: true, message: 'No subscriptions found' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const payload = JSON.stringify({
-      title,
-      body: message,
-      icon: '/app-icon-192.png',
-      badge: '/app-icon-192.png',
-      tag: type || 'notification',
-      data: { url: url || '/admin', type: type || 'general' },
-      vibrate: [200, 100, 200],
-      requireInteraction: type === 'chat'
-    });
-
-    let successCount = 0;
-    let failCount = 0;
-
-    for (const sub of subscriptions) {
-      try {
-        console.log(`Sending push to: ${sub.endpoint.substring(0, 60)}...`);
-        successCount++;
-      } catch (pushError: unknown) {
-        console.error('Error sending push:', pushError);
-        failCount++;
-        
-        const err = pushError as { statusCode?: number };
-        if (err.statusCode === 410 || err.statusCode === 404) {
-          await adminClient
-            .from('push_subscriptions')
-            .delete()
-            .eq('id', sub.id);
-        }
+  let sent = 0;
+  let failed = 0;
+  for (const subscription of subscriptions) {
+    try {
+      await webpush.sendNotification({
+        endpoint: subscription.endpoint,
+        keys: { p256dh: subscription.p256dh, auth: subscription.auth },
+      }, payload);
+      sent += 1;
+    } catch (error) {
+      failed += 1;
+      const statusCode = typeof error === "object" && error && "statusCode" in error
+        ? Number((error as { statusCode?: number }).statusCode)
+        : 0;
+      console.error("Web Push delivery failed", { subscriptionId: subscription.id, statusCode });
+      if (statusCode === 404 || statusCode === 410) {
+        await adminClient.from("push_subscriptions").delete().eq("id", subscription.id);
       }
     }
-
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        sent: successCount, 
-        failed: failCount,
-        message: `Notification processed for ${successCount} device(s)`
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-
-  } catch (error: unknown) {
-    console.error('Error in send-push-notification:', error);
-    return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
   }
+
+  const deliveryStatus = failed === 0 ? "delivered" : sent > 0 ? "partial" : "failed";
+  return json({
+    success: sent > 0,
+    delivery_status: deliveryStatus,
+    sent,
+    failed,
+  }, sent > 0 ? 200 : 502);
 });
