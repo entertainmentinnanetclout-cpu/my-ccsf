@@ -45,7 +45,7 @@ export function PilotRouteGuard({
     );
   }
 
-  if (!user) return <Navigate to="/auth" replace state={{ from: location.pathname }} />;
+  if (!user) return <Navigate to="/pilot/auth" replace state={{ from: location.pathname }} />;
   if (!userRole || !allowedRoles.includes(userRole)) {
     return (
       <GuardState
@@ -59,7 +59,7 @@ export function PilotRouteGuard({
   }
 
   if (userRole === 'student' && !profileCompleted) {
-    return <Navigate to="/profile-completion" replace state={{ from: location.pathname }} />;
+    return <Navigate to="/profile-completion" replace state={{ from: '/pilot' }} />;
   }
 
   if (userRole === 'security' && !userProfile?.campus) {
