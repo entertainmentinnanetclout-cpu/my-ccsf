@@ -50,15 +50,39 @@ Verified live:
 - governed exports, retention and cleanup controls;
 - zero persistent Phase 8 fixture residue after rollback.
 
-Applied migration:
+Applied and ledger-reconciled migration:
 
 - `20260719213542_phase_8_authenticated_assignment_parity.sql`
 
 The migration changes only isolated Pilot assignment authority. It does not modify production case or dispatch functions.
 
+The final security adviser state contains only the existing project-level warning that leaked-password protection is disabled. No Phase 8 RLS, function, Storage or policy finding was introduced. Performance adviser results are informational unused-index notices and are not release blockers.
+
 ## Accessibility, responsive and PWA verification
 
 The final gate covers keyboard semantics, labelled loading and error states, mobile safe areas, complete mobile navigation, responsive structures, reduced-motion behavior, canonical CCSF/TUT light-dark branding, institutional dark mode, navy `en-ZA` PWA metadata, native icons, controlled service-worker updates and role-aware routes.
+
+## Automated and Preview verification
+
+Implementation head `cf6c0b9465529ee6dcfbdc2b552f0913dd102253` passed GitHub Actions run **#587**:
+
+- strict dependency installation;
+- Pilot production isolation;
+- Phase 3 route activation;
+- core product hardening;
+- Phase 4 Student and Phase 5 Campus-Security parity;
+- Phase 6 Super-Admin parity;
+- Phase 7 authentication, PWA and institutional consistency;
+- Phase 8 end-to-end release gate;
+- transparent canonical CCSF/TUT branding;
+- official/Pilot student-home parity;
+- TypeScript and ESLint;
+- fail-closed production build;
+- approved Pilot Preview build.
+
+Vercel Preview deployment `dpl_2eFGJFs8ju1G7NrXaVrbZo1QEqux` reached `READY` for that exact implementation head. The public shell, official `/auth` route and `/pilot/auth` deep link returned the same final institutional SPA build with `en-ZA` metadata, navy theme identity, canonical icons and viewport safe-area support.
+
+No real account passwords were requested or stored. Authenticated student, campus-security and super-admin behaviour was verified through rollback-only live role/RLS matrices, while direct route registration and fail-closed redirect behaviour were enforced by the automated route gates.
 
 ## Rollback package
 
@@ -69,7 +93,3 @@ The complete Git, Vercel, PWA, Supabase, branding and emergency-isolation rollba
 Phase 8 means the release candidate is technically ready for an explicit decision. It does not authorise merging PR #27, promoting Preview to production, enabling production Pilot Mode, enabling external emergency dispatch or changing the approved colours and logo hierarchy.
 
 Approval to merge, approval to publish and approval to enable production capabilities are separate decisions.
-
-## Final verification record
-
-The final GitHub Actions run, release-candidate head and Vercel Preview deployment are added here after the Phase 8 gate executes on the completed branch head.
