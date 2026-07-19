@@ -27,6 +27,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import {
   addPilotReportNote,
@@ -49,6 +50,7 @@ const EMPTY_DATA: PilotAdminData = {
 const FINAL_STATUSES = new Set<PilotReportStatus>(['simulation_completed', 'cancelled', 'withdrawn', 'expired']);
 
 export function PilotCampusSecurityDashboard({ campus }: { campus: CampusLocation }) {
+  const { userProfile } = useAuth();
   const { toast } = useToast();
   const [activeView, setActiveView] = useState<CampusView>('overview');
   const [data, setData] = useState<PilotAdminData>(EMPTY_DATA);
@@ -110,9 +112,11 @@ export function PilotCampusSecurityDashboard({ campus }: { campus: CampusLocatio
   const metrics = useMemo(() => calculatePilotMetrics(data), [data]);
   const filteredReports = useMemo(() => data.reports.filter((report) => {
     const query = search.trim().toLowerCase();
-    const matchesQuery = !query || report.title.toLowerCase().includes(query) || report.reference_number.toLowerCase().includes(query) || report.category.toLowerCase().includes(query);
-    const matchesStatus = statusFilter === 'all' || report.status === statusFilter;
-    return matchesQuery && matchesStatus;
+    const matchesQuery = !query
+      || report.title.toLowerCase().includes(query)
+      || report.reference_number.toLowerCase().includes(query)
+      || report.category.toLowerCase().includes(query);
+    return matchesQuery && (statusFilter === 'all' || report.status === statusFilter);
   }), [data.reports, search, statusFilter]);
   const activeReports = data.reports.filter((report) => !FINAL_STATUSES.has(report.status));
   const unassignedReports = data.reports.filter((report) => ['received', 'assessing'].includes(report.status));
@@ -132,20 +136,21 @@ export function PilotCampusSecurityDashboard({ campus }: { campus: CampusLocatio
     setActionTitle(mode === 'notify' ? 'Pilot case update' : '');
   };
 
-  const closeAction = () => {
-    if (savingAction) return;
+  const resetAction = () => {
     setActionReport(null);
     setActionMode(null);
     setActionValue('');
   };
 
   const submitAction = async () => {
-    if (!actionReport || !actionMode || !actionValue.trim()) return;
+    if (!actionReport || !actionMode) return;
+    if (actionMode !== 'assign' && !actionValue.trim()) return;
     setSavingAction(true);
     try {
       if (actionMode === 'assign') {
-        await transitionPilotReport(actionReport.id, 'assigned', 'Pilot report assigned to campus security officer.', actionValue.trim());
-        toast({ title: 'Pilot report assigned' });
+        if (!userProfile?.id) throw new Error('Your authenticated staff profile could not be verified.');
+        await transitionPilotReport(actionReport.id, 'assigned', 'Pilot report accepted by the authenticated campus staff member.', userProfile.id);
+        toast({ title: 'Pilot report assigned to you' });
       } else if (actionMode === 'note') {
         await addPilotReportNote(actionReport.id, actionValue.trim());
         toast({ title: 'Pilot timeline note added' });
@@ -158,7 +163,7 @@ export function PilotCampusSecurityDashboard({ campus }: { campus: CampusLocatio
         });
         toast({ title: 'Pilot notification sent' });
       }
-      closeAction();
+      resetAction();
       await refresh();
     } catch (error) {
       toast({ title: 'Pilot action failed', description: error instanceof Error ? error.message : 'Try again.', variant: 'destructive' });
@@ -219,75 +224,46 @@ export function PilotCampusSecurityDashboard({ campus }: { campus: CampusLocatio
         </div>
       </Card>
 
-      {activeView === 'overview' && (
-        <div className="space-y-6">
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <Metric icon={AlertCircle} label="Active simulated cases" value={activeReports.length} />
-            <Metric icon={UserCheck} label="Awaiting assignment" value={unassignedReports.length} />
-            <Metric icon={Users} label="Pilot participants" value={data.participants.length} />
-            <Metric icon={CheckCircle2} label="Completion rate" value={`${metrics.completionRate}%`} />
-          </div>
-          <Card>
-            <CardHeader><CardTitle className="flex items-center gap-2"><Bell className="h-5 w-5 text-destructive" />Realtime Campus Queue</CardTitle><CardDescription>Newest simulated reports visible under campus RLS.</CardDescription></CardHeader>
-            <CardContent className="space-y-3">{activeReports.slice(0, 6).map((report) => <ReportRow key={report.id} report={report} onAdvance={moveReport} onAssign={() => beginAction(report, 'assign')} onNote={() => beginAction(report, 'note')} onNotify={() => beginAction(report, 'notify')} />)}{!activeReports.length && <EmptyState title="No active Pilot cases" description="New student simulations will appear here in realtime." />}</CardContent>
-          </Card>
+      {activeView === 'overview' && <div className="space-y-6">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <Metric icon={AlertCircle} label="Active simulated cases" value={activeReports.length} />
+          <Metric icon={UserCheck} label="Awaiting assignment" value={unassignedReports.length} />
+          <Metric icon={Users} label="Pilot participants" value={data.participants.length} />
+          <Metric icon={CheckCircle2} label="Completion rate" value={`${metrics.completionRate}%`} />
         </div>
-      )}
+        <Card><CardHeader><CardTitle className="flex items-center gap-2"><Bell className="h-5 w-5 text-destructive" />Realtime Campus Queue</CardTitle><CardDescription>Newest simulated reports visible under campus RLS.</CardDescription></CardHeader><CardContent className="space-y-3">{activeReports.slice(0, 6).map((report) => <ReportRow key={report.id} report={report} onAdvance={moveReport} onNote={() => beginAction(report, 'note')} onNotify={() => beginAction(report, 'notify')} />)}{!activeReports.length && <EmptyState title="No active Pilot cases" description="New student simulations will appear here in realtime." />}</CardContent></Card>
+      </div>}
 
-      {activeView === 'incidents' && (
-        <Card>
-          <CardHeader><CardTitle>Pilot Incident Queue</CardTitle><CardDescription>Assignment and lifecycle controls affect only isolated Pilot records.</CardDescription></CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-3 md:grid-cols-[1fr_240px]">
-              <div className="relative"><Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /><Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search reference, title or category" className="pl-9" aria-label="Search Pilot reports" /></div>
-              <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as typeof statusFilter)}><SelectTrigger aria-label="Filter Pilot reports by status"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All statuses</SelectItem>{Object.entries(PILOT_STATUS_LABELS).map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}</SelectContent></Select>
-            </div>
-            <div className="space-y-3">{filteredReports.map((report) => <ReportRow key={report.id} report={report} onAdvance={moveReport} onAssign={() => beginAction(report, 'assign')} onNote={() => beginAction(report, 'note')} onNotify={() => beginAction(report, 'notify')} />)}{!filteredReports.length && <EmptyState title="No matching Pilot cases" description="Adjust the search or status filter." />}</div>
-          </CardContent>
-        </Card>
-      )}
+      {activeView === 'incidents' && <Card><CardHeader><CardTitle>Pilot Incident Queue</CardTitle><CardDescription>Assignment and lifecycle controls affect only isolated Pilot records.</CardDescription></CardHeader><CardContent className="space-y-4"><div className="grid gap-3 md:grid-cols-[1fr_240px]"><div className="relative"><Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /><Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search reference, title or category" className="pl-9" aria-label="Search Pilot reports" /></div><Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as typeof statusFilter)}><SelectTrigger aria-label="Filter Pilot reports by status"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All statuses</SelectItem>{Object.entries(PILOT_STATUS_LABELS).map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}</SelectContent></Select></div><div className="space-y-3">{filteredReports.map((report) => <ReportRow key={report.id} report={report} onAdvance={moveReport} onNote={() => beginAction(report, 'note')} onNotify={() => beginAction(report, 'notify')} />)}{!filteredReports.length && <EmptyState title="No matching Pilot cases" description="Adjust the search or status filter." />}</div></CardContent></Card>}
 
-      {activeView === 'analytics' && (
-        <div className="space-y-6">
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><Metric icon={MapPin} label="Location success" value={`${metrics.locationSuccessRate}%`} /><Metric icon={FileText} label="Evidence success" value={`${metrics.attachmentSuccessRate}%`} /><Metric icon={Bell} label="Notification read rate" value={`${metrics.notificationReadRate}%`} /><Metric icon={BarChart3} label="Average ease" value={metrics.averageEaseRating || '—'} /></div>
-          <Card><CardHeader><CardTitle>Feature Test Results</CardTitle><CardDescription>Campus-scoped Pilot telemetry only.</CardDescription></CardHeader><CardContent className="grid gap-3 md:grid-cols-2">{Object.entries(groupTests(data)).map(([key, result]) => <div key={key} className="rounded-lg border p-4"><p className="font-semibold capitalize">{key.replace(/_/g, ' ')}</p><p className="mt-1 text-sm text-muted-foreground">Passed {result.passed} · Failed {result.failed} · Denied {result.denied}</p></div>)}{!data.featureTests.length && <p className="col-span-full py-8 text-center text-muted-foreground">No feature tests recorded for this campus yet.</p>}</CardContent></Card>
-        </div>
-      )}
+      {activeView === 'analytics' && <div className="space-y-6"><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><Metric icon={MapPin} label="Location success" value={`${metrics.locationSuccessRate}%`} /><Metric icon={FileText} label="Evidence success" value={`${metrics.attachmentSuccessRate}%`} /><Metric icon={Bell} label="Notification read rate" value={`${metrics.notificationReadRate}%`} /><Metric icon={BarChart3} label="Average ease" value={metrics.averageEaseRating || '—'} /></div><Card><CardHeader><CardTitle>Feature Test Results</CardTitle><CardDescription>Campus-scoped Pilot telemetry only.</CardDescription></CardHeader><CardContent className="grid gap-3 md:grid-cols-2">{Object.entries(groupTests(data)).map(([key, result]) => <div key={key} className="rounded-lg border p-4"><p className="font-semibold capitalize">{key.replace(/_/g, ' ')}</p><p className="mt-1 text-sm text-muted-foreground">Passed {result.passed} · Failed {result.failed} · Denied {result.denied}</p></div>)}{!data.featureTests.length && <p className="col-span-full py-8 text-center text-muted-foreground">No feature tests recorded for this campus yet.</p>}</CardContent></Card></div>}
 
-      {activeView === 'students' && (
-        <Card><CardHeader><CardTitle>Campus Pilot Students ({data.participants.length})</CardTitle><CardDescription>Only participants authorised for {CAMPUS_LABELS[campus]} are visible.</CardDescription></CardHeader><CardContent className="space-y-3">{data.participants.map((participant) => { const sessions = data.sessions.filter((item) => item.participant_id === participant.id); const reports = data.reports.filter((item) => item.participant_id === participant.id); return <div key={participant.id} className="grid gap-3 rounded-xl border p-4 sm:grid-cols-[1fr_auto] sm:items-center"><div><p className="font-bold">Participant {participant.user_id.slice(0, 8)}</p><p className="text-sm text-muted-foreground">{CAMPUS_LABELS[participant.campus]} · {reports.length} report(s) · {sessions.length} session(s)</p></div><Badge variant="secondary" className="w-fit capitalize">{participant.status}</Badge></div>; })}{!data.participants.length && <EmptyState title="No campus participants" description="Students enrolled in the permanent Pilot programme will appear automatically." />}</CardContent></Card>
-      )}
+      {activeView === 'students' && <Card><CardHeader><CardTitle>Campus Pilot Students ({data.participants.length})</CardTitle><CardDescription>Only participants authorised for {CAMPUS_LABELS[campus]} are visible.</CardDescription></CardHeader><CardContent className="space-y-3">{data.participants.map((participant) => { const sessions = data.sessions.filter((item) => item.participant_id === participant.id); const reports = data.reports.filter((item) => item.participant_id === participant.id); return <div key={participant.id} className="grid gap-3 rounded-xl border p-4 sm:grid-cols-[1fr_auto] sm:items-center"><div><p className="font-bold">Participant {participant.user_id.slice(0, 8)}</p><p className="text-sm text-muted-foreground">{CAMPUS_LABELS[participant.campus]} · {reports.length} report(s) · {sessions.length} session(s)</p></div><Badge variant="secondary" className="w-fit capitalize">{participant.status}</Badge></div>; })}{!data.participants.length && <EmptyState title="No campus participants" description="Students enrolled in the permanent Pilot programme will appear automatically." />}</CardContent></Card>}
 
-      {activeView === 'announcements' && (
-        <Card><CardHeader><CardTitle>Pilot Updates</CardTitle><CardDescription>Case-linked notifications issued by authorised Pilot staff.</CardDescription></CardHeader><CardContent className="space-y-3">{data.notifications.map((item) => <div key={item.id} className="rounded-xl border p-4"><div className="flex items-start justify-between gap-3"><div><p className="font-bold">{item.title}</p><p className="mt-1 text-sm text-muted-foreground">{item.message}</p><p className="mt-2 text-xs text-muted-foreground">{new Date(item.created_at).toLocaleString('en-ZA')}</p></div><Badge variant={item.is_read ? 'secondary' : 'default'}>{item.is_read ? 'Read' : 'Unread'}</Badge></div></div>)}{!data.notifications.length && <EmptyState title="No Pilot updates sent" description="Use Comms or a case action to send a student update." />}</CardContent></Card>
-      )}
+      {activeView === 'announcements' && <Card><CardHeader><CardTitle>Pilot Updates</CardTitle><CardDescription>Case-linked notifications issued by authorised Pilot staff.</CardDescription></CardHeader><CardContent className="space-y-3">{data.notifications.map((item) => <div key={item.id} className="rounded-xl border p-4"><div className="flex items-start justify-between gap-3"><div><p className="font-bold">{item.title}</p><p className="mt-1 text-sm text-muted-foreground">{item.message}</p><p className="mt-2 text-xs text-muted-foreground">{new Date(item.created_at).toLocaleString('en-ZA')}</p></div><Badge variant={item.is_read ? 'secondary' : 'default'}>{item.is_read ? 'Read' : 'Unread'}</Badge></div></div>)}{!data.notifications.length && <EmptyState title="No Pilot updates sent" description="Use Comms or a case action to send a student update." />}</CardContent></Card>}
 
-      {activeView === 'communication' && (
-        <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
-          <Card><CardHeader><CardTitle>Student Communication</CardTitle><CardDescription>Send an in-app Pilot notification linked to a selected simulated case.</CardDescription></CardHeader><CardContent className="space-y-3">{data.reports.map((report) => <button key={report.id} className="w-full rounded-xl border p-4 text-left transition hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" onClick={() => beginAction(report, 'notify')}><p className="font-bold">{report.title}</p><p className="text-sm text-muted-foreground">{report.reference_number} · {PILOT_STATUS_LABELS[report.status]}</p></button>)}{!data.reports.length && <EmptyState title="No reports available" description="Communication becomes available after a student submits a Pilot report." />}</CardContent></Card>
-          <Card><CardHeader><CardTitle>Recent Timeline Activity</CardTitle><CardDescription>Campus-scoped status, assignment, note and notification events.</CardDescription></CardHeader><CardContent className="space-y-3">{data.events.slice(0, 20).map((event) => <div key={event.id} className="rounded-xl border p-4"><p className="font-bold capitalize">{event.event_type.replace(/_/g, ' ')}</p><p className="mt-1 text-sm text-muted-foreground">{event.notes || 'Pilot workflow event recorded.'}</p><p className="mt-2 text-xs text-muted-foreground">{new Date(event.created_at).toLocaleString('en-ZA')}</p></div>)}{!data.events.length && <EmptyState title="No timeline activity" description="Case actions will appear here in realtime." />}</CardContent></Card>
-        </div>
-      )}
+      {activeView === 'communication' && <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]"><Card><CardHeader><CardTitle>Student Communication</CardTitle><CardDescription>Send an in-app Pilot notification linked to a selected simulated case.</CardDescription></CardHeader><CardContent className="space-y-3">{data.reports.map((report) => <button key={report.id} className="w-full rounded-xl border p-4 text-left transition hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" onClick={() => beginAction(report, 'notify')}><p className="font-bold">{report.title}</p><p className="text-sm text-muted-foreground">{report.reference_number} · {PILOT_STATUS_LABELS[report.status]}</p></button>)}{!data.reports.length && <EmptyState title="No reports available" description="Communication becomes available after a student submits a Pilot report." />}</CardContent></Card><Card><CardHeader><CardTitle>Recent Timeline Activity</CardTitle><CardDescription>Campus-scoped status, assignment, note and notification events.</CardDescription></CardHeader><CardContent className="space-y-3">{data.events.slice(0, 20).map((event) => <div key={event.id} className="rounded-xl border p-4"><p className="font-bold capitalize">{event.event_type.replace(/_/g, ' ')}</p><p className="mt-1 text-sm text-muted-foreground">{event.notes || 'Pilot workflow event recorded.'}</p><p className="mt-2 text-xs text-muted-foreground">{new Date(event.created_at).toLocaleString('en-ZA')}</p></div>)}{!data.events.length && <EmptyState title="No timeline activity" description="Case actions will appear here in realtime." />}</CardContent></Card></div>}
 
       <MobileBottomNav items={navItems} activeView={activeView} onViewChange={(view) => setActiveView(view as CampusView)} />
 
-      <Dialog open={Boolean(actionMode && actionReport)} onOpenChange={(open) => { if (!open) closeAction(); }}>
+      <Dialog open={Boolean(actionMode && actionReport)} onOpenChange={(open) => { if (!open && !savingAction) resetAction(); }}>
         <DialogContent>
-          <DialogHeader><DialogTitle>{actionMode === 'assign' ? 'Assign Pilot Report' : actionMode === 'note' ? 'Add Timeline Note' : 'Send Pilot Notification'}</DialogTitle><DialogDescription>{actionReport?.reference_number} · This action remains inside Pilot Mode.</DialogDescription></DialogHeader>
+          <DialogHeader><DialogTitle>{actionMode === 'assign' ? 'Accept Pilot Report' : actionMode === 'note' ? 'Add Timeline Note' : 'Send Pilot Notification'}</DialogTitle><DialogDescription>{actionReport?.reference_number} · This action remains inside Pilot Mode.</DialogDescription></DialogHeader>
           <div className="space-y-4 py-2">
+            {actionMode === 'assign' && <div className="rounded-xl border bg-muted/45 p-4"><p className="font-semibold">Authenticated assignment</p><p className="mt-1 text-sm text-muted-foreground">This simulated case will be assigned to {userProfile?.full_name || 'your verified staff profile'}. No profile UUID is required.</p></div>}
             {actionMode === 'notify' && <div className="space-y-2"><Label htmlFor="pilot-action-title">Notification title</Label><Input id="pilot-action-title" value={actionTitle} onChange={(event) => setActionTitle(event.target.value)} maxLength={200} /></div>}
-            <div className="space-y-2"><Label htmlFor="pilot-action-value">{actionMode === 'assign' ? 'Campus officer profile UUID' : actionMode === 'note' ? 'Timeline note' : 'Message'}</Label>{actionMode === 'assign' ? <Input id="pilot-action-value" value={actionValue} onChange={(event) => setActionValue(event.target.value)} placeholder="00000000-0000-0000-0000-000000000000" /> : <Textarea id="pilot-action-value" value={actionValue} onChange={(event) => setActionValue(event.target.value)} rows={5} maxLength={2000} />}</div>
+            {actionMode !== 'assign' && <div className="space-y-2"><Label htmlFor="pilot-action-value">{actionMode === 'note' ? 'Timeline note' : 'Message'}</Label><Textarea id="pilot-action-value" value={actionValue} onChange={(event) => setActionValue(event.target.value)} rows={5} maxLength={2000} /></div>}
           </div>
-          <DialogFooter><Button variant="outline" onClick={closeAction} disabled={savingAction}>Cancel</Button><Button onClick={() => void submitAction()} disabled={savingAction || !actionValue.trim()}>{savingAction && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Confirm Pilot Action</Button></DialogFooter>
+          <DialogFooter><Button variant="outline" onClick={resetAction} disabled={savingAction}>Cancel</Button><Button onClick={() => void submitAction()} disabled={savingAction || (actionMode !== 'assign' && !actionValue.trim())}>{savingAction && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{actionMode === 'assign' ? 'Assign to me' : 'Confirm Pilot Action'}</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
   );
 }
 
-function ReportRow({ report, onAdvance, onAssign, onNote, onNotify }: { report: PilotReport; onAdvance: (report: PilotReport) => void; onAssign: () => void; onNote: () => void; onNotify: () => void }) {
-  const nextLabel = report.status === 'received' ? 'Start Assessment' : report.status === 'assessing' ? 'Assign Officer' : report.status === 'assigned' ? 'Start Response' : report.status === 'in_progress' ? 'Complete Simulation' : null;
-  return <div className="rounded-xl border p-4"><div className="flex flex-col justify-between gap-4 xl:flex-row xl:items-center"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><p className="font-bold">{report.title}</p><Badge variant="outline">{PILOT_STATUS_LABELS[report.status]}</Badge>{report.assigned_to && <Badge variant="secondary"><UserCheck className="mr-1 h-3 w-3" />Assigned</Badge>}</div><p className="mt-1 text-sm text-muted-foreground">{report.reference_number} · {report.category}</p><p className="mt-2 line-clamp-2 text-sm">{report.description}</p></div><div className="flex flex-wrap gap-2">{nextLabel && <Button size="sm" onClick={() => report.status === 'assessing' ? onAssign() : onAdvance(report)}>{nextLabel}</Button>}<Button size="sm" variant="outline" onClick={onNote}><FileText className="mr-1 h-4 w-4" />Note</Button><Button size="sm" variant="outline" onClick={onNotify}><Bell className="mr-1 h-4 w-4" />Notify</Button></div></div></div>;
+function ReportRow({ report, onAdvance, onNote, onNotify }: { report: PilotReport; onAdvance: (report: PilotReport) => void; onNote: () => void; onNotify: () => void }) {
+  const nextLabel = report.status === 'received' ? 'Start Assessment' : report.status === 'assessing' ? 'Accept Case' : report.status === 'assigned' ? 'Start Response' : report.status === 'in_progress' ? 'Complete Simulation' : null;
+  return <div className="rounded-xl border p-4"><div className="flex flex-col justify-between gap-4 xl:flex-row xl:items-center"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><p className="font-bold">{report.title}</p><Badge variant="outline">{PILOT_STATUS_LABELS[report.status]}</Badge>{report.assigned_to && <Badge variant="secondary"><UserCheck className="mr-1 h-3 w-3" />Assigned</Badge>}</div><p className="mt-1 text-sm text-muted-foreground">{report.reference_number} · {report.category}</p><p className="mt-2 line-clamp-2 text-sm">{report.description}</p></div><div className="flex flex-wrap gap-2">{nextLabel && <Button size="sm" onClick={() => onAdvance(report)}>{nextLabel}</Button>}<Button size="sm" variant="outline" onClick={onNote}><FileText className="mr-1 h-4 w-4" />Note</Button><Button size="sm" variant="outline" onClick={onNotify}><Bell className="mr-1 h-4 w-4" />Notify</Button></div></div></div>;
 }
 
 function Metric({ icon: Icon, label, value }: { icon: typeof AlertCircle; label: string; value: string | number }) {
