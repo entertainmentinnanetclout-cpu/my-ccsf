@@ -3,7 +3,7 @@
 Last audited: 19 July 2026  
 Canonical codebase: `entertainmentinnanetclout-cpu/my-ccsf`  
 Production Supabase project: `MY CCSF` (`lfelzsubrlqwcsnetpov`)  
-Execution branch: `agent/phase-2-5-logo-carousel-parity`
+Execution branch: `main` — Phase 2.5 merged through PR #25
 
 ## Non-negotiable release rules
 
@@ -17,7 +17,7 @@ Execution branch: `agent/phase-2-5-logo-carousel-parity`
 ## Audit baseline
 
 - Open pull requests: **0**
-- Current Phase 2.5 baseline: `dbb6551d8a614ecacfa79735e69c51a03deda216`
+- Current Phase 2.5 baseline: `8920e3d8514cd140dcfec0481b6d960d2d062c9a`
 - Supabase migration drift: **Resolved** — branch action reports all migrations up to date; status `FUNCTIONS_DEPLOYED`, preview `ACTIVE_HEALTHY`
 - Security adviser: leaked-password protection disabled (warning)
 - Performance adviser: informational unused-index notices only; retain until representative Pilot traffic exists
@@ -116,7 +116,7 @@ Brand inventory complete, visual regression review approved, all checks green.
 
 ## Phase 2.5 — Supplied logo correction and student dashboard parity
 
-**Status:** In execution
+**Status:** Complete — merged, production deployment ready, migration current, eMalahleni RLS path verified
 
 **Depends on:** Phases 1–2
 
@@ -137,7 +137,7 @@ Brand inventory complete, visual regression review approved, all checks green.
 
 ### Merge gate
 
-Phase 2.5 PR green, Supabase migration applied once, preview approved, and production visually verified.
+Completed through PR #25. GitHub QA and Vercel preview/production builds passed; Supabase migration `20260719180500` is present once and an authenticated eMalahleni query returns the active `/og-image.png` slide.
 
 ## Phase 3 — Pilot controls and role-safe workflows
 
