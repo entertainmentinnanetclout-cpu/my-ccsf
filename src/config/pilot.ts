@@ -28,6 +28,7 @@ export const PILOT_WARNING =
 
 export const PILOT_CONSENT_VERSION = 'ccsf-pilot-consent-v2-2026-07';
 export const PILOT_LOCATION_STORAGE_KEY = 'pilot_location_tracking';
+export const PILOT_POST_PROFILE_REDIRECT_KEY = 'ccsf_pilot_post_profile_redirect';
 export const PILOT_ATTACHMENT_BUCKET = 'pilot-report-attachments';
 export const PILOT_MAX_FILE_BYTES = 10 * 1024 * 1024;
 export const PILOT_MAX_ATTACHMENTS = 3;
