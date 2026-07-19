@@ -1,4 +1,4 @@
-import ccsfLogo from '@/assets/ccsf-logo.svg';
+import ccsfLogo from '@/assets/Campus safety forum logo design(1).png';
 import tutLogoForDarkTheme from '@/assets/tut-logo.png';
 import tutLogoForLightTheme from '@/assets/tut_light_theme.png';
 
