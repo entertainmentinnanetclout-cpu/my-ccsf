@@ -3,7 +3,6 @@ import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FileText, Home, LifeBuoy, LogOut, Map, MapPin, Plus, Shield } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { InstitutionBrand } from '@/components/shared/InstitutionBrand';
@@ -16,61 +15,26 @@ import { CampusMap } from '@/components/student/CampusMap';
 import { StudentDashboardHome } from '@/components/student/StudentDashboardHome';
 import { StudentChat } from '@/components/student/StudentChat';
 import { MyCaseReports } from '@/components/student/MyCaseReports';
+import { BRAND } from '@/brand';
+import { CAMPUS_LABELS } from '@/config/pilot';
+import type { CampusLocation } from '@/types/pilot';
 
 type StudentView = 'home' | 'report' | 'mycases' | 'map' | 'messages';
 const STUDENT_VIEWS = new Set<StudentView>(['home', 'report', 'mycases', 'map', 'messages']);
 
 const Dashboard = () => {
-  const { user, signOut } = useAuth();
+  const { userProfile, signOut } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedView = searchParams.get('tab') as StudentView | null;
-  const [activeView, setActiveView] = useState<StudentView>(
-    requestedView && STUDENT_VIEWS.has(requestedView) ? requestedView : 'home',
-  );
-  const [userCampus, setUserCampus] = useState('Campus');
-  const [userCampusId, setUserCampusId] = useState<string | null>(null);
+  const [activeView, setActiveView] = useState<StudentView>(requestedView && STUDENT_VIEWS.has(requestedView) ? requestedView : 'home');
+  const campus = userProfile?.campus as CampusLocation | null | undefined;
+  const campusLabel = campus ? CAMPUS_LABELS[campus] : 'Campus assignment pending';
 
   useEffect(() => {
     const requested = searchParams.get('tab') as StudentView | null;
     if (requested && STUDENT_VIEWS.has(requested)) setActiveView(requested);
     if (!requested) setActiveView('home');
   }, [searchParams]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const checkProfile = async () => {
-      if (!user) return;
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('campus')
-        .eq('id', user.id)
-        .single();
-
-      if (cancelled || error) return;
-      if (data?.campus) {
-        setUserCampusId(data.campus);
-        const campusDisplayNames: Record<string, string> = {
-          pretoria_west_main: 'Pretoria West Campus',
-          arcadia: 'Arcadia Campus',
-          arts: 'Arts Campus',
-          giyani: 'Giyani Campus',
-          mbombela: 'Mbombela Campus',
-          polokwane: 'Polokwane Campus',
-          garankuwa: 'Ga-Rankuwa Campus',
-          soshanguve_south: 'Soshanguve South Campus',
-          soshanguve_north: 'Soshanguve North Campus',
-          emalahleni: 'Emalahleni Campus',
-        };
-        setUserCampus(campusDisplayNames[data.campus] || 'Campus');
-      }
-    };
-
-    void checkProfile();
-    return () => {
-      cancelled = true;
-    };
-  }, [user]);
 
   const changeView = (view: StudentView) => {
     setActiveView(view);
@@ -92,49 +56,47 @@ const Dashboard = () => {
     <div className="min-h-screen bg-background" data-testid="ready-dashboard">
       <EmergencyReport />
 
-      <div className="relative">
-        <motion.header
-          initial={{ y: -100, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.5, ease: 'easeInOut' }}
-          className="sticky top-0 z-40 border-b border-border border-t-4 border-t-[#F2A900] bg-background shadow-soft dark:bg-primary"
-        >
-          <div className="w-full px-4 py-3 sm:py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <motion.div className="relative" whileHover={{ scale: 1.1, rotate: 5 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>
-                  <InstitutionBrand size="header" />
-                  <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 animate-pulse rounded-full border-2 border-background bg-success dark:border-primary" aria-hidden="true" />
-                </motion.div>
-                <div className="hidden sm:block">
-                  <div className="flex items-center gap-2">
-                    <Shield className="h-5 w-5 text-primary dark:text-white" aria-hidden="true" />
-                    <h1 className="text-lg font-bold text-primary dark:text-white sm:text-xl">Campus Safety Forum</h1>
-                  </div>
-                  <p className="text-xs font-medium text-muted-foreground dark:text-white/80 sm:text-sm">CCSF Student Portal</p>
+      <motion.header
+        initial={{ y: -100, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.5, ease: 'easeInOut' }}
+        className="sticky top-0 z-40 border-b border-border border-t-4 border-t-[#F2A900] bg-background shadow-soft dark:bg-primary"
+      >
+        <div className="w-full px-4 py-3 sm:py-4">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+              <motion.div className="relative shrink-0" whileHover={{ scale: 1.05 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>
+                <InstitutionBrand size="header" />
+                <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-background bg-success dark:border-primary" aria-hidden="true" />
+              </motion.div>
+              <div className="hidden min-w-0 sm:block">
+                <div className="flex items-center gap-2">
+                  <Shield className="h-5 w-5 shrink-0 text-primary dark:text-white" aria-hidden="true" />
+                  <h1 className="truncate text-lg font-bold text-primary dark:text-white sm:text-xl">{BRAND.productLongName}</h1>
                 </div>
-              </div>
-
-              <div className="flex items-center gap-2 sm:gap-3">
-                <motion.div className="hidden items-center gap-2 rounded-full border border-border bg-muted px-4 py-2 shadow-sm dark:border-white/20 dark:bg-white/10 lg:flex" whileHover={{ scale: 1.02 }}>
-                  <MapPin className="h-4 w-4 text-primary dark:text-white" aria-hidden="true" />
-                  <span className="text-sm font-semibold text-primary dark:text-white">{userCampus}</span>
-                </motion.div>
-                <ThemeToggle />
-                <NotificationBell />
-                <motion.div whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.95 }}>
-                  <Button variant="ghost" size="icon" onClick={signOut} className="hidden sm:flex" aria-label="Sign out of CCSF">
-                    <LogOut className="h-5 w-5" aria-hidden="true" />
-                  </Button>
-                </motion.div>
+                <p className="text-xs font-medium text-muted-foreground dark:text-white/80 sm:text-sm">CCSF Student Portal</p>
               </div>
             </div>
-          </div>
-        </motion.header>
-      </div>
 
-      <main className="w-full pb-20 md:pb-6">
-        <motion.div initial={{ opacity: 0, y: 25 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4, duration: 0.4 }} className="mb-4 px-4 sm:mb-6">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <motion.div className="hidden items-center gap-2 rounded-full border border-border bg-muted px-4 py-2 shadow-sm dark:border-white/20 dark:bg-white/10 lg:flex" whileHover={{ scale: 1.02 }}>
+                <MapPin className="h-4 w-4 text-primary dark:text-white" aria-hidden="true" />
+                <span className="text-sm font-semibold text-primary dark:text-white">{campusLabel}</span>
+              </motion.div>
+              <ThemeToggle />
+              <NotificationBell />
+              <motion.div whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.95 }}>
+                <Button variant="ghost" size="icon" onClick={() => void signOut()} className="hidden sm:flex" aria-label="Sign out of CCSF">
+                  <LogOut className="h-5 w-5" aria-hidden="true" />
+                </Button>
+              </motion.div>
+            </div>
+          </div>
+        </div>
+      </motion.header>
+
+      <main className="w-full pb-24 md:pb-6">
+        <motion.div initial={{ opacity: 0, y: 25 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.4 }} className="mb-4 px-4 sm:mb-6">
           <Card className="hidden bg-card/95 p-2 shadow-elevated backdrop-blur-sm md:block sm:p-3">
             <div className="grid grid-cols-5 gap-1.5 sm:gap-2" role="tablist" aria-label="Student portal sections">
               {navItems.map(({ view, icon: Icon, label }) => (
@@ -157,7 +119,7 @@ const Dashboard = () => {
         </motion.div>
 
         <motion.div key={activeView} initial={{ opacity: 0, x: 20, scale: 0.97 }} animate={{ opacity: 1, x: 0, scale: 1 }} exit={{ opacity: 0, x: -20, scale: 0.97 }} transition={{ type: 'spring', stiffness: 300, damping: 30 }}>
-          {activeView === 'home' && <StudentDashboardHome campus={userCampusId || undefined} />}
+          {activeView === 'home' && <StudentDashboardHome campus={campus || undefined} />}
           <div className="px-4">
             {activeView === 'mycases' && <MyCaseReports />}
             {activeView === 'report' && <ReportIncident />}
@@ -167,14 +129,14 @@ const Dashboard = () => {
         </motion.div>
 
         <footer className="mt-8 pb-6 text-center sm:mt-12">
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="inline-flex items-center gap-2 rounded-full border border-border bg-muted/50 px-4 py-2">
+          <div className="inline-flex items-center gap-2 rounded-full border border-border bg-muted/50 px-4 py-2">
             <Shield className="h-4 w-4 text-primary" aria-hidden="true" />
-            <p className="text-xs font-medium text-muted-foreground sm:text-sm">Powered By Campus Protection Service</p>
-          </motion.div>
+            <p className="text-xs font-semibold text-muted-foreground sm:text-sm">{BRAND.productLongName} · {BRAND.institutionName}</p>
+          </div>
         </footer>
       </main>
 
-      <MobileBottomNav items={navItems} activeView={activeView} onViewChange={(view) => changeView(view as StudentView)} />
+      <MobileBottomNav items={navItems} activeView={activeView} onViewChange={(view) => changeView(view as StudentView)} ariaLabel="Student portal sections" />
     </div>
   );
 };
