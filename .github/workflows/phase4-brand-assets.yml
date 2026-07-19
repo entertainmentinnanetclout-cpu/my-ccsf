@@ -1,0 +1,98 @@
+name: Phase 4 CCSF Brand Asset Generation
+
+on:
+  push:
+    branches:
+      - feature/ccsf-phases-3-8-release-candidate
+    paths:
+      - scripts/generate-brand-assets.py
+      - .github/workflows/phase4-brand-assets.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out release-candidate branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/ccsf-phases-3-8-release-candidate
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install image tooling
+        run: python -m pip install --disable-pip-version-check pillow==11.3.0
+
+      - name: Generate transparent platform assets
+        run: python scripts/generate-brand-assets.py
+
+      - name: Verify generated image metadata
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from PIL import Image
+
+          paths = [
+              'src/assets/Campus safety forum logo design(1).png',
+              'src/assets/ccsf-logo.png',
+              'public/ccsf-logo.png',
+              'public/app-icon-1024.png',
+              'public/app-icon-512.png',
+              'public/app-icon-192.png',
+              'public/maskable-icon-512.png',
+              'public/apple-touch-icon.png',
+              'public/favicon.png',
+              'public/favicon-32x32.png',
+              'public/favicon-16x16.png',
+              'public/favicon.ico',
+          ]
+          for value in paths:
+              path = Path(value)
+              with Image.open(path) as image:
+                  alpha = image.convert('RGBA').getchannel('A')
+                  print(f'{path}: format={image.format} size={image.size} alpha={alpha.getextrema()}')
+          PY
+
+      - name: Commit generated binaries to release candidate
+        run: |
+          if git diff --quiet -- \
+            'src/assets/Campus safety forum logo design(1).png' \
+            'src/assets/ccsf-logo.png' \
+            'public/ccsf-logo.png' \
+            'public/app-icon-1024.png' \
+            'public/app-icon-512.png' \
+            'public/app-icon-192.png' \
+            'public/maskable-icon-512.png' \
+            'public/apple-touch-icon.png' \
+            'public/favicon.png' \
+            'public/favicon-32x32.png' \
+            'public/favicon-16x16.png' \
+            'public/favicon.ico'; then
+            echo 'Brand assets are already current.'
+            exit 0
+          fi
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            'src/assets/Campus safety forum logo design(1).png' \
+            'src/assets/ccsf-logo.png' \
+            'public/ccsf-logo.png' \
+            'public/app-icon-1024.png' \
+            'public/app-icon-512.png' \
+            'public/app-icon-192.png' \
+            'public/maskable-icon-512.png' \
+            'public/apple-touch-icon.png' \
+            'public/favicon.png' \
+            'public/favicon-32x32.png' \
+            'public/favicon-16x16.png' \
+            'public/favicon.ico'
+          git commit -m 'phase 4: regenerate transparent CCSF app and favicon assets'
+          git push origin HEAD:feature/ccsf-phases-3-8-release-candidate
