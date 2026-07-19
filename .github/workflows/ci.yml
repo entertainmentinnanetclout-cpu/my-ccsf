@@ -40,6 +40,9 @@ jobs:
       - name: Verify canonical CCSF and TUT branding
         run: npm run test:branding
 
+      - name: Verify production and Pilot student-home parity
+        run: npm run test:student-home
+
       - name: Type-check application
         run: npm run typecheck
 
