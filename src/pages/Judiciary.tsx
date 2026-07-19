@@ -4,13 +4,11 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { Shield, Home, Gavel, Calendar, Clock, User, FileText, AlertCircle, Loader2 } from 'lucide-react';
-import tutLogo from '@/assets/tut-logo.png';
-import tutLogoLight from '@/assets/tut_light_theme.png';
+import { InstitutionBrand } from '@/components/shared/InstitutionBrand';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
-import { useTheme } from 'next-themes';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface CaseUpdate {
@@ -29,7 +27,6 @@ interface CaseUpdate {
 
 const Judiciary = () => {
   const navigate = useNavigate();
-  const { theme } = useTheme();
   const { user } = useAuth();
   const [caseUpdates, setCaseUpdates] = useState<CaseUpdate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -118,11 +115,9 @@ const Judiciary = () => {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <motion.img
-                src={theme === 'dark' ? tutLogo : tutLogoLight}
-                alt="TUT Logo"
-                className="h-10 logo-glow"
-              />
+              <motion.div className="text-white" whileHover={{ scale: 1.05 }}>
+                <InstitutionBrand size="header" />
+              </motion.div>
               <div>
                 <div className="flex items-center gap-2">
                   <Gavel className="h-5 w-5 text-white" />

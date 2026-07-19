@@ -1,9 +1,9 @@
 // Service Worker for My CCSF PWA
 // Handles push notifications and offline caching
 
-const CACHE_NAME = 'my-ccsf-v1';
-const STATIC_CACHE = 'my-ccsf-static-v1';
-const DYNAMIC_CACHE = 'my-ccsf-dynamic-v1';
+const CACHE_NAME = 'my-ccsf-v2';
+const STATIC_CACHE = 'my-ccsf-static-v2';
+const DYNAMIC_CACHE = 'my-ccsf-dynamic-v2';
 
 // Static assets to cache on install
 const STATIC_ASSETS = [
@@ -11,6 +11,8 @@ const STATIC_ASSETS = [
   '/index.html',
   '/manifest.json',
   '/favicon.svg',
+  '/app-icon-192.png',
+  '/app-icon-512.png',
 ];
 
 // Install event - cache static assets

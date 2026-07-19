@@ -9,7 +9,8 @@
     "build:dev": "vite build --mode development",
     "typecheck": "tsc -p tsconfig.app.json --noEmit",
     "test:pilot-isolation": "node scripts/verify-pilot-isolation.mjs",
-    "qa:pilot": "npm run test:pilot-isolation && npm run typecheck && npm run lint && npm run build",
+    "test:branding": "node scripts/verify-branding.mjs",
+    "qa:pilot": "npm run test:pilot-isolation && npm run test:branding && npm run typecheck && npm run lint && npm run build",
     "lint": "eslint .",
     "preview": "vite preview"
   },

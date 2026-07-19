@@ -10,10 +10,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { motion } from 'framer-motion';
 import { Shield, AlertCircle, Loader2, MapPin, ArrowLeft } from 'lucide-react';
-import tutLogo from '@/assets/tut-logo.png';
-import tutLogoLight from '@/assets/tut_light_theme.png';
+import { InstitutionBrand } from '@/components/shared/InstitutionBrand';
 import { z } from 'zod';
-import { useTheme } from 'next-themes';
 
 // Campus options with display names and DB values
 const campusOptions = [
@@ -50,7 +48,6 @@ const resetSchema = z.object({
 type AuthView = 'login' | 'signup' | 'forgot-password';
 
 const Auth = () => {
-  const { theme } = useTheme();
   const [view, setView] = useState<AuthView>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -203,14 +200,14 @@ const Auth = () => {
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2 }}
         >
-          <motion.img
-            src={theme === 'dark' ? tutLogo : tutLogoLight}
-            alt="TUT Logo"
-            className="h-16 mx-auto mb-4 logo-glow"
+          <motion.div
+            className="mx-auto mb-4 flex justify-center text-white"
             initial={{ scale: 0.9 }}
             animate={{ scale: 1 }}
             transition={{ delay: 0.3, type: 'spring', stiffness: 200 }}
-          />
+          >
+            <InstitutionBrand size="auth" />
+          </motion.div>
           <div className="flex items-center justify-center gap-2 mb-2">
             <Shield className="h-8 w-8 text-foreground drop-shadow-lg" />
             <h1 className="text-3xl font-bold text-foreground">Campus Protection Services</h1>

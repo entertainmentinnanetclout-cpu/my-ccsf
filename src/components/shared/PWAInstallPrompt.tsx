@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Download, X, Smartphone, Zap, Bell, Wifi } from 'lucide-react';
+import { Download, X, Zap, Bell, Wifi } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { BRAND } from '@/brand';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -115,7 +116,11 @@ const PWAInstallPrompt = () => {
               ease: 'easeInOut',
             }}
           >
-            <Smartphone className="h-7 w-7 text-white" />
+            <img
+              src={BRAND.assets.ccsfLogo}
+              alt="Campus Community Safety Forum"
+              className="h-11 w-11 object-contain"
+            />
           </motion.div>
 
           {/* Content */}

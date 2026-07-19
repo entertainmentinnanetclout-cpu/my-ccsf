@@ -37,6 +37,9 @@ jobs:
       - name: Verify Pilot production isolation
         run: npm run test:pilot-isolation
 
+      - name: Verify canonical CCSF and TUT branding
+        run: npm run test:branding
+
       - name: Type-check application
         run: npm run typecheck
 
