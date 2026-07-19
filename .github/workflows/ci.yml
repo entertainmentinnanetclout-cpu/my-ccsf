@@ -31,10 +31,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        shell: bash
-        run: |
-          set -o pipefail
-          npm ci --no-audit --no-fund --loglevel=error 2>&1 | tail -100
+        run: npm install --no-audit --no-fund --loglevel=error
 
       - name: Verify Pilot production isolation
         run: npm run test:pilot-isolation
