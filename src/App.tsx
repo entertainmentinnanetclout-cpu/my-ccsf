@@ -12,6 +12,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { PilotModeProvider } from './contexts/PilotModeContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { PilotRouteGuard } from './components/pilot/PilotRouteGuard';
+import { PilotPostProfileRedirect } from './components/pilot/PilotPostProfileRedirect';
 import PilotInstitutionalLayout from './components/pilot/PilotInstitutionalLayout';
 import Layout from './components/shared/Layout';
 import PWAInstallPrompt from './components/shared/PWAInstallPrompt';
@@ -84,7 +85,9 @@ const App = () => (
 
                   <Route path="/dashboard" element={
                     <ProtectedRoute allowedRoles={['student']}>
-                      <Dashboard />
+                      <PilotPostProfileRedirect>
+                        <Dashboard />
+                      </PilotPostProfileRedirect>
                     </ProtectedRoute>
                   } />
                   <Route path="/security/*" element={
