@@ -106,11 +106,33 @@ assert(
   pilotConfig.includes('Demo Mode: No emergency service has been dispatched.'),
   'The canonical no-dispatch warning remains present.',
 );
+assert(
+  pilotConfig.includes("PILOT_POST_PROFILE_REDIRECT_KEY = 'ccsf_pilot_post_profile_redirect'"),
+  'The interrupted student journey uses a dedicated Pilot-only session key.',
+);
 
 const pilotAuth = read('src/pages/pilot/PilotAuth.tsx');
 assert(pilotAuth.includes('useLocation'), 'Pilot authentication reads the requested route.');
 assert(pilotAuth.includes('resolvePilotDestination'), 'Pilot authentication resolves role-safe destinations.');
-assert(pilotAuth.includes('state: { from: destination }'), 'Profile completion retains the approved Pilot destination.');
+assert(pilotAuth.includes('state: { from: destination }'), 'Profile completion receives the approved Pilot destination.');
+assert(
+  pilotAuth.includes('sessionStorage.setItem(PILOT_POST_PROFILE_REDIRECT_KEY, destination)'),
+  'Incomplete student profiles retain the approved Pilot destination for one browser session.',
+);
+assert(
+  pilotAuth.includes('sessionStorage.removeItem(PILOT_POST_PROFILE_REDIRECT_KEY)'),
+  'Normal Pilot authentication clears stale post-profile destinations.',
+);
+
+const postProfileRedirect = read('src/components/pilot/PilotPostProfileRedirect.tsx');
+assert(
+  postProfileRedirect.includes("resolvePilotDestination('student', requestedPath)"),
+  'Post-profile resumption revalidates the stored path as a student Pilot destination.',
+);
+assert(
+  postProfileRedirect.includes('sessionStorage.removeItem(PILOT_POST_PROFILE_REDIRECT_KEY)'),
+  'Post-profile resumption consumes the destination exactly once.',
+);
 
 const protectedRoute = read('src/components/ProtectedRoute.tsx');
 assert(
@@ -132,6 +154,10 @@ const app = read('src/App.tsx');
 for (const route of ['/pilot/auth', '/pilot', '/pilot/session/:sessionId', '/pilot/report/:reportId', '/pilot/resources', '/security/pilot', '/admin/pilot']) {
   assert(app.includes(`path="${route}"`), `Direct route ${route} is registered.`);
 }
+assert(
+  app.includes('<PilotPostProfileRedirect>') && app.includes('</PilotPostProfileRedirect>'),
+  'The student dashboard completes interrupted Pilot profile journeys.',
+);
 
 const vercel = read('vercel.json');
 assert(vercel.includes('"destination": "/index.html"'), 'Vercel rewrites direct deep links to the SPA entry point.');
