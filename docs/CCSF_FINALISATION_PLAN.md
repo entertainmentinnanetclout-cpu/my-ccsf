@@ -3,7 +3,7 @@
 Last audited: 19 July 2026  
 Canonical codebase: `entertainmentinnanetclout-cpu/my-ccsf`  
 Production Supabase project: `MY CCSF` (`lfelzsubrlqwcsnetpov`)  
-Execution branch: `finalize/ccsf-release-readiness`
+Execution branch: `agent/phase-2-canonical-ccsf-branding`
 
 ## Non-negotiable release rules
 
@@ -12,18 +12,17 @@ Execution branch: `finalize/ccsf-release-readiness`
 3. Every phase must pass type-check, lint, production build, Pilot isolation verification, and relevant end-to-end checks.
 4. Production migrations are forward-only. Already-applied migrations must not be rerun.
 5. Pilot Mode must remain fail-closed outside explicitly approved environments.
-6. No release may claim canonical CCSF branding until the complete approved asset package is present and verified.
+6. CCSF and TUT remain co-branded; the existing application colour system is unchanged.
 
 ## Audit baseline
 
 - Open pull requests: **0**
-- Current `main`: `3d2ddc37402e01fb7b0176b22ec0956367c34f3f`
+- Current Phase 2 baseline: `516052521b5a7cd500dab34b9e8e92e49eacd01d`
 - Supabase migration drift: **Resolved** — branch action reports all migrations up to date; status `FUNCTIONS_DEPLOYED`, preview `ACTIVE_HEALTHY`
-- Failure reason: production migration versions exist remotely but are absent from `supabase/migrations`
 - Security adviser: leaked-password protection disabled (warning)
 - Performance adviser: informational unused-index notices only; retain until representative Pilot traffic exists
-- Canonical branding merge: incomplete; it contains only `.brand-assets/logo.hex.part01`
-- Temporary brand-transfer bucket: empty
+- Canonical branding: CCSF + theme-aware TUT lockup centralised and applied across application surfaces
+- Temporary brand-transfer artifact and empty bucket: removed through the Phase 2 forward migration
 - Tracked `.env`: removed on the execution branch; `.env.example` remains the safe template
 
 ### Branch disposition
@@ -90,20 +89,23 @@ Database reconciliation report attached; migration dry run and application QA pa
 
 ## Phase 2 — Canonical CCSF branding
 
-**Depends on:** Phase 0; complete approved asset package
+**Status:** Complete — canonical co-brand lockup implemented without colour-system changes
+
+**Depends on:** Phase 0
 
 ### Deliverables
 
-- Obtain the complete canonical CCSF logo in transparent PNG and SVG/vector form.
+- Establish the canonical CCSF logo in transparent PNG and SVG/vector form.
 - Remove the incomplete hex transfer artifact and temporary transfer mechanism.
 - Centralise brand assets and names in one brand module.
-- Replace every obsolete TUT-only, interim CCSF, placeholder Lovable, favicon, PWA, metadata, portal-shell, and document reference.
-- Preserve TUT references only where they correctly identify the institution/campus context.
+- Replace every obsolete TUT-only lockup, interim CCSF, favicon, PWA, metadata and portal-shell reference.
+- Keep the TUT light/dark logos alongside CCSF and preserve TUT references where they identify the institution/campus context.
+- Preserve the existing application colour tokens and theme palette.
 - Verify logo proportions, clear space, contrast, responsive scaling, and print/digital usage.
 
 ### Acceptance criteria
 
-- Approved owner visually signs off the canonical mark.
+- Product-owner direction is reflected: no colour changes and CCSF is shown alongside the TUT light/dark marks.
 - Repository search finds no prohibited legacy branding.
 - Browser metadata, PWA icons, login, student, security, admin, Pilot, email/export, and error surfaces use the canonical identity.
 - No base64/hex chunk remains as a production asset.
@@ -183,7 +185,6 @@ Formal go/no-go approval. Merge by reviewed PR only; tag the release and monitor
 
 ## Immediate next actions
 
-1. Recover the complete approved logo asset package.
-2. Execute the canonical CCSF branding inventory and replacement.
-3. Prove whether the three divergent branches contain any unique work worth carrying forward.
-4. Continue later phases through controlled, verified PRs.
+1. Execute Phase 3 Pilot controls and role-safe workflow verification.
+2. Prove whether the three divergent branches contain any unique work worth carrying forward.
+3. Continue later phases through controlled, verified PRs.

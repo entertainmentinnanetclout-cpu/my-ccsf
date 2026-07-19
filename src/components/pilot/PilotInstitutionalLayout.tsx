@@ -1,14 +1,12 @@
 import { motion } from 'framer-motion';
 import { ArrowLeft, LogOut, MapPin, Shield, ShieldCheck } from 'lucide-react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { useTheme } from 'next-themes';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/shared/ThemeToggle';
+import { InstitutionBrand } from '@/components/shared/InstitutionBrand';
 import { CAMPUS_LABELS } from '@/config/pilot';
 import type { CampusLocation } from '@/types/pilot';
-import tutLogo from '@/assets/tut-logo.png';
-import tutLogoLight from '@/assets/tut_light_theme.png';
 
 type PilotPortalContext = {
   portalLabel: string;
@@ -50,7 +48,6 @@ function resolvePortalContext(pathname: string): PilotPortalContext {
 
 export default function PilotInstitutionalLayout() {
   const location = useLocation();
-  const { theme } = useTheme();
   const { userProfile, signOut } = useAuth();
   const context = resolvePortalContext(location.pathname);
   const campus = userProfile?.campus as CampusLocation | null | undefined;
@@ -68,7 +65,7 @@ export default function PilotInstitutionalLayout() {
           <div className="flex items-center justify-between gap-3">
             <div className="flex min-w-0 items-center gap-3">
               <motion.div className="relative shrink-0" whileHover={{ scale: 1.05 }} transition={{ type: 'spring', stiffness: 300, damping: 22 }}>
-                <img src={theme === 'dark' ? tutLogo : tutLogoLight} alt="Tshwane University of Technology" className="h-10 w-auto object-contain sm:h-12" />
+                <InstitutionBrand size="header" />
                 <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-background bg-emerald-500 dark:border-[#002F6C]" />
               </motion.div>
 

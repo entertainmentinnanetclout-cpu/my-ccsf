@@ -11,9 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { motion } from 'framer-motion';
 import { Shield, Loader2, MapPin, User, Phone, BookOpen, Home as HomeIcon, CheckCircle2 } from 'lucide-react';
-import tutLogo from '@/assets/tut-logo.png';
-import tutLogoLight from '@/assets/tut_light_theme.png';
-import { useTheme } from 'next-themes';
+import { InstitutionBrand } from '@/components/shared/InstitutionBrand';
 
 const campusOptions = [
   { value: 'pretoria_west_main', label: 'Pretoria West (Main Campus)' },
@@ -47,7 +45,6 @@ const residenceOptions = [
 
 const ProfileCompletion = () => {
   const { user, userProfile, loading: authLoading, profileCompleted } = useAuth();
-  const { theme } = useTheme();
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -198,11 +195,9 @@ const ProfileCompletion = () => {
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2 }}
         >
-          <motion.img
-            src={theme === 'dark' ? tutLogo : tutLogoLight}
-            alt="TUT Logo"
-            className="h-14 mx-auto mb-4 logo-glow"
-          />
+          <motion.div className="mx-auto mb-4 flex justify-center" whileHover={{ scale: 1.03 }}>
+            <InstitutionBrand size="auth" />
+          </motion.div>
           <div className="flex items-center justify-center gap-2 mb-2">
             <Shield className="h-6 w-6 text-foreground" />
             <h1 className="text-2xl font-bold text-foreground">Complete Your Profile</h1>

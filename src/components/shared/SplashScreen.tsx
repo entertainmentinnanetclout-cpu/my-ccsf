@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, Lock, Eye, AlertTriangle, Volume2, VolumeX } from 'lucide-react';
-import ccsfLogo from '@/assets/ccsf-logo.png';
+import { InstitutionBrand } from '@/components/shared/InstitutionBrand';
 
 interface SplashScreenProps {
   onComplete: () => void;
@@ -404,10 +404,8 @@ const SplashScreen = ({ onComplete, minDuration = 4500 }: SplashScreenProps) => 
           />
 
           {/* Shield heartbeat pulse */}
-          <motion.img
-            src={ccsfLogo}
-            alt="CCSF Logo"
-            className="w-40 h-40 object-contain relative z-10"
+          <motion.div
+            className="relative z-10 text-white"
             style={{
               filter: 'drop-shadow(0 0 30px rgba(0, 47, 108, 0.6)) drop-shadow(0 0 60px rgba(0, 47, 108, 0.3))',
             }}
@@ -426,7 +424,9 @@ const SplashScreen = ({ onComplete, minDuration = 4500 }: SplashScreenProps) => 
               repeat: Infinity,
               ease: 'easeInOut',
             }}
-          />
+          >
+            <InstitutionBrand size="splash" className="justify-center" />
+          </motion.div>
         </motion.div>
       </div>
 

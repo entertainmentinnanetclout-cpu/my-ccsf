@@ -5,9 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ThemeToggle } from '@/components/shared/ThemeToggle';
+import { InstitutionBrand } from '@/components/shared/InstitutionBrand';
 import { PILOT_WARNING } from '@/config/pilot';
-import tutLogo from '@/assets/tut-logo.png';
-import tutLogoLight from '@/assets/tut_light_theme.png';
 
 type PilotAuthView = 'login' | 'forgot-password';
 
@@ -39,11 +38,7 @@ export function PilotAuthInstitutionalView({
       <header className="border-b border-border bg-background/95 shadow-soft backdrop-blur-xl dark:bg-[#002F6C]/95">
         <div className="flex w-full items-center justify-between px-4 py-3 sm:px-6 sm:py-4">
           <div className="flex items-center gap-3">
-            <img
-              src={theme === 'dark' ? tutLogo : tutLogoLight}
-              alt="Tshwane University of Technology"
-              className="h-10 w-auto object-contain sm:h-12"
-            />
+            <InstitutionBrand size="header" themeOverride={theme} />
             <div>
               <div className="flex items-center gap-2">
                 <Shield className="h-5 w-5 text-[#002F6C] dark:text-white" />

@@ -4,8 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { motion } from 'framer-motion';
 import { Shield, LayoutDashboard, AlertCircle, Megaphone, MessageSquare, BarChart3, Images, Users, Siren, Building2, Wifi } from 'lucide-react';
-import tutLogo from '@/assets/tut-logo.png';
-import tutLogoLight from '@/assets/tut_light_theme.png';
+import { InstitutionBrand } from '@/components/shared/InstitutionBrand';
 import { AdminOverview } from '@/components/admin/AdminOverview';
 import { AdminIncidents } from '@/components/admin/AdminIncidents';
 import { AdminAnnouncements } from '@/components/admin/AdminAnnouncements';
@@ -23,11 +22,9 @@ import { CasesProvider } from '@/contexts/CasesContext';
 import { MasterSyncButton } from '@/components/admin/MasterSyncButton';
 import { OfficeView } from '@/components/admin/OfficeView';
 import { WifiAccessPointManager } from '@/components/admin/WifiAccessPointManager';
-import { useTheme } from 'next-themes';
 
 const Admin = () => {
   const navigate = useNavigate();
-  const { theme } = useTheme();
   const [activeView, setActiveView] = useState<'overview' | 'incidents' | 'analytics' | 'announcements' | 'communication' | 'carousel' | 'admins' | 'escalation' | 'office' | 'wifi'>('overview');
   const navItems = [{
     view: 'overview',
@@ -87,14 +84,16 @@ const Admin = () => {
           <div className="container mx-auto px-4 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <motion.img src={theme === 'dark' ? tutLogo : tutLogoLight} alt="TUT Logo" className="h-10 logo-glow" whileHover={{
+                <motion.div className="text-white" whileHover={{
                 scale: 1.1,
                 rotate: -5
               }} transition={{
                 type: "spring",
                 stiffness: 300,
                 damping: 20
-              }} />
+              }}>
+                  <InstitutionBrand size="header" />
+                </motion.div>
                 <div>
                   <div className="flex items-center gap-2">
                     <Shield className="h-5 w-5 text-white animate-pulse" />
