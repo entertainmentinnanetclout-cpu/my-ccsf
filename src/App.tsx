@@ -1,20 +1,10 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Toaster } from '@/components/ui/toaster';
+import { Toaster as Sonner } from '@/components/ui/sonner';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { ThemeProvider } from 'next-themes';
 import React from 'react';
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 1,
-      refetchOnWindowFocus: false,
-    },
-  },
-});
-
 import { AuthProvider } from './contexts/AuthContext';
 import { PilotModeProvider } from './contexts/PilotModeContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -23,6 +13,7 @@ import { PilotPostProfileRedirect } from './components/pilot/PilotPostProfileRed
 import PilotInstitutionalLayout from './components/pilot/PilotInstitutionalLayout';
 import Layout from './components/shared/Layout';
 import PWAInstallPrompt from './components/shared/PWAInstallPrompt';
+import PWAUpdatePrompt from './components/shared/PWAUpdatePrompt';
 import { ApplicationErrorBoundary } from './components/shared/ApplicationErrorBoundary';
 import { ConnectivityBanner } from './components/shared/ConnectivityBanner';
 import Index from './pages/Index';
@@ -42,6 +33,15 @@ import PilotReportTracking from './pages/pilot/PilotReportTracking';
 import PilotResources from './pages/pilot/PilotResources';
 import CampusPilotPage from './pages/pilot/CampusPilotPage';
 import SuperAdminPilotPage from './pages/pilot/SuperAdminPilotPage';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 const App = () => (
   <ApplicationErrorBoundary>
@@ -96,46 +96,33 @@ const App = () => (
 
                     <Route path="/dashboard" element={
                       <ProtectedRoute allowedRoles={['student']}>
-                        <PilotPostProfileRedirect>
-                          <Dashboard />
-                        </PilotPostProfileRedirect>
+                        <PilotPostProfileRedirect><Dashboard /></PilotPostProfileRedirect>
                       </ProtectedRoute>
                     } />
                     <Route path="/security/*" element={
-                      <ProtectedRoute allowedRoles={['security', 'admin']}>
-                        <Security />
-                      </ProtectedRoute>
+                      <ProtectedRoute allowedRoles={['security', 'admin']}><Security /></ProtectedRoute>
                     } />
                     <Route path="/admin/*" element={
-                      <ProtectedRoute allowedRoles={['admin']}>
-                        <Admin />
-                      </ProtectedRoute>
+                      <ProtectedRoute allowedRoles={['admin']}><Admin /></ProtectedRoute>
                     } />
                     <Route path="/office" element={
-                      <ProtectedRoute allowedRoles={['security', 'admin']}>
-                        <Office />
-                      </ProtectedRoute>
+                      <ProtectedRoute allowedRoles={['security', 'admin']}><Office /></ProtectedRoute>
                     } />
                     <Route path="/profile" element={
-                      <ProtectedRoute allowedRoles={['student', 'security', 'admin']}>
-                        <Profile />
-                      </ProtectedRoute>
+                      <ProtectedRoute allowedRoles={['student', 'security', 'admin']}><Profile /></ProtectedRoute>
                     } />
                     <Route path="/profile-completion" element={
-                      <ProtectedRoute allowedRoles={['student', 'security', 'admin']}>
-                        <ProfileCompletion />
-                      </ProtectedRoute>
+                      <ProtectedRoute allowedRoles={['student', 'security', 'admin']}><ProfileCompletion /></ProtectedRoute>
                     } />
                     <Route path="/judiciary" element={
-                      <ProtectedRoute allowedRoles={['security', 'admin']}>
-                        <Judiciary />
-                      </ProtectedRoute>
+                      <ProtectedRoute allowedRoles={['security', 'admin']}><Judiciary /></ProtectedRoute>
                     } />
 
                     <Route path="*" element={<NotFound />} />
                   </Route>
                 </Routes>
                 <PWAInstallPrompt />
+                <PWAUpdatePrompt />
               </PilotModeProvider>
             </AuthProvider>
           </BrowserRouter>
