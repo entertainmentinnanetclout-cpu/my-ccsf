@@ -1,0 +1,224 @@
+/* Institutional visual alignment for CCSF portals.
+   Uses the same TUT blue/gold hierarchy as the current student dashboard. */
+
+:root {
+  --tut-blue: #002f6c;
+  --tut-blue-bright: #0055a5;
+  --tut-gold: #f2a900;
+}
+
+.pilot-institutional-shell {
+  background:
+    radial-gradient(circle at 12% 0%, rgba(0, 47, 108, 0.08), transparent 34rem),
+    linear-gradient(180deg, hsl(var(--background)) 0%, hsl(var(--muted) / 0.32) 100%);
+}
+
+.pilot-premium-surface > .min-h-screen {
+  min-height: auto;
+  background: transparent;
+}
+
+.pilot-premium-surface .container {
+  width: 100%;
+  max-width: 100%;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+.pilot-premium-surface [role='tablist'] {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+  width: 100%;
+  gap: 0.5rem;
+  padding: 0.65rem;
+  border: 1px solid hsl(var(--border) / 0.7);
+  border-radius: 1rem;
+  background: hsl(var(--card) / 0.96);
+  box-shadow: 0 18px 45px -30px rgba(0, 47, 108, 0.55);
+  backdrop-filter: blur(14px);
+}
+
+.pilot-premium-surface [role='tab'] {
+  min-height: 2.75rem;
+  border-radius: 0.75rem;
+  padding-inline: 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: hsl(var(--muted-foreground));
+  transition: transform 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+}
+
+.pilot-premium-surface [role='tab']:hover {
+  transform: translateY(-1px);
+  background: rgba(0, 47, 108, 0.07);
+  color: var(--tut-blue);
+}
+
+.pilot-premium-surface [role='tab'][data-state='active'] {
+  color: #fff;
+  background: linear-gradient(135deg, var(--tut-blue), var(--tut-blue-bright));
+  box-shadow: 0 12px 24px -16px rgba(0, 47, 108, 0.9);
+}
+
+.pilot-premium-surface [data-radix-tabs-content] > div,
+.pilot-premium-surface .shadow-large,
+.pilot-premium-surface .shadow-elevated {
+  border-color: hsl(var(--border) / 0.72);
+  box-shadow: 0 18px 48px -34px rgba(0, 47, 108, 0.62);
+}
+
+.pilot-premium-surface .rounded-lg.border,
+.pilot-premium-surface .rounded-xl.border {
+  border-color: hsl(var(--border) / 0.68);
+  background: hsl(var(--card) / 0.86);
+}
+
+.pilot-premium-surface button:not([data-state='active']) {
+  font-weight: 650;
+}
+
+/* Existing production staff portals receive the student-dashboard institutional frame. */
+[data-testid='ready-admin'],
+[data-testid='ready-campus-admin'] {
+  background:
+    radial-gradient(circle at 10% 0%, rgba(0, 47, 108, 0.07), transparent 32rem),
+    hsl(var(--background));
+}
+
+[data-testid='ready-admin'] > header,
+[data-testid='ready-campus-admin'] > header {
+  border-top: 4px solid var(--tut-gold) !important;
+  border-bottom: 1px solid hsl(var(--border)) !important;
+  background: hsl(var(--background) / 0.97) !important;
+  box-shadow: 0 14px 38px -30px rgba(0, 47, 108, 0.8) !important;
+  backdrop-filter: blur(16px);
+}
+
+[data-testid='ready-admin'] > header .text-white,
+[data-testid='ready-campus-admin'] > header .text-white {
+  color: var(--tut-blue) !important;
+}
+
+[data-testid='ready-admin'] > header .bg-white\/10,
+[data-testid='ready-campus-admin'] > header .bg-white\/10,
+[data-testid='ready-admin'] > header .bg-white\/20,
+[data-testid='ready-campus-admin'] > header .bg-white\/20 {
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--muted)) !important;
+}
+
+[data-testid='ready-admin'] > header::after,
+[data-testid='ready-campus-admin'] > header::after {
+  display: block;
+  width: 100%;
+  padding: 0.48rem 1rem;
+  border-bottom: 3px solid var(--tut-blue);
+  background: var(--tut-gold);
+  color: var(--tut-blue);
+  text-align: center;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+[data-testid='ready-admin'] > header::after {
+  content: 'TUT Campus Safety Forum · Super-Admin Operations';
+}
+
+[data-testid='ready-campus-admin'] > header::after {
+  content: 'TUT Campus Safety Forum · Campus Operations';
+}
+
+[data-testid='ready-admin'] main > div:first-child > div,
+[data-testid='ready-campus-admin'] main > div:first-child > div {
+  border: 1px solid hsl(var(--border) / 0.72);
+  border-radius: 1rem;
+  background: hsl(var(--card) / 0.96);
+  box-shadow: 0 18px 45px -32px rgba(0, 47, 108, 0.72);
+  backdrop-filter: blur(12px);
+}
+
+[data-testid='ready-admin'] main button[class*='bg-primary'],
+[data-testid='ready-campus-admin'] main button[class*='bg-primary'] {
+  background: linear-gradient(135deg, var(--tut-blue), var(--tut-blue-bright));
+  box-shadow: 0 12px 24px -18px rgba(0, 47, 108, 0.95);
+}
+
+[data-testid='ready-admin'] footer p,
+[data-testid='ready-campus-admin'] footer p {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid hsl(var(--border));
+  border-radius: 999px;
+  background: hsl(var(--muted) / 0.55);
+  padding: 0.55rem 1rem;
+  color: var(--tut-blue) !important;
+}
+
+/* The standard authentication screen uses the same restrained institutional canvas. */
+#root .min-h-screen.flex.items-center.justify-center.p-4[style] {
+  position: relative;
+  border-top: 4px solid var(--tut-gold);
+  background:
+    radial-gradient(circle at top left, rgba(0, 47, 108, 0.12), transparent 36rem),
+    linear-gradient(180deg, hsl(var(--background)), hsl(var(--muted) / 0.36)) !important;
+}
+
+#root .min-h-screen.flex.items-center.justify-center.p-4[style]::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 4px;
+  background: var(--tut-blue);
+  content: '';
+}
+
+#root .min-h-screen.flex.items-center.justify-center.p-4[style] .shadow-large {
+  border: 1px solid hsl(var(--border) / 0.75) !important;
+  border-top: 4px solid var(--tut-blue) !important;
+  border-radius: 1rem;
+  box-shadow: 0 28px 72px -42px rgba(0, 47, 108, 0.82) !important;
+}
+
+.dark [data-testid='ready-admin'] > header,
+.dark [data-testid='ready-campus-admin'] > header {
+  background: var(--tut-blue) !important;
+}
+
+.dark [data-testid='ready-admin'] > header .text-white,
+.dark [data-testid='ready-campus-admin'] > header .text-white {
+  color: #fff !important;
+}
+
+.dark [data-testid='ready-admin'] footer p,
+.dark [data-testid='ready-campus-admin'] footer p {
+  color: #fff !important;
+}
+
+@media (min-width: 640px) {
+  .pilot-premium-surface .container {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+@media (max-width: 767px) {
+  .pilot-premium-surface [role='tablist'] {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+  }
+
+  .pilot-premium-surface [role='tab'] {
+    min-width: 8.5rem;
+    scroll-snap-align: start;
+  }
+
+  [data-testid='ready-admin'] > header::after,
+  [data-testid='ready-campus-admin'] > header::after {
+    font-size: 0.62rem;
+    letter-spacing: 0.08em;
+  }
+}
