@@ -58,7 +58,8 @@ check(config.includes('No external emergency service or production dispatch work
 check(student.includes('ready-pilot-student-dashboard') && campus.includes('ready-pilot-campus-parity') && superAdmin.includes('ready-pilot-super-admin-parity'), 'All role dashboards expose readiness markers.');
 
 check([student,campus,superAdmin].every((x) => x.includes('role="tablist"') && x.includes('aria-selected=')), 'All role navigation exposes accessible tab state.');
-check(mobile.includes('overflow-x-auto') && mobile.includes('safe-area-inset-bottom') && !mobile.includes('slice(0'), 'Mobile navigation is complete and safe-area aware.');
+check(mobile.includes("typeof maxItems === 'number' ? items.slice(0, maxItems) : items") && mobile.includes('overflow-x-auto') && mobile.includes('safe-area-inset-bottom'), 'Mobile navigation shows every section by default and remains safe-area aware.');
+check(!student.includes('maxItems=') && !campus.includes('maxItems=') && !superAdmin.includes('maxItems='), 'Student, campus and super-admin portals do not opt into mobile truncation.');
 check(brand.includes('getTutLogo(activeTheme)') && brand.includes('BRAND.assets.ccsfLogo'), 'Canonical CCSF and separate TUT theme logos remain paired.');
 check(splash.includes('useReducedMotion') && splash.includes('InstitutionBrand'), 'Splash remains institutional and reduced-motion aware.');
 check(manifest.theme_color === '#002F6C' && manifest.lang === 'en-ZA' && manifest.icons.some((x) => x.purpose === 'maskable'), 'PWA identity, locale and maskable icon remain correct.');
