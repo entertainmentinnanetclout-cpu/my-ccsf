@@ -45,6 +45,9 @@ jobs:
       - name: Verify Phase 4 student and Phase 5 campus-security parity
         run: npm run test:phase4-5-parity
 
+      - name: Verify Phase 6 super-admin parity
+        run: npm run test:phase6-parity
+
       - name: Verify transparent canonical CCSF and TUT branding
         run: npm run test:branding
 
