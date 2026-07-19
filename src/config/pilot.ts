@@ -21,7 +21,7 @@ export const PILOT_ROUTES = {
 } as const;
 
 export const PILOT_WARNING =
-  'Pilot Test Environment: reports, status changes, notifications, location and evidence workflows are live inside Pilot Mode. No external emergency service or production dispatch workflow is contacted.';
+  'Demo Mode: No emergency service has been dispatched. Pilot Test Environment: reports, status changes, notifications, location and evidence workflows are live inside Pilot Mode. No external emergency service or production dispatch workflow is contacted.';
 
 export const PILOT_CONSENT_VERSION = 'ccsf-pilot-consent-v2-2026-07';
 export const PILOT_LOCATION_STORAGE_KEY = 'pilot_location_tracking';
