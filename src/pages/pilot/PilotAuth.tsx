@@ -4,7 +4,12 @@ import { useTheme } from 'next-themes';
 import { Loader2, LockKeyhole } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { PILOT_ENABLED, PILOT_ROUTES, resolvePilotDestination } from '@/config/pilot';
+import {
+  PILOT_ENABLED,
+  PILOT_POST_PROFILE_REDIRECT_KEY,
+  PILOT_ROUTES,
+  resolvePilotDestination,
+} from '@/config/pilot';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -36,6 +41,7 @@ export default function PilotAuth() {
 
     const destination = resolvePilotDestination(userRole, requestedFrom);
     if (userRole === 'student' && !profileCompleted) {
+      sessionStorage.setItem(PILOT_POST_PROFILE_REDIRECT_KEY, destination);
       navigate('/profile-completion', {
         replace: true,
         state: { from: destination },
@@ -43,6 +49,7 @@ export default function PilotAuth() {
       return;
     }
 
+    sessionStorage.removeItem(PILOT_POST_PROFILE_REDIRECT_KEY);
     navigate(destination, { replace: true });
   }, [user, userRole, profileCompleted, requestedFrom, navigate]);
 
