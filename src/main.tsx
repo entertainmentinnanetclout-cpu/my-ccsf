@@ -4,6 +4,7 @@ import { AnimatePresence } from "framer-motion";
 import App from "./App.tsx";
 import SplashScreen from "./components/shared/SplashScreen.tsx";
 import "./index.css";
+import "./styles/institutional-portals.css";
 
 // Register service worker for offline support
 if ('serviceWorker' in navigator) {

@@ -12,6 +12,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { PilotModeProvider } from './contexts/PilotModeContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { PilotRouteGuard } from './components/pilot/PilotRouteGuard';
+import PilotInstitutionalLayout from './components/pilot/PilotInstitutionalLayout';
 import Layout from './components/shared/Layout';
 import PWAInstallPrompt from './components/shared/PWAInstallPrompt';
 import Index from './pages/Index';
@@ -44,16 +45,7 @@ const App = () => (
               <Routes>
                 <Route path="/pilot/auth" element={<PilotAuth />} />
 
-                <Route element={<Layout />}>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/auth" element={<Auth />} />
-
-                  <Route path="/dashboard" element={
-                    <ProtectedRoute allowedRoles={['student']}>
-                      <Dashboard />
-                    </ProtectedRoute>
-                  } />
-
+                <Route element={<PilotInstitutionalLayout />}>
                   <Route path="/pilot" element={
                     <ProtectedRoute allowedRoles={['student']}>
                       <PilotRouteGuard allowedRoles={['student']}><PilotLanding /></PilotRouteGuard>
@@ -74,7 +66,6 @@ const App = () => (
                       <PilotRouteGuard allowedRoles={['student']}><PilotResources /></PilotRouteGuard>
                     </ProtectedRoute>
                   } />
-
                   <Route path="/security/pilot" element={
                     <ProtectedRoute allowedRoles={['security', 'admin']}>
                       <PilotRouteGuard allowedRoles={['security', 'admin']}><CampusPilotPage /></PilotRouteGuard>
@@ -85,7 +76,17 @@ const App = () => (
                       <PilotRouteGuard allowedRoles={['admin']}><SuperAdminPilotPage /></PilotRouteGuard>
                     </ProtectedRoute>
                   } />
+                </Route>
 
+                <Route element={<Layout />}>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/auth" element={<Auth />} />
+
+                  <Route path="/dashboard" element={
+                    <ProtectedRoute allowedRoles={['student']}>
+                      <Dashboard />
+                    </ProtectedRoute>
+                  } />
                   <Route path="/security/*" element={
                     <ProtectedRoute allowedRoles={['security', 'admin']}>
                       <Security />
