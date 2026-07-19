@@ -52,7 +52,7 @@ Verified live:
 
 Applied migration:
 
-- `20260719211500_phase_8_authenticated_assignment_parity.sql`
+- `20260719213542_phase_8_authenticated_assignment_parity.sql`
 
 The migration changes only isolated Pilot assignment authority. It does not modify production case or dispatch functions.
 
