@@ -2,9 +2,9 @@
 
 **Branch:** `feature/controlled-pilot-mode`  
 **Base:** `main`  
-**Changed files:** 99
+**Changed files:** 101
 
-This is the exact final file inventory for Pull Request #5 at Phase 7 completion.
+This is the exact final file inventory for Pull Request #5 after the Preview UAT authentication correction.
 
 ```text
 .env.example
@@ -48,6 +48,7 @@ eslint.config.js
 package.json
 scripts/verify-pilot-isolation.mjs
 src/App.tsx
+src/components/ProtectedRoute.tsx
 src/components/admin/CampusAdminManager.tsx
 src/components/admin/StaffCommunication.tsx
 src/components/pilot/PilotAdminWorkspace.tsx
@@ -70,6 +71,7 @@ src/integrations/supabase/types.ts
 src/lib/chatMedia.ts
 src/pages/Dashboard.tsx
 src/pages/pilot/CampusPilotPage.tsx
+src/pages/pilot/PilotAuth.tsx
 src/pages/pilot/PilotLanding.tsx
 src/pages/pilot/PilotReportTracking.tsx
 src/pages/pilot/PilotResources.tsx
