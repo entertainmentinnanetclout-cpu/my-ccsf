@@ -1,6 +1,15 @@
 import type { Database } from '@/integrations/supabase/types';
 
-export const PILOT_ENABLED = import.meta.env.VITE_PILOT_MODE_ENABLED === 'true';
+const runtimeHostname = typeof window === 'undefined' ? '' : window.location.hostname.toLowerCase();
+const isLocalPilotRuntime = runtimeHostname === 'localhost' || runtimeHostname === '127.0.0.1';
+const isApprovedBranchPreview = runtimeHostname.includes('git-fea-') && runtimeHostname.endsWith('.vercel.app');
+
+/**
+ * Pilot Mode is always enabled on local development and approved Vercel feature-branch aliases.
+ * Production and main-branch deployments remain fail-closed unless explicitly enabled.
+ */
+export const PILOT_ENABLED =
+  import.meta.env.VITE_PILOT_MODE_ENABLED === 'true' || isLocalPilotRuntime || isApprovedBranchPreview;
 
 export const PILOT_ROUTES = {
   landing: '/pilot',
@@ -12,9 +21,9 @@ export const PILOT_ROUTES = {
 } as const;
 
 export const PILOT_WARNING =
-  'Demo Mode: No emergency service has been dispatched. For an actual emergency, contact CPS immediately using institutionally verified contact details.';
+  'Pilot Test Environment: reports, status changes, notifications, location and evidence workflows are live inside Pilot Mode. No external emergency service or production dispatch workflow is contacted.';
 
-export const PILOT_CONSENT_VERSION = 'ccsf-pilot-consent-v1-2026-07';
+export const PILOT_CONSENT_VERSION = 'ccsf-pilot-consent-v2-2026-07';
 export const PILOT_LOCATION_STORAGE_KEY = 'pilot_location_tracking';
 export const PILOT_ATTACHMENT_BUCKET = 'pilot-report-attachments';
 export const PILOT_MAX_FILE_BYTES = 10 * 1024 * 1024;
@@ -36,7 +45,7 @@ export const PILOT_STATUS_LABELS: Record<PilotReportStatus, string> = {
   assessing: 'Assessing',
   assigned: 'Assigned',
   in_progress: 'In Progress',
-  simulation_completed: 'Simulation Completed',
+  simulation_completed: 'Resolved / Completed',
   cancelled: 'Cancelled',
   withdrawn: 'Withdrawn',
   expired: 'Expired',
