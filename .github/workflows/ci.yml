@@ -39,8 +39,11 @@ jobs:
       - name: Verify Phase 3 activation and routing
         run: npm run test:phase3-routing
 
-      - name: Verify Phase 4 core product completion
+      - name: Verify core product hardening
         run: npm run test:phase4-product
+
+      - name: Verify Phase 4 student and Phase 5 campus-security parity
+        run: npm run test:phase4-5-parity
 
       - name: Verify transparent canonical CCSF and TUT branding
         run: npm run test:branding
