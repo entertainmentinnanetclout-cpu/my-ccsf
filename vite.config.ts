@@ -1,13 +1,26 @@
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 
 export default defineConfig(({ mode }) => {
-  const explicitPilotFlag = process.env.VITE_PILOT_MODE_ENABLED;
+  const env = loadEnv(mode, process.cwd(), "");
+  const supabaseUrl = env.VITE_SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const supabasePublishableKey =
+    env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+  if (mode === "production" && (!supabaseUrl || !supabasePublishableKey)) {
+    throw new Error(
+      "Production builds require VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY.",
+    );
+  }
+
+  const explicitPilotFlag =
+    env.VITE_PILOT_MODE_ENABLED || process.env.VITE_PILOT_MODE_ENABLED;
+  const vercelEnvironment = env.VERCEL_ENV || process.env.VERCEL_ENV;
+  const vercelBranch = env.VERCEL_GIT_COMMIT_REF || process.env.VERCEL_GIT_COMMIT_REF;
   const approvedPreviewBranch =
-    process.env.VERCEL_ENV === "preview" &&
-    process.env.VERCEL_GIT_COMMIT_REF === "feature/controlled-pilot-mode";
+    vercelEnvironment === "preview" && vercelBranch === "feature/controlled-pilot-mode";
   const pilotModeEnabled = explicitPilotFlag ?? (approvedPreviewBranch ? "true" : "false");
 
   return {
