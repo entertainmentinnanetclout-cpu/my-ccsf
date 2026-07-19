@@ -72,8 +72,10 @@ assert(!/service[_-]?role/i.test(browserSource), 'Browser Pilot source contains 
 assert(!/pilot-session-cleanup|pilot-cleanup|pilot-export-results/.test(browserSource), 'Browser Pilot source does not call diagnostic-only Edge slugs.');
 
 const config = read('src/config/pilot.ts');
-assert(config.includes("VITE_PILOT_MODE_ENABLED === 'true'"), 'Pilot feature activation is fail-closed.');
-assert(config.includes('Demo Mode: No emergency service has been dispatched.'), 'Required no-dispatch warning is present.');
+assert(config.includes("VITE_PILOT_MODE_ENABLED === 'true'"), 'Explicit Pilot environment override remains available.');
+assert(config.includes("runtimeHostname.includes('git-fea-')"), 'Approved Vercel feature-branch aliases automatically enable Pilot Mode.');
+assert(config.includes("runtimeHostname === 'localhost'"), 'Local Pilot development is automatically enabled.');
+assert(config.includes('No external emergency service or production dispatch workflow is contacted.'), 'Required no-dispatch warning is present.');
 assert(config.includes("PILOT_LOCATION_STORAGE_KEY = 'pilot_location_tracking'"), 'Pilot tracking uses a separate browser-storage key.');
 assert(config.includes("PILOT_ATTACHMENT_BUCKET = 'pilot-report-attachments'"), 'Pilot attachments use the private Pilot bucket.');
 for (const status of ['received', 'assessing', 'assigned', 'in_progress', 'simulation_completed']) {
@@ -92,8 +94,12 @@ assert(app.includes("allowedRoles={['admin']}"), 'Super-admin Pilot route is adm
 const pilotAuth = read('src/pages/pilot/PilotAuth.tsx');
 assert(pilotAuth.includes('signInWithPassword'), 'Pilot authentication reuses existing Supabase accounts.');
 assert(pilotAuth.includes('pilotDestination'), 'Pilot authentication redirects by the existing account role.');
-assert(!pilotAuth.includes('signUp('), 'Pilot authentication does not create uninvited accounts.');
-assert(pilotAuth.includes('Student accounts must be invited'), 'Pilot authentication explains the student allowlist requirement.');
+assert(!pilotAuth.includes('signUp('), 'Pilot authentication does not create public accounts.');
+
+const studentDashboard = read('src/components/pilot/PilotStudentDashboard.tsx');
+assert(studentDashboard.includes("'home' | 'mycases' | 'report' | 'map' | 'messages'"), 'Pilot student dashboard mirrors the official student navigation model.');
+assert(studentDashboard.includes('PilotReportForm'), 'Pilot student dashboard exposes the complete Pilot report workflow.');
+assert(studentDashboard.includes('loadPilotNotifications'), 'Pilot student dashboard loads Pilot-only notifications.');
 
 const protectedRoute = read('src/components/ProtectedRoute.tsx');
 assert(protectedRoute.includes("? '/pilot/auth' : '/auth'"), 'Unauthenticated Pilot routes redirect to the dedicated Pilot login.');
