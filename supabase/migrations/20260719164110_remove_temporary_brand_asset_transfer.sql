@@ -10,6 +10,10 @@ begin
     raise exception 'chatgpt-brand-transfer is not empty; preserve and review its objects before bucket removal';
   end if;
 
+  -- Supabase Storage protects its tables from direct deletes unless the same
+  -- transaction-local guard used by the Storage API is explicitly enabled.
+  perform set_config('storage.allow_delete_query', 'true', true);
+
   delete from storage.buckets
   where id = 'chatgpt-brand-transfer';
 end
