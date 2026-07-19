@@ -51,6 +51,9 @@ jobs:
       - name: Verify Phase 7 authentication, PWA and institutional consistency
         run: npm run test:phase7-consistency
 
+      - name: Verify Phase 8 end-to-end UAT release gate
+        run: npm run test:phase8-release
+
       - name: Verify transparent canonical CCSF and TUT branding
         run: npm run test:branding
 
