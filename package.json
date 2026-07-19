@@ -10,7 +10,8 @@
     "typecheck": "tsc -p tsconfig.app.json --noEmit",
     "test:pilot-isolation": "node scripts/verify-pilot-isolation.mjs",
     "test:branding": "node scripts/verify-branding.mjs",
-    "qa:pilot": "npm run test:pilot-isolation && npm run test:branding && npm run typecheck && npm run lint && npm run build",
+    "test:student-home": "node scripts/verify-student-home-parity.mjs",
+    "qa:pilot": "npm run test:pilot-isolation && npm run test:branding && npm run test:student-home && npm run typecheck && npm run lint && npm run build",
     "lint": "eslint .",
     "preview": "vite preview"
   },

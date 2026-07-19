@@ -8,8 +8,7 @@ import { InstitutionBrand } from '@/components/shared/InstitutionBrand';
 import { ReportIncident } from '@/components/student/ReportIncident';
 import { EmergencyReport } from '@/components/student/EmergencyReport';
 import { CampusMap } from '@/components/student/CampusMap';
-import { CampusCarousel } from '@/components/student/CampusCarousel';
-import { NewsFeed } from '@/components/student/NewsFeed';
+import { StudentDashboardHome } from '@/components/student/StudentDashboardHome';
 import { StudentChat } from '@/components/student/StudentChat';
 import { MyCaseReports } from '@/components/student/MyCaseReports';
 import { NotificationBell } from '@/components/shared/NotificationBell';
@@ -22,7 +21,6 @@ const Dashboard = () => {
   const [activeView, setActiveView] = useState<'home' | 'report' | 'mycases' | 'map' | 'messages'>('home');
   const [userCampus, setUserCampus] = useState<string>('Campus');
   const [userCampusId, setUserCampusId] = useState<string | null>(null);
-  const [welcomeMessage, setWelcomeMessage] = useState<string>('Welcome | Re a le amogela | Nemukelekile');
 
   useEffect(() => {
     const checkProfile = async () => {
@@ -52,20 +50,7 @@ const Dashboard = () => {
       }
     };
 
-    const fetchSettings = async () => {
-      const { data } = await supabase
-        .from('app_settings')
-        .select('value')
-        .eq('key', 'welcome_banner_text')
-        .maybeSingle();
-
-      if (typeof data?.value === 'string' && data.value.trim()) {
-        setWelcomeMessage(data.value);
-      }
-    };
-
-    checkProfile();
-    fetchSettings();
+    void checkProfile();
   }, [user]);
   const navItems = [
     { view: 'home', icon: Home, label: 'Home' },
@@ -182,32 +167,7 @@ const Dashboard = () => {
           exit={{ opacity: 0, x: -20, scale: 0.97 }}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
         >
-          {activeView === 'home' && (
-            <div className="space-y-4 sm:space-y-6">
-              <div className="px-4">
-                <CampusCarousel campus={userCampusId || undefined} />
-              </div>
-
-              {/* Welcome Banner - Now below Carousel */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="w-full bg-[#F2A900] py-4 px-6 mb-4 overflow-hidden relative border-b-4 border-[#002F6C]"
-              >
-                <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(0,47,108,0.05)_50%,transparent_75%)] bg-[length:250%_250%] animate-gradient-x" />
-                <div className="relative z-10 text-center">
-                  <h2 className="text-[#002F6C] text-lg sm:text-xl font-bold tracking-tight uppercase">
-                    {welcomeMessage}
-                  </h2>
-                </div>
-              </motion.div>
-
-              <div className="px-4">
-                <NewsFeed />
-              </div>
-            </div>
-          )}
+          {activeView === 'home' && <StudentDashboardHome campus={userCampusId || undefined} />}
           <div className="px-4">
             {activeView === 'mycases' && <MyCaseReports />}
             {activeView === 'report' && <ReportIncident />}

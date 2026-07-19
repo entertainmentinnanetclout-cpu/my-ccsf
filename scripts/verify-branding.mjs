@@ -3,6 +3,8 @@ import { constants } from 'node:fs';
 import path from 'node:path';
 
 const root = process.cwd();
+const suppliedLogoPath = path.join('src', 'assets', 'Campus safety forum logo design(1).png');
+const publicLogoPath = path.join('public', 'ccsf-logo.png');
 const productionRoots = ['src', 'public'];
 const textExtensions = new Set(['.html', '.js', '.json', '.mjs', '.svg', '.ts', '.tsx']);
 const violations = [];
@@ -31,6 +33,7 @@ for (const file of files) {
   const content = await readFile(path.join(root, file), 'utf8');
   const prohibited = [
     ['legacy CCSF raster import', /@\/assets\/ccsf-logo\.png/],
+    ['generated CCSF vector reference', /ccsf-logo\.svg/],
     ['direct TUT logo import', /@\/assets\/(?:tut-logo\.png|tut_light_theme\.png)/],
     ['obsolete product expansion', /Campus Crime Safety Forum/],
     ['obsolete logo tagline', /NEXT LEVEL SECURITY/],
@@ -39,6 +42,41 @@ for (const file of files) {
 
   for (const [label, pattern] of prohibited) {
     if (pattern.test(content)) violations.push(`${file}: ${label}`);
+  }
+}
+
+const brandModule = await readFile(path.join(root, 'src', 'brand', 'index.ts'), 'utf8');
+if (!brandModule.includes("@/assets/Campus safety forum logo design(1).png")) {
+  violations.push('src/brand/index.ts: supplied CCSF logo is not the canonical import');
+}
+
+try {
+  const [suppliedLogo, publicLogo, compatibilityLogo] = await Promise.all([
+    readFile(path.join(root, suppliedLogoPath)),
+    readFile(path.join(root, publicLogoPath)),
+    readFile(path.join(root, 'src', 'assets', 'ccsf-logo.png')),
+  ]);
+
+  if (!suppliedLogo.equals(publicLogo)) {
+    violations.push('public/ccsf-logo.png: does not exactly match the supplied CCSF logo');
+  }
+  if (!suppliedLogo.equals(compatibilityLogo)) {
+    violations.push('src/assets/ccsf-logo.png: compatibility copy does not exactly match the supplied CCSF logo');
+  }
+} catch {
+  violations.push('supplied CCSF logo or public canonical copy is missing');
+}
+
+for (const obsoleteAsset of [
+  path.join('src', 'assets', 'ccsf-logo.svg'),
+  path.join('public', 'ccsf-logo.svg'),
+  path.join('public', 'favicon.svg'),
+]) {
+  try {
+    await access(path.join(root, obsoleteAsset), constants.F_OK);
+    violations.push(`${obsoleteAsset}: generated placeholder asset still exists`);
+  } catch {
+    // Expected: Phase 2.5 removes every generated placeholder logo asset.
   }
 }
 

@@ -3,7 +3,7 @@
 Last audited: 19 July 2026  
 Canonical codebase: `entertainmentinnanetclout-cpu/my-ccsf`  
 Production Supabase project: `MY CCSF` (`lfelzsubrlqwcsnetpov`)  
-Execution branch: `agent/phase-2-canonical-ccsf-branding`
+Execution branch: `agent/phase-2-5-logo-carousel-parity`
 
 ## Non-negotiable release rules
 
@@ -17,11 +17,11 @@ Execution branch: `agent/phase-2-canonical-ccsf-branding`
 ## Audit baseline
 
 - Open pull requests: **0**
-- Current Phase 2 baseline: `516052521b5a7cd500dab34b9e8e92e49eacd01d`
+- Current Phase 2.5 baseline: `dbb6551d8a614ecacfa79735e69c51a03deda216`
 - Supabase migration drift: **Resolved** — branch action reports all migrations up to date; status `FUNCTIONS_DEPLOYED`, preview `ACTIVE_HEALTHY`
 - Security adviser: leaked-password protection disabled (warning)
 - Performance adviser: informational unused-index notices only; retain until representative Pilot traffic exists
-- Canonical branding: CCSF + theme-aware TUT lockup centralised and applied across application surfaces
+- Canonical branding: the supplied CCSF PNG + theme-aware TUT lockup is centralised and applied across application surfaces
 - Temporary brand-transfer artifact and empty bucket: removed through the Phase 2 forward migration
 - Tracked `.env`: removed on the execution branch; `.env.example` remains the safe template
 
@@ -113,6 +113,31 @@ Database reconciliation report attached; migration dry run and application QA pa
 ### Merge gate
 
 Brand inventory complete, visual regression review approved, all checks green.
+
+## Phase 2.5 — Supplied logo correction and student dashboard parity
+
+**Status:** In execution
+
+**Depends on:** Phases 1–2
+
+### Deliverables
+
+- Replace the generated interim CCSF artwork with the user-supplied PNG on every browser, PWA, social and application surface.
+- Keep the existing colour system and TUT light/dark assets unchanged.
+- Repair non-deployable carousel database paths and prevent new `/src/...` paths.
+- Share the carousel, welcome banner and news feed between production and Pilot student dashboards.
+- Keep all Pilot reports, cases, location, notifications and metrics isolated.
+
+### Acceptance criteria
+
+- Branding verification proves the public CCSF source exactly matches the supplied PNG.
+- Both student home dashboards render a carousel, welcome banner and news feed.
+- eMalahleni no longer resolves to an empty carousel.
+- Pilot isolation, type-check, lint, build and browser checks pass.
+
+### Merge gate
+
+Phase 2.5 PR green, Supabase migration applied once, preview approved, and production visually verified.
 
 ## Phase 3 — Pilot controls and role-safe workflows
 

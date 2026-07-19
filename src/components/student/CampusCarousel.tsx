@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Shield, ImageOff } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { ChevronLeft, ChevronRight, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { CarouselSkeleton } from '@/components/shared/LoadingSkeletons';
@@ -13,22 +13,72 @@ interface CarouselImage {
   category: string;
 }
 
+interface CarouselItem {
+  id: string;
+  image: string;
+  title: string;
+  type: string;
+}
+
 interface CampusCarouselProps {
   campus?: string;
+}
+
+const DEFAULT_SLIDE_ID = 'institutional-safety-slide';
+
+function isDeployableImageUrl(url: string) {
+  return Boolean(url) && !/^\/?src\//i.test(url);
+}
+
+function formatCampusName(campus?: string) {
+  if (!campus) return 'TUT Campus';
+
+  return campus
+    .split('_')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
+    .replace('Garankuwa', 'Ga-Rankuwa')
+    .replace('Emalahleni', 'eMalahleni');
 }
 
 export const CampusCarousel = ({ campus }: CampusCarouselProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
   const [dbImages, setDbImages] = useState<CarouselImage[]>([]);
+  const [failedImageIds, setFailedImageIds] = useState<Set<string>>(() => new Set());
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    fetchCarouselImages();
+  const fetchCarouselImages = useCallback(async () => {
+    setIsLoading(true);
 
-    // Real-time subscription for carousel updates
+    let query = supabase
+      .from('carousel_images')
+      .select('id, image_url, title, category')
+      .eq('is_active', true)
+      .order('display_order', { ascending: true });
+
+    if (campus) {
+      query = query.in('campus', [campus, 'all']);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Unable to load campus carousel images', error);
+      setDbImages([]);
+    } else {
+      setDbImages((data ?? []).filter((item) => isDeployableImageUrl(item.image_url)));
+    }
+
+    setFailedImageIds(new Set());
+    setIsLoading(false);
+  }, [campus]);
+
+  useEffect(() => {
+    void fetchCarouselImages();
+
     const channel = supabase
-      .channel('carousel-images-realtime')
+      .channel(`carousel-images-${campus ?? 'current-campus'}`)
       .on(
         'postgres_changes',
         {
@@ -37,94 +87,79 @@ export const CampusCarousel = ({ campus }: CampusCarouselProps) => {
           table: 'carousel_images',
         },
         () => {
-          fetchCarouselImages();
-        }
+          void fetchCarouselImages();
+        },
       )
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      void supabase.removeChannel(channel);
     };
-  }, [campus]);
+  }, [campus, fetchCarouselImages]);
 
-  const fetchCarouselImages = async () => {
-    setIsLoading(true);
-    
-    let query = supabase
-      .from('carousel_images')
-      .select('id, image_url, title, category')
-      .eq('is_active', true)
-      .order('display_order', { ascending: true });
+  const carouselItems = useMemo<CarouselItem[]>(() => {
+    const availableImages = dbImages
+      .filter((item) => !failedImageIds.has(item.id))
+      .map((item) => ({
+        id: item.id,
+        image: item.image_url,
+        title: item.title,
+        type: item.category,
+      }));
 
-    // If campus is specified, get images for that campus or 'all' campus
-    if (campus) {
-      query = query.or(`campus.eq.${campus},campus.eq.all`);
-    }
+    if (availableImages.length > 0) return availableImages;
 
-    const { data, error } = await query;
+    return [{
+      id: DEFAULT_SLIDE_ID,
+      image: '/og-image.png',
+      title: `${formatCampusName(campus)} Safety`,
+      type: 'Campus Community Safety Forum',
+    }];
+  }, [campus, dbImages, failedImageIds]);
 
-    if (!error && data) {
-      setDbImages(data);
-    }
-    setIsLoading(false);
-  };
-
-  // Use database images only - filter out broken local paths
-  const carouselItems = dbImages
-    .filter(img => !img.image_url.startsWith('/src/') && !img.image_url.startsWith('src/'))
-    .map(img => ({ 
-      image: img.image_url, 
-      title: img.title, 
-      type: img.category 
-    }));
-
-  useEffect(() => {
-    if (isHovered || carouselItems.length === 0) return;
-    const timer = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % carouselItems.length);
-    }, 4000);
-    return () => clearInterval(timer);
-  }, [isHovered, carouselItems.length]);
-
-  // Reset index when images change
   useEffect(() => {
     setCurrentIndex(0);
-  }, [dbImages]);
+  }, [campus, dbImages]);
+
+  useEffect(() => {
+    if (currentIndex >= carouselItems.length) setCurrentIndex(0);
+  }, [carouselItems.length, currentIndex]);
+
+  useEffect(() => {
+    if (isHovered || carouselItems.length < 2) return;
+
+    const timer = window.setInterval(() => {
+      setCurrentIndex((previous) => (previous + 1) % carouselItems.length);
+    }, 4000);
+
+    return () => window.clearInterval(timer);
+  }, [carouselItems.length, isHovered]);
 
   const goToPrevious = () => {
     triggerHaptic('light');
-    setCurrentIndex((prev) => (prev - 1 + carouselItems.length) % carouselItems.length);
+    setCurrentIndex((previous) => (previous - 1 + carouselItems.length) % carouselItems.length);
   };
-  
+
   const goToNext = () => {
     triggerHaptic('light');
-    setCurrentIndex((prev) => (prev + 1) % carouselItems.length);
+    setCurrentIndex((previous) => (previous + 1) % carouselItems.length);
   };
 
-  if (isLoading) {
-    return <CarouselSkeleton />;
-  }
+  if (isLoading) return <CarouselSkeleton />;
 
-  // Show empty state if no images
-  if (carouselItems.length === 0) {
-    return (
-      <div className="w-full h-[180px] xs:h-[200px] sm:h-[280px] md:h-[350px] lg:h-[400px] rounded-xl sm:rounded-2xl bg-muted flex flex-col items-center justify-center">
-        <ImageOff className="h-12 w-12 text-muted-foreground mb-3" />
-        <p className="text-muted-foreground text-sm">No campus images available</p>
-        <p className="text-muted-foreground text-xs mt-1">Images will appear once uploaded by admin</p>
-      </div>
-    );
-  }
+  const currentItem = carouselItems[currentIndex] ?? carouselItems[0];
+  const hasMultipleItems = carouselItems.length > 1;
 
   return (
     <div
-      className="relative w-full h-[180px] xs:h-[200px] sm:h-[280px] md:h-[350px] lg:h-[400px] rounded-xl sm:rounded-2xl overflow-hidden shadow-lg sm:shadow-large"
+      className="relative h-[180px] w-full overflow-hidden rounded-xl shadow-lg xs:h-[200px] sm:h-[280px] sm:rounded-2xl sm:shadow-large md:h-[350px] lg:h-[400px]"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      data-testid="campus-carousel"
     >
       <AnimatePresence mode="wait">
         <motion.div
-          key={currentIndex}
+          key={currentItem.id}
           initial={{ opacity: 0, scale: 1.02 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.98 }}
@@ -132,25 +167,25 @@ export const CampusCarousel = ({ campus }: CampusCarouselProps) => {
           className="absolute inset-0"
         >
           <img
-            src={carouselItems[currentIndex].image}
-            alt={carouselItems[currentIndex].title}
-            className="w-full h-full object-cover object-center"
-            loading="lazy"
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              if (!target.dataset.fallback) {
-                target.dataset.fallback = 'true';
-                target.src = 'https://placehold.co/800x400/1a1a2e/ffffff?text=Campus+Image';
+            src={currentItem.image}
+            alt={currentItem.title}
+            className={currentItem.id === DEFAULT_SLIDE_ID
+              ? 'h-full w-full bg-white object-contain object-center'
+              : 'h-full w-full object-cover object-center'}
+            loading={currentIndex === 0 ? 'eager' : 'lazy'}
+            onError={() => {
+              if (currentItem.id !== DEFAULT_SLIDE_ID) {
+                setFailedImageIds((previous) => new Set(previous).add(currentItem.id));
               }
             }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20" />
-          <div className="absolute bottom-0 left-0 right-0 p-2 xs:p-3 sm:p-4 md:p-6">
-            <span className="inline-block px-1.5 xs:px-2 py-0.5 xs:py-1 bg-primary/80 text-primary-foreground text-[10px] xs:text-xs rounded-full mb-1 xs:mb-2">
-              {carouselItems[currentIndex].type}
+          <div className="absolute inset-x-0 bottom-0 p-2 xs:p-3 sm:p-4 md:p-6">
+            <span className="mb-1 inline-block rounded-full bg-primary/80 px-1.5 py-0.5 text-[10px] text-primary-foreground xs:mb-2 xs:px-2 xs:py-1 xs:text-xs">
+              {currentItem.type}
             </span>
-            <h3 className="text-white text-sm xs:text-base sm:text-lg md:text-2xl font-bold leading-tight">
-              {carouselItems[currentIndex].title}
+            <h3 className="text-sm font-bold leading-tight text-white xs:text-base sm:text-lg md:text-2xl">
+              {currentItem.title}
             </h3>
           </div>
 
@@ -165,10 +200,10 @@ export const CampusCarousel = ({ campus }: CampusCarouselProps) => {
                 <motion.div
                   initial={{ scale: 0.8 }}
                   animate={{ scale: 1 }}
-                  className="flex items-center gap-2 sm:gap-3 bg-background/95 px-4 sm:px-6 py-3 sm:py-4 rounded-2xl shadow-large"
+                  className="flex items-center gap-2 rounded-2xl bg-background/95 px-4 py-3 shadow-large sm:gap-3 sm:px-6 sm:py-4"
                 >
-                  <Shield className="h-6 w-6 sm:h-8 sm:w-8 text-primary animate-pulse" />
-                  <span className="text-lg sm:text-xl md:text-2xl font-bold text-foreground">Protected By CCSF</span>
+                  <Shield className="h-6 w-6 animate-pulse text-primary sm:h-8 sm:w-8" />
+                  <span className="text-lg font-bold text-foreground sm:text-xl md:text-2xl">Protected By CCSF</span>
                 </motion.div>
               </motion.div>
             )}
@@ -176,34 +211,44 @@ export const CampusCarousel = ({ campus }: CampusCarouselProps) => {
         </motion.div>
       </AnimatePresence>
 
-      <Button
-        variant="ghost"
-        size="icon"
-        className="absolute left-1 xs:left-2 top-1/2 -translate-y-1/2 bg-background/60 hover:bg-background/80 text-foreground rounded-full z-10 h-7 w-7 xs:h-8 xs:w-8 sm:h-10 sm:w-10"
-        onClick={goToPrevious}
-      >
-        <ChevronLeft className="h-3.5 w-3.5 xs:h-4 xs:w-4 sm:h-6 sm:w-6" />
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="absolute right-1 xs:right-2 top-1/2 -translate-y-1/2 bg-background/60 hover:bg-background/80 text-foreground rounded-full z-10 h-7 w-7 xs:h-8 xs:w-8 sm:h-10 sm:w-10"
-        onClick={goToNext}
-      >
-        <ChevronRight className="h-3.5 w-3.5 xs:h-4 xs:w-4 sm:h-6 sm:w-6" />
-      </Button>
+      {hasMultipleItems && (
+        <>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute left-1 top-1/2 z-10 h-7 w-7 -translate-y-1/2 rounded-full bg-background/60 text-foreground hover:bg-background/80 xs:left-2 xs:h-8 xs:w-8 sm:h-10 sm:w-10"
+            onClick={goToPrevious}
+            aria-label="Show previous campus image"
+          >
+            <ChevronLeft className="h-3.5 w-3.5 xs:h-4 xs:w-4 sm:h-6 sm:w-6" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute right-1 top-1/2 z-10 h-7 w-7 -translate-y-1/2 rounded-full bg-background/60 text-foreground hover:bg-background/80 xs:right-2 xs:h-8 xs:w-8 sm:h-10 sm:w-10"
+            onClick={goToNext}
+            aria-label="Show next campus image"
+          >
+            <ChevronRight className="h-3.5 w-3.5 xs:h-4 xs:w-4 sm:h-6 sm:w-6" />
+          </Button>
 
-      <div className="absolute bottom-2 xs:bottom-3 sm:bottom-4 right-2 xs:right-3 sm:right-4 flex gap-0.5 xs:gap-1 sm:gap-1.5 z-10">
-        {carouselItems.map((_, index) => (
-          <button
-            key={index}
-            onClick={() => setCurrentIndex(index)}
-            className={`h-1 xs:h-1.5 sm:h-2 rounded-full transition-all ${
-              index === currentIndex ? 'bg-white w-3 xs:w-4 sm:w-6' : 'bg-white/50 hover:bg-white/70 w-1 xs:w-1.5 sm:w-2'
-            }`}
-          />
-        ))}
-      </div>
+          <div className="absolute bottom-2 right-2 z-10 flex gap-0.5 xs:bottom-3 xs:right-3 xs:gap-1 sm:bottom-4 sm:right-4 sm:gap-1.5">
+            {carouselItems.map((item, index) => (
+              <button
+                key={item.id}
+                onClick={() => setCurrentIndex(index)}
+                aria-label={`Show campus image ${index + 1} of ${carouselItems.length}`}
+                aria-current={index === currentIndex ? 'true' : undefined}
+                className={`h-1 rounded-full transition-all xs:h-1.5 sm:h-2 ${
+                  index === currentIndex
+                    ? 'w-3 bg-white xs:w-4 sm:w-6'
+                    : 'w-1 bg-white/50 hover:bg-white/70 xs:w-1.5 sm:w-2'
+                }`}
+              />
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 };
