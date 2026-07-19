@@ -3,6 +3,8 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 
+const APPROVED_PILOT_PREVIEW_BRANCH = "feature/ccsf-phases-3-8-release-candidate";
+
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   const supabaseUrl = env.VITE_SUPABASE_URL || process.env.VITE_SUPABASE_URL;
@@ -20,8 +22,9 @@ export default defineConfig(({ mode }) => {
   const vercelEnvironment = env.VERCEL_ENV || process.env.VERCEL_ENV;
   const vercelBranch = env.VERCEL_GIT_COMMIT_REF || process.env.VERCEL_GIT_COMMIT_REF;
   const approvedPreviewBranch =
-    vercelEnvironment === "preview" && vercelBranch === "feature/controlled-pilot-mode";
-  const pilotModeEnabled = explicitPilotFlag ?? (approvedPreviewBranch ? "true" : "false");
+    vercelEnvironment === "preview" && vercelBranch === APPROVED_PILOT_PREVIEW_BRANCH;
+  const pilotModeEnabled =
+    explicitPilotFlag === "true" || approvedPreviewBranch ? "true" : "false";
 
   return {
     server: {
