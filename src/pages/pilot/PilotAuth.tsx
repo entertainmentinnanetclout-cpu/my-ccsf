@@ -11,6 +11,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import tutLogoLight from '@/assets/tut_light_theme.png';
 
+const PILOT_AUTH_PATH = '/pilot/auth';
+
 type PilotAuthView = 'login' | 'forgot-password';
 type PilotRole = 'student' | 'security' | 'admin';
 
@@ -61,7 +63,7 @@ export default function PilotAuth() {
     try {
       if (view === 'forgot-password') {
         const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
-          redirectTo: `${window.location.origin}${PILOT_ROUTES.auth}?reset=true`,
+          redirectTo: `${window.location.origin}${PILOT_AUTH_PATH}?reset=true`,
         });
         if (error) throw error;
         toast({ title: 'Recovery email sent', description: 'Use the link in your email, then return to the Pilot login.' });
