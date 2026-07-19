@@ -3,12 +3,10 @@ import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { AlertCircle, Loader2, LockKeyhole, ShieldAlert } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePilotMode } from '@/contexts/PilotModeContext';
-import { PILOT_ENABLED } from '@/config/pilot';
+import { PILOT_ENABLED, pilotDefaultDestination, type PilotRole } from '@/config/pilot';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { PilotBanner } from '@/components/pilot/PilotBanner';
-
-type PilotRole = 'student' | 'security' | 'admin';
 
 export function PilotRouteGuard({
   allowedRoles,
@@ -21,6 +19,7 @@ export function PilotRouteGuard({
   const navigate = useNavigate();
   const { user, userRole, userProfile, loading: authLoading, profileCompleted } = useAuth();
   const { loading, error, program, participant } = usePilotMode();
+  const requestedPath = `${location.pathname}${location.search}${location.hash}`;
 
   if (!PILOT_ENABLED) {
     return (
@@ -45,21 +44,21 @@ export function PilotRouteGuard({
     );
   }
 
-  if (!user) return <Navigate to="/pilot/auth" replace state={{ from: location.pathname }} />;
-  if (!userRole || !allowedRoles.includes(userRole)) {
+  if (!user) return <Navigate to="/pilot/auth" replace state={{ from: requestedPath }} />;
+  if (!userRole || !allowedRoles.includes(userRole as PilotRole)) {
     return (
       <GuardState
         icon={ShieldAlert}
         title="Role not authorised"
         description="Your current portal role cannot access this Pilot route."
-        actionLabel="Return to your portal"
-        onAction={() => navigate(userRole === 'admin' ? '/admin' : userRole === 'security' ? '/security' : '/dashboard')}
+        actionLabel="Open your Pilot portal"
+        onAction={() => navigate(userRole ? pilotDefaultDestination(userRole as PilotRole) : '/pilot/auth')}
       />
     );
   }
 
   if (userRole === 'student' && !profileCompleted) {
-    return <Navigate to="/profile-completion" replace state={{ from: '/pilot' }} />;
+    return <Navigate to="/profile-completion" replace state={{ from: requestedPath }} />;
   }
 
   if (userRole === 'security' && !userProfile?.campus) {
@@ -69,7 +68,7 @@ export function PilotRouteGuard({
         title="Campus assignment required"
         description="A campus assignment is required before campus-scoped Pilot records can be accessed."
         actionLabel="Open profile"
-        onAction={() => navigate('/profile')}
+        onAction={() => navigate('/profile', { state: { from: requestedPath } })}
       />
     );
   }
