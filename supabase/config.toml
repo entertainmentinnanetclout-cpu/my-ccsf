@@ -24,10 +24,10 @@ verify_jwt = true
 [functions.pilot-delete-report]
 verify_jwt = true
 
-[functions.pilot-delete-session]
+[functions.pilot-session-cleanup]
 verify_jwt = true
 
-[functions.pilot-purge-data]
+[functions.pilot-cleanup]
 verify_jwt = true
 
 [functions.pilot-export-results]

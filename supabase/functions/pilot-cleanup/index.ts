@@ -10,7 +10,7 @@ Deno.serve((req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers });
   return new Response(JSON.stringify({
     error: 'retired_endpoint',
-    message: 'pilot-export-results is not an operational CCSF endpoint.',
-    replacement: 'Use the audited pilot_export_data RPC.',
+    message: 'pilot-cleanup is not an operational CCSF endpoint.',
+    replacement: 'Use report-by-report pilot-delete-report followed by the authorised campus, programme, or retention completion RPC.',
   }), { status: 410, headers });
 });
