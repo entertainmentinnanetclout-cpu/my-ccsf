@@ -19,7 +19,7 @@ Completed: 19 July 2026
 
 The authoritative SQL and per-version byte/MD5 register are recorded in [phase-1-supabase-migration-reconciliation.md](phase-1-supabase-migration-reconciliation.md). Supabase CLI compares local and remote timestamps, so blank legacy migration names use the local suffix `remote_commit` without changing their authoritative version.
 
-Merge-triggered Supabase branch sync is the last infrastructure signal. The pre-merge `main` status remains `MIGRATIONS_FAILED` because the restored files are intentionally not present on `main` until this reviewed PR merges.
+Merge-triggered Supabase branch sync completed successfully. After 30 byte-identical UUID-named legacy duplicates were removed, the branch action reported `All migrations are up to date`, deployed all 11 configured functions, reached `FUNCTIONS_DEPLOYED`, and retained `ACTIVE_HEALTHY` preview status.
 
 ## Edge Function parity
 
@@ -58,10 +58,17 @@ The sole security warning is Supabase Auth leaked-password protection being disa
 
 Unused-index notices are retained until representative Pilot traffic exists; removing intended relationship and queue indexes before usage statistics mature would be premature.
 
-## Completion gate
+## Final completion evidence
 
-Phase 1 is complete when:
+- PR #20 merged: governance, 119 canonical migrations, Edge source/configuration and verification records.
+- PR #21 merged: removed 30 byte-for-byte duplicate UUID-named legacy files.
+- GitHub Pilot isolation, type-check, lint and production build: passed.
+- Supabase branch log: `All migrations are up to date`.
+- Supabase status: `FUNCTIONS_DEPLOYED`.
+- Preview project status: `ACTIVE_HEALTHY`.
+- Active functions: 11/11; JWT enabled: 11/11.
+- Deployed files matching `main`: 27/27.
+- Security adviser: one accepted leaked-password warning; no critical/high findings.
+- Performance adviser: informational unused indexes only.
 
-1. GitHub QA passes at the final commit;
-2. the reviewed PR is merged to `main`;
-3. Supabase branch action re-runs and no longer reports missing remote migration versions.
+**Phase 1 is complete.**
