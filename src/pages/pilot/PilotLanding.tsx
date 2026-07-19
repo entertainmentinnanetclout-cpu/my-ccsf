@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { CalendarDays, CheckCircle2, Clock3, FileCheck2, Loader2, MapPin, ShieldCheck, Trash2 } from 'lucide-react';
+import { CheckCircle2, FileCheck2, Loader2, MapPin, ShieldCheck } from 'lucide-react';
 import { usePilotMode } from '@/contexts/PilotModeContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { consentToPilot, createPilotSession } from '@/services/pilot/pilotCoreService';
-import { CAMPUS_LABELS, PILOT_CONSENT_VERSION, PILOT_ROUTES } from '@/config/pilot';
+import { CAMPUS_LABELS, PILOT_CONSENT_VERSION } from '@/config/pilot';
 import { PilotBanner } from '@/components/pilot/PilotBanner';
+import { PilotStudentDashboard } from '@/components/pilot/PilotStudentDashboard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -14,7 +14,6 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 
 export default function PilotLanding() {
-  const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
   const { program, participant, session, refresh, setSession } = usePilotMode();
@@ -24,23 +23,26 @@ export default function PilotLanding() {
   if (!program || !participant || !user) return null;
 
   const hasConsent = ['consented', 'active', 'completed'].includes(participant.status) && Boolean(participant.consented_at);
-  const canStart = program.status === 'active' && ['invited', 'consented', 'active'].includes(participant.status);
   const currentSession = session?.status === 'in_progress' ? session : null;
 
-  const start = async () => {
+  const enterDashboard = async () => {
     setLoading(true);
     try {
       if (!hasConsent) {
-        if (!consent) throw new Error('Consent must be accepted before starting the Pilot.');
+        if (!consent) throw new Error('Consent must be accepted before entering the Pilot dashboard.');
         await consentToPilot(participant.id, PILOT_CONSENT_VERSION);
       }
-      const next = currentSession ?? await createPilotSession({ ...participant, status: hasConsent ? participant.status : 'consented' });
+
+      const next = currentSession ?? await createPilotSession({
+        ...participant,
+        status: hasConsent ? participant.status : 'consented',
+      });
       setSession(next);
       await refresh();
-      navigate(PILOT_ROUTES.session(next.id));
+      toast({ title: 'Pilot dashboard activated', description: 'The isolated full-workflow environment is ready.' });
     } catch (caught) {
       toast({
-        title: 'Unable to start Pilot session',
+        title: 'Unable to enter Pilot dashboard',
         description: caught instanceof Error ? caught.message : 'Try again.',
         variant: 'destructive',
       });
@@ -49,110 +51,85 @@ export default function PilotLanding() {
     }
   };
 
+  if (currentSession && hasConsent) {
+    return <PilotStudentDashboard program={program} participant={participant} session={currentSession} />;
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto max-w-5xl px-4 py-8 md:py-12">
         <PilotBanner className="mb-6" />
 
-        <div className="grid gap-6 lg:grid-cols-[1.35fr_0.65fr]">
-          <Card className="shadow-large">
-            <CardHeader>
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <CardTitle className="text-2xl md:text-3xl">{program.name}</CardTitle>
-                  <CardDescription className="mt-2 max-w-2xl text-base">
-                    {program.description || 'Controlled testing of the CCSF digital safety workflow.'}
-                  </CardDescription>
-                </div>
-                <Badge variant={program.status === 'active' ? 'default' : 'secondary'} className="capitalize">
-                  {program.status}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid gap-3 sm:grid-cols-3">
-                <Info icon={MapPin} label="Campus" value={CAMPUS_LABELS[participant.campus]} />
-                <Info icon={Clock3} label="Retention" value={`${program.retention_days} days`} />
-                <Info icon={ShieldCheck} label="Participation" value={participant.status.replace(/_/g, ' ')} />
-              </div>
-
-              <div className="rounded-xl border bg-muted/30 p-5">
-                <h2 className="font-bold">What this Pilot tests</h2>
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  {[
-                    'Simulated incident submission',
-                    'Emergency-button simulation',
-                    'Location permission and accuracy',
-                    'Private attachment upload',
-                    'Status tracking and notifications',
-                    'Usability, confidence and feedback',
-                  ].map((item) => (
-                    <div key={item} className="flex items-start gap-2 text-sm">
-                      <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-green-600" />
-                      <span>{item}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {!hasConsent && (
-                <div className="rounded-xl border border-primary/20 p-5">
-                  <h2 className="font-bold">Participant consent</h2>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Consent records the Pilot purpose, temporary data collection, optional location and attachment testing, no-real-dispatch notice, retention period and withdrawal process.
-                  </p>
-                  <div className="mt-4 flex items-start gap-3">
-                    <Checkbox id="pilot-consent" checked={consent} onCheckedChange={(checked) => setConsent(checked === true)} />
-                    <Label htmlFor="pilot-consent" className="leading-relaxed">
-                      I consent to participate in this controlled simulation. I understand that no real emergency response will be dispatched and that I may withdraw through the Pilot interface.
-                    </Label>
-                  </div>
-                </div>
-              )}
-
-              {program.status !== 'active' && !currentSession && (
-                <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100">
-                  New sessions are unavailable while the programme is {program.status}. Existing records remain available for review.
-                </div>
-              )}
-
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <Button size="lg" onClick={start} disabled={loading || (!currentSession && !canStart) || (!hasConsent && !consent)} className="sm:flex-1">
-                  {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : currentSession ? <FileCheck2 className="mr-2 h-5 w-5" /> : <ShieldCheck className="mr-2 h-5 w-5" />}
-                  {currentSession ? 'Resume Pilot Session' : 'Consent and Start Session'}
-                </Button>
-                <Button size="lg" variant="outline" onClick={() => navigate(PILOT_ROUTES.resources)}>
-                  <FileCheck2 className="mr-2 h-5 w-5" /> Safety Resources
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Programme window</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 text-sm">
-                <DateLine label="Starts" value={program.starts_at} />
-                <DateLine label="Ends" value={program.ends_at} />
-                <DateLine label="Invited" value={participant.invited_at} />
-                <DateLine label="Consented" value={participant.consented_at} />
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg"><Trash2 className="h-5 w-5" /> Your data rights</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2 text-sm text-muted-foreground">
-                <p>You may withdraw from an active session and request deletion of Pilot records.</p>
-                <p>Private files are removed before relational deletion is finalised.</p>
-                <p>Production cases and emergency services are not affected by Pilot deletion actions.</p>
-              </CardContent>
-            </Card>
+        <Card className="overflow-hidden border-border/60 shadow-large">
+          <div className="border-b-4 border-b-[#002F6C] bg-[#F2A900] px-6 py-5 text-[#002F6C]">
+            <p className="text-xs font-extrabold uppercase tracking-[0.18em]">Always-on full workflow Pilot</p>
+            <h1 className="mt-1 text-2xl font-extrabold sm:text-3xl">Activate your Pilot student dashboard</h1>
           </div>
-        </div>
+
+          <CardHeader>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <CardTitle>{program.name}</CardTitle>
+                <CardDescription className="mt-2 max-w-3xl text-base">
+                  This separate environment mirrors the official report, location, evidence, status, notification and case-tracking flow. Pilot reports are live inside Pilot Mode and remain separate from production cases.
+                </CardDescription>
+              </div>
+              <Badge className="bg-emerald-600 capitalize">{program.status}</Badge>
+            </div>
+          </CardHeader>
+
+          <CardContent className="space-y-6">
+            <div className="grid gap-4 sm:grid-cols-3">
+              <Info icon={MapPin} label="Campus" value={CAMPUS_LABELS[participant.campus]} />
+              <Info icon={FileCheck2} label="Workflow" value="Full report lifecycle" />
+              <Info icon={ShieldCheck} label="Dispatch" value="Pilot-only" />
+            </div>
+
+            <div className="rounded-xl border bg-muted/30 p-5">
+              <h2 className="font-bold">Enabled functionality</h2>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                {[
+                  'Standard and emergency reporting tests',
+                  'GPS location and live tracking tests',
+                  'Private evidence attachments',
+                  'Live campus and super-admin report queues',
+                  'Assignment and case-status progression',
+                  'Student notifications and case tracking',
+                ].map((item) => (
+                  <div key={item} className="flex items-start gap-2 text-sm">
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                    <span>{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {!hasConsent && (
+              <div className="rounded-xl border border-primary/20 p-5">
+                <h2 className="font-bold">One-time Pilot consent</h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Pilot records are operational test records. They are visible to authorised Pilot staff but never trigger external emergency dispatch.
+                </p>
+                <div className="mt-4 flex items-start gap-3">
+                  <Checkbox id="pilot-consent" checked={consent} onCheckedChange={(checked) => setConsent(checked === true)} />
+                  <Label htmlFor="pilot-consent" className="leading-relaxed">
+                    I consent to use the isolated CCSF Pilot environment and understand that reports remain test records even though the complete internal workflow is active.
+                  </Label>
+                </div>
+              </div>
+            )}
+
+            <Button
+              size="lg"
+              onClick={enterDashboard}
+              disabled={loading || (!hasConsent && !consent)}
+              className="w-full bg-gradient-to-r from-[#002F6C] to-[#0055A5] text-base font-bold text-white shadow-lg"
+            >
+              {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <ShieldCheck className="mr-2 h-5 w-5" />}
+              Enter Full Pilot Dashboard
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
@@ -160,19 +137,10 @@ export default function PilotLanding() {
 
 function Info({ icon: Icon, label, value }: { icon: typeof MapPin; label: string; value: string }) {
   return (
-    <div className="rounded-lg border bg-background p-3">
-      <Icon className="h-4 w-4 text-primary" />
-      <p className="mt-2 text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className="mt-1 font-semibold capitalize">{value}</p>
-    </div>
-  );
-}
-
-function DateLine({ label, value }: { label: string; value: string | null }) {
-  return (
-    <div className="flex items-center justify-between gap-3 border-b pb-2 last:border-0 last:pb-0">
-      <span className="flex items-center gap-2 text-muted-foreground"><CalendarDays className="h-4 w-4" /> {label}</span>
-      <span className="text-right font-medium">{value ? new Date(value).toLocaleDateString() : 'Not specified'}</span>
+    <div className="rounded-xl border bg-background p-4">
+      <Icon className="h-5 w-5 text-primary" />
+      <p className="mt-3 text-xs font-bold uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className="mt-1 font-semibold">{value}</p>
     </div>
   );
 }
