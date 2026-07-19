@@ -1,73 +1,66 @@
-# Welcome to your Lovable project
+# CCSF — Campus Community Safety Forum
 
-## Project info
+CCSF is a role-based campus safety platform for students, campus security teams, administrators, and authorised office/judiciary workflows. The application includes incident reporting and tracking, campus-scoped case management, private evidence/media handling, notifications, emergency contacts, and a controlled Pilot environment.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## Technology
 
-## How can I edit this code?
+- React 18, TypeScript, Vite
+- Tailwind CSS and shadcn/ui
+- Supabase Auth, Postgres, Row Level Security, Storage, Realtime, and Edge Functions
+- GitHub Actions for verification
 
-There are several ways of editing your application.
+## Local setup
 
-**Use Lovable**
+Requirements: Node.js 20 and npm.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+```bash
+npm ci
+cp .env.example .env
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+Populate `.env` with the correct Supabase publishable browser key. Never place a Supabase secret or service-role key in a client environment variable or commit it to Git.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Verification
 
-**Use GitHub Codespaces**
+```bash
+npm run typecheck
+npm run lint
+npm run build
+npm run test:pilot-isolation
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+Run the complete Pilot gate with:
 
-## What technologies are used for this project?
+```bash
+npm run qa:pilot
+```
 
-This project is built with:
+## Pilot safety boundary
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+Pilot Mode is a controlled simulation environment. It does not dispatch an external emergency service. It must remain disabled unless the deployment is explicitly approved:
 
-## How can I deploy this project?
+```text
+VITE_PILOT_MODE_ENABLED=false
+```
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+Pilot routes:
 
-## Can I connect a custom domain to my Lovable project?
+- Student: `/pilot`
+- Campus security/admin: `/security/pilot`
+- Super admin: `/admin/pilot`
 
-Yes, you can!
+## Supabase
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+Production project: `MY CCSF`  
+Project reference: `lfelzsubrlqwcsnetpov`
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Production migrations are forward-only. Consult the live ledgers under `docs/pilot-mode/` before applying any schema change. Never rerun a migration that is already recorded in production.
+
+All exposed tables require appropriate RLS. Public client code may use only publishable/anon credentials. Elevated operations belong in reviewed database functions or JWT-protected Edge Functions with explicit caller and scope validation.
+
+## Delivery governance
+
+The authoritative remaining-work sequence, dependencies, acceptance criteria, branch disposition, and merge gates are in [docs/CCSF_FINALISATION_PLAN.md](docs/CCSF_FINALISATION_PLAN.md).
+
+No stale branch should be merged wholesale. Isolate and review any proven unique changes before carrying them into the current execution branch.
