@@ -7,6 +7,19 @@ const EMERGENCY_TITLE = 'Emergency assistance request';
 const EMERGENCY_DESCRIPTION = 'Emergency assistance requested. The student may be unable to provide further details.';
 const EMERGENCY_FALLBACK_CATEGORY = 'Public violence';
 
+const isProgrammeOpen = (program: {
+  status: string;
+  starts_at: string | null;
+  ends_at: string | null;
+  eligible_campuses: string[];
+}, campus: string) => {
+  const now = Date.now();
+  return program.status === 'active'
+    && (!program.starts_at || new Date(program.starts_at).getTime() <= now)
+    && (!program.ends_at || new Date(program.ends_at).getTime() >= now)
+    && program.eligible_campuses.includes(campus);
+};
+
 Deno.serve(async (req) => {
   const early = requirePost(req);
   if (early) return early;
@@ -28,6 +41,9 @@ Deno.serve(async (req) => {
     if (!session || session.user_id !== context.user.id || session.status !== 'in_progress') {
       throw new PilotHttpError(404, 'An active owned Pilot session is required.', 'session_not_found');
     }
+    if (new Date(session.expires_at).getTime() <= Date.now()) {
+      throw new PilotHttpError(409, 'The Pilot session has expired.', 'session_expired');
+    }
     if (!context.campus || session.campus !== context.campus) {
       throw new PilotHttpError(403, 'The Pilot session campus does not match your profile.', 'campus_mismatch');
     }
@@ -37,29 +53,40 @@ Deno.serve(async (req) => {
       context.adminClient.from('pilot_programs').select('*').eq('id', session.program_id).maybeSingle(),
     ]);
     if (participantError || programError) throw participantError ?? programError;
-    if (!participant || participant.user_id !== context.user.id || !['consented', 'active'].includes(participant.status)) {
-      throw new PilotHttpError(403, 'Pilot participation is no longer active.', 'participant_inactive');
+    if (!participant
+      || participant.user_id !== context.user.id
+      || participant.program_id !== session.program_id
+      || participant.campus !== session.campus
+      || !['consented', 'active'].includes(participant.status)) {
+      throw new PilotHttpError(403, 'Pilot participation is no longer active for this campus.', 'participant_inactive');
     }
-    if (!program || program.status !== 'active') {
-      throw new PilotHttpError(409, 'The Pilot programme is not accepting reports.', 'programme_inactive');
+    if (!program || !isProgrammeOpen(program, session.campus)) {
+      throw new PilotHttpError(409, 'The Pilot programme is not active for this campus.', 'programme_inactive');
     }
 
     let scenario: {
       id: string;
       scenario_type: string;
       expected_category: string | null;
+      simulated_severity: string;
+      routing_destination: string;
+      simulation_notice: string;
+      requires_location: boolean;
     } | null = null;
 
     if (scenarioId) {
       const { data, error: scenarioError } = await context.adminClient
         .from('pilot_scenarios')
-        .select('id, scenario_type, expected_category')
+        .select('id, scenario_type, expected_category, simulated_severity, routing_destination, simulation_notice, requires_location')
         .eq('id', scenarioId)
         .eq('program_id', session.program_id)
         .eq('is_active', true)
         .maybeSingle();
       if (scenarioError) throw scenarioError;
       if (!data) throw new PilotHttpError(400, 'The selected Pilot scenario is not active.', 'scenario_inactive');
+      if (data.routing_destination !== 'campus_security') {
+        throw new PilotHttpError(409, 'The selected Pilot scenario has an unsupported routing destination.', 'routing_invalid');
+      }
       scenario = data;
     }
 
@@ -84,8 +111,8 @@ Deno.serve(async (req) => {
     const locationDescription = optionalText(body.location_description, 'location_description', 500)
       ?? (emergency ? 'Emergency location captured; readable address lookup was unavailable.' : null);
 
-    if (emergency && (locationLat === null || locationLng === null)) {
-      throw new PilotHttpError(400, 'Emergency reports require a captured location.', 'emergency_location_required');
+    if ((emergency || scenario?.requires_location) && (locationLat === null || locationLng === null)) {
+      throw new PilotHttpError(400, 'This Pilot scenario requires a captured location.', 'scenario_location_required');
     }
 
     const { data: report, error: reportError } = await context.adminClient
@@ -111,6 +138,10 @@ Deno.serve(async (req) => {
       .single();
     if (reportError || !report) throw reportError ?? new Error('Report submission returned no record.');
 
+    if (report.routing_campus !== session.campus || report.routing_destination !== 'campus_security') {
+      throw new PilotHttpError(500, 'Pilot report routing verification failed.', 'routing_verification_failed');
+    }
+
     await context.adminClient
       .from('pilot_sessions')
       .update({ last_activity_at: new Date().toISOString() })
@@ -129,6 +160,11 @@ Deno.serve(async (req) => {
         scenario_id: scenarioId,
         minimal_emergency_flow: emergency,
         location_description: locationDescription,
+        simulation_only: true,
+        simulated_severity: report.simulated_severity,
+        routing_destination: report.routing_destination,
+        routing_campus: report.routing_campus,
+        external_dispatch: false,
       },
     });
 
