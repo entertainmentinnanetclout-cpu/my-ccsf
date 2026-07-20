@@ -15,7 +15,11 @@ const app = read('src/App.tsx');
 for (const label of ['Home', 'My Cases', 'Report', 'Map', 'Support']) {
   assert(student.includes(`label: '${label}'`), `Student Pilot includes official ${label} navigation.`);
 }
-assert(student.includes('<StudentDashboardHome campus={participant.campus} />'), 'Student Pilot retains official home carousel, welcome and news content.');
+assert(
+  student.includes('<PilotDashboardCarousel')
+    && student.includes('<StudentDashboardHome campus={participant.campus} showCarousel={false} />'),
+  'Student Pilot uses the isolated Phase 4 carousel while retaining shared welcome and news content.',
+);
 assert(student.includes('loadOwnPilotReports') && student.includes('loadPilotScenarios') && student.includes('loadPilotNotifications'), 'Student Pilot loads isolated cases, workflows and notifications.');
 assert(
   student.includes('Emergency Test')
@@ -29,6 +33,8 @@ assert(student.includes('setNotifications(previous)'), 'Student notification upd
 assert(student.includes('role="tablist"') && student.includes('aria-selected='), 'Student Pilot navigation exposes accessible tab semantics.');
 assert(student.includes('role="log"') && student.includes('aria-live="polite"'), 'Student Pilot notifications are announced accessibly.');
 assert(student.includes('data-testid="ready-pilot-student-dashboard"'), 'Student Pilot has a stable readiness marker.');
+assert(student.includes('usePilotGuide({ autoOpen: true })'), 'Student Pilot includes the Phase 4 first-login guide.');
+assert(student.includes('Download the CCSF Pilot Safety Guide'), 'Student Pilot exposes the Phase 4 safety handbook.');
 
 for (const prohibited of ["from('incidents')", "from('notifications')", "from('case_updates')", "from('incident_media')", 'send-push-notification', '<EmergencyReport', '<ReportIncident']) {
   assert(!student.includes(prohibited), `Student Pilot does not reference production workflow: ${prohibited}.`);
