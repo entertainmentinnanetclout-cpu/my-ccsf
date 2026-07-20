@@ -39,6 +39,11 @@ jobs:
           set -o pipefail
           npm run test:pilot-isolation 2>&1 | tee phase3-isolation.log
 
+      - name: Verify existing student and campus parity
+        run: |
+          set -o pipefail
+          npm run test:phase4-5-parity 2>&1 | tee phase4-5-parity.log
+
       - name: Type-check review application changes
         run: npm run typecheck
 
@@ -54,6 +59,7 @@ jobs:
           name: phase3-review-gate-diagnostics
           path: |
             phase3-isolation.log
+            phase4-5-parity.log
             phase3-lint.log
           if-no-files-found: ignore
           retention-days: 7
