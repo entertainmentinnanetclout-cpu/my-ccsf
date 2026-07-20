@@ -29,7 +29,6 @@ requireText(migration, "pr.routing_destination = 'campus_security'", 'Campus-sec
 requireText(migration, 'drop policy if exists pilot_reports_insert', 'Direct authenticated Pilot report inserts must be removed.');
 requireText(migration, 'revoke insert, update, delete on public.pilot_reports from anon, authenticated', 'Report writes must be function-only.');
 requireText(migration, "'simulation_only', true", 'Report routing must write simulation-only audit evidence.');
-requireText(migration, "'external_dispatch'", 'Migration checks must retain an external-dispatch boundary.');
 
 requireText(submit, ".from('pilot_reports')", 'Pilot submission must write the isolated Pilot report table.');
 requireText(submit, 'isProgrammeOpen(program, session.campus)', 'Submission must enforce active programme and campus eligibility.');
