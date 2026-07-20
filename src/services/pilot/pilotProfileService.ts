@@ -19,38 +19,30 @@ export interface PilotStudentIdentity {
   emergency_contact_relationship: string | null;
 }
 
-const PROFILE_FIELDS = [
-  'id',
-  'full_name',
-  'first_name',
-  'last_name',
-  'email',
-  'phone_number',
-  'campus',
-  'student_number',
-  'course',
-  'year_of_study',
-  'residence',
-  'emergency_contact_name',
-  'emergency_contact_phone',
-  'emergency_contact_relationship',
-].join(',');
+type PilotIdentityRpcResult = {
+  data: PilotStudentIdentity[] | null;
+  error: { message?: string } | null;
+};
 
 export async function loadPilotStudentIdentities(userIds: string[]): Promise<PilotStudentIdentity[]> {
   const uniqueIds = [...new Set(userIds.filter(Boolean))];
   if (!uniqueIds.length) return [];
 
-  const { data, error } = await supabase
-    .from('profiles')
-    .select(PROFILE_FIELDS)
-    .in('id', uniqueIds);
+  const callIdentityRpc = supabase.rpc as unknown as (
+    functionName: string,
+    args: Record<string, unknown>,
+  ) => Promise<PilotIdentityRpcResult>;
+
+  const { data, error } = await callIdentityRpc('pilot_get_student_identities', {
+    p_user_ids: uniqueIds,
+  });
 
   if (error) {
     console.error('Unable to load Pilot student identities.', error);
-    throw new Error('Student names and profile details could not be loaded.');
+    throw new Error(error.message || 'Student names and profile details could not be loaded.');
   }
 
-  return (data ?? []) as unknown as PilotStudentIdentity[];
+  return data ?? [];
 }
 
 export async function loadPilotStudentIdentity(userId: string): Promise<PilotStudentIdentity | null> {
