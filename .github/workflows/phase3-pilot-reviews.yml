@@ -34,11 +34,29 @@ jobs:
       - name: Verify Phase 2 reporting remains intact
         run: npm run test:phase2-routing
 
+      - name: Verify Pilot production isolation
+        run: |
+          set -o pipefail
+          npm run test:pilot-isolation 2>&1 | tee phase3-isolation.log
+
       - name: Type-check review application changes
         run: npm run typecheck
 
       - name: Lint review application changes
-        run: npm run lint
+        run: |
+          set -o pipefail
+          npm run lint 2>&1 | tee phase3-lint.log
+
+      - name: Upload Phase 3 diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase3-review-gate-diagnostics
+          path: |
+            phase3-isolation.log
+            phase3-lint.log
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: Build Pilot application
         run: npm run build
