@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { CheckCircle2, ChevronRight, FileText, Loader2, LogOut, ShieldCheck } from 'lucide-react';
 import { usePilotMode } from '@/contexts/PilotModeContext';
 import { PilotBanner } from '@/components/pilot/PilotBanner';
@@ -14,9 +14,12 @@ import { loadOwnPilotReports, loadPilotScenarios, loadPilotSession, withdrawPilo
 import { PILOT_ROUTES } from '@/config/pilot';
 import type { PilotReport, PilotScenario, PilotSession as PilotSessionType } from '@/types/pilot';
 
+const SESSION_TABS = new Set(['scenarios', 'reports', 'complete']);
+
 export default function PilotSession() {
   const { sessionId } = useParams();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const { program, participant, setSession: setContextSession, refresh } = usePilotMode();
   const [session, setSession] = useState<PilotSessionType | null>(null);
@@ -24,6 +27,8 @@ export default function PilotSession() {
   const [reports, setReports] = useState<PilotReport[]>([]);
   const [activeScenario, setActiveScenario] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const requestedTab = searchParams.get('tab');
+  const activeTab = requestedTab && SESSION_TABS.has(requestedTab) ? requestedTab : 'scenarios';
 
   useEffect(() => {
     if (!sessionId || !program) return;
@@ -60,6 +65,11 @@ export default function PilotSession() {
     }
   };
 
+  const selectTab = (value: string) => {
+    if (!SESSION_TABS.has(value)) return;
+    setSearchParams({ tab: value }, { replace: true });
+  };
+
   if (session.status === 'completed') {
     return (
       <div className="container mx-auto max-w-4xl px-4 py-10">
@@ -91,10 +101,10 @@ export default function PilotSession() {
           <Button variant="outline" onClick={withdraw}><LogOut className="mr-2 h-4 w-4" /> Withdraw</Button>
         </div>
 
-        <Tabs defaultValue="scenarios" className="space-y-6">
+        <Tabs value={activeTab} onValueChange={selectTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="scenarios">Scenarios</TabsTrigger>
-            <TabsTrigger value="reports">My Reports</TabsTrigger>
+            <TabsTrigger value="scenarios">Report Incident</TabsTrigger>
+            <TabsTrigger value="reports">My Cases</TabsTrigger>
             <TabsTrigger value="complete">Complete</TabsTrigger>
           </TabsList>
 
@@ -124,7 +134,7 @@ export default function PilotSession() {
 
           <TabsContent value="reports">
             <Card>
-              <CardHeader><CardTitle>My Simulated Reports</CardTitle><CardDescription>Production cases are not included.</CardDescription></CardHeader>
+              <CardHeader><CardTitle>My Pilot Cases</CardTitle><CardDescription>Tap a case to open its full details, readable location and timeline. Production cases are not included.</CardDescription></CardHeader>
               <CardContent className="space-y-3">
                 {reports.map((report) => (
                   <Link key={report.id} to={PILOT_ROUTES.report(report.id)} className="flex items-center justify-between rounded-lg border p-4 transition hover:border-primary/50 hover:bg-muted/30">
