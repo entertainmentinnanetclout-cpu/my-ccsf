@@ -66,6 +66,7 @@ for (const file of sourceFiles) {
     if (pattern.regex.test(content)) failures.push(`${file} references ${pattern.name}.`);
   }
 }
+
 assert(!failures.some((failure) => failure.includes('references')), 'Pilot browser and Edge source contain no production incident, location, media, case, escalation, push, or reporting references.');
 
 const browserSource = browserPilotPaths.flatMap(walk).filter((file) => /\.(?:ts|tsx)$/.test(file)).map(read).join('\n');
@@ -83,7 +84,16 @@ for (const status of ['received', 'assessing', 'assigned', 'in_progress', 'simul
 }
 
 const routeConfig = read('src/config/pilotRoutes.ts');
-for (const route of ['/pilot/auth', '/pilot', '/pilot/resources', '/security/pilot', '/admin/pilot']) {
+for (const route of [
+  '/pilot/auth',
+  '/pilot',
+  '/pilot/reviews',
+  '/pilot/resources',
+  '/security/pilot',
+  '/security/pilot/reviews',
+  '/admin/pilot',
+  '/admin/pilot/reviews',
+]) {
   assert(routeConfig.includes(`'${route}'`), `Pilot route contract contains ${route}.`);
 }
 assert(routeConfig.includes("pathname.startsWith('/pilot/session/')"), 'Pilot session deep links are explicitly recognised.');
@@ -95,10 +105,21 @@ assert(viteConfig.includes('feature/ccsf-phases-3-8-release-candidate'), 'Only t
 assert(viteConfig.includes('vercelEnvironment === "preview"'), 'Automatic Pilot enablement requires a Vercel Preview deployment.');
 
 const app = read('src/App.tsx');
-for (const route of ['/pilot/auth', '/pilot', '/pilot/session/:sessionId', '/pilot/report/:reportId', '/pilot/resources', '/security/pilot', '/admin/pilot']) {
+for (const route of [
+  '/pilot/auth',
+  '/pilot',
+  '/pilot/session/:sessionId',
+  '/pilot/report/:reportId',
+  '/pilot/reviews',
+  '/pilot/resources',
+  '/security/pilot',
+  '/security/pilot/reviews',
+  '/admin/pilot',
+  '/admin/pilot/reviews',
+]) {
   assert(app.includes(`path="${route}"`), `Approved route ${route} is registered.`);
 }
-assert(app.includes('<Route path="/pilot/auth" element={<PilotAuth />} />'), 'Pilot authentication is rendered outside the official application layout.');
+assert(app.includes('<PilotEntryIntentBoundary><PilotAuth /></PilotEntryIntentBoundary>'), 'Pilot authentication is rendered inside the dedicated Pilot intent boundary and outside the official application layout.');
 assert(app.includes("allowedRoles={['student']}"), 'Student Pilot routes are role guarded.');
 assert(app.includes("allowedRoles={['security', 'admin']}"), 'Campus Pilot route is staff guarded.');
 assert(app.includes("allowedRoles={['admin']}"), 'Super-admin Pilot route is admin guarded.');
@@ -120,6 +141,13 @@ for (const functionSlug of ['pilot-create-session', 'pilot-submit-report']) {
 assert(coreService.includes("from('pilot_location_events')"), 'Location writes target pilot_location_events.');
 assert(coreService.includes("from('pilot_attachments')"), 'Attachment metadata targets pilot_attachments.');
 assert(coreService.includes('createSignedUrl'), 'Private attachments use signed URLs.');
+
+const reviewService = read('src/services/pilot/pilotReviewService.ts');
+assert(reviewService.includes("'pilot-review-attachments'"), 'Pilot review screenshots use the private review bucket.');
+assert(reviewService.includes("rpc('pilot_submit_review'"), 'Student reviews use the server-derived Pilot submission RPC.');
+assert(reviewService.includes("rpc('pilot_moderate_review'"), 'Review moderation uses the authorised Pilot RPC.');
+assert(!reviewService.includes("from('feedback')"), 'Pilot reviews do not use a production feedback table.');
+assert(!reviewService.includes("from('incidents')"), 'Pilot reviews do not use production incidents.');
 
 const adminService = read('src/services/pilot/pilotAdminService.ts');
 for (const functionSlug of ['pilot-transition-status', 'pilot-create-notification', 'pilot-delete-report']) {
