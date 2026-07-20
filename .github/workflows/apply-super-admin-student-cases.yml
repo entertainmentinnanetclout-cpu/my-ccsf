@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - scripts/apply-super-admin-student-cases.mjs
+      - scripts/run-super-admin-student-cases-migration.mjs
 
 permissions:
   contents: write
@@ -31,7 +31,7 @@ jobs:
           cache: npm
 
       - name: Apply guarded migration
-        run: node scripts/apply-super-admin-student-cases.mjs
+        run: node scripts/run-super-admin-student-cases-migration.mjs
 
       - name: Install dependencies
         run: npm ci
