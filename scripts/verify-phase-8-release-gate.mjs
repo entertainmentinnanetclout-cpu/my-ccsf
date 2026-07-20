@@ -10,6 +10,8 @@ const check = (value, message) => value ? passes.push(message) : failures.push(m
 const core = read('src/services/pilot/pilotCoreService.ts');
 const admin = read('src/services/pilot/pilotAdminService.ts');
 const form = read('src/components/pilot/PilotReportForm.tsx');
+const geolocation = read('src/lib/browserGeolocation.ts');
+const tracking = read('src/hooks/pilot/usePilotLocationTracking.ts');
 const student = read('src/components/pilot/PilotStudentDashboard.tsx');
 const campus = read('src/components/pilot/PilotCampusSecurityDashboard.tsx');
 const superAdmin = read('src/components/pilot/PilotSuperAdminDashboard.tsx');
@@ -30,7 +32,13 @@ const completion = read('docs/PHASE_8_COMPLETE.md');
 check(core.includes("'pilot-create-session'") && core.includes("'pilot-submit-report'"), 'Student session and report services are isolated Pilot Edge calls.');
 check(['location_lat','location_lng','location_accuracy','location_description'].every((x) => core.includes(x)), 'Report payload preserves all location fields.');
 check(core.includes("from('pilot_location_events')") && form.includes("source: 'initial_fix'"), 'Location events use the Pilot location table.');
-check(form.includes('enableHighAccuracy: true') && form.includes('scenario.requires_live_tracking'), 'High-accuracy and live tracking workflows remain enabled.');
+check(
+  geolocation.includes('enableHighAccuracy: true')
+    && geolocation.includes("acquisition: 'high_accuracy'")
+    && tracking.includes('navigator.geolocation.watchPosition')
+    && tracking.includes("'live_tracking'"),
+  'High-accuracy capture and controlled live tracking workflows remain enabled.',
+);
 check(form.includes('uploadPilotAttachments') && core.includes('PILOT_MAX_ATTACHMENTS') && core.includes('PILOT_MAX_FILE_BYTES'), 'Evidence upload limits and workflow remain enabled.');
 check(core.includes('createSignedUrl') && core.includes('PILOT_ATTACHMENT_BUCKET'), 'Private evidence retrieval uses signed URLs.');
 check(
@@ -81,8 +89,15 @@ check(student.includes('title="Track your cases"') && student.includes("onClick=
   && student.includes('title="Support centre"') && student.includes("onClick={() => setView('support')}")
   && student.includes('<button onClick={onClick}'), 'Every student quick-action card has a real destination and click handler.');
 check(student.includes('onClick={openEmergencySimulation}') && student.includes('onClick={() => void refresh(true)}') && student.includes('onClick={() => void markRead(item)}'), 'Student emergency, refresh and notification actions have working handlers.');
-check(campus.includes('onClick={() => openAction(report)}') && campus.includes('onClick={() => openNote(report)}') && campus.includes('onClick={() => openUpdate(report)}')
-  && campus.includes('await transitionPilotReport(') && campus.includes('await addPilotReportNote(') && campus.includes('await createPilotNotification('), 'Campus case controls are connected to lifecycle, note and notification services.');
+check(
+  campus.includes('onAdvance={moveReport}')
+    && campus.includes("onNote={() => beginAction(report, 'note')}")
+    && campus.includes("onNotify={() => beginAction(report, 'notify')}")
+    && campus.includes('await transitionPilotReport(')
+    && campus.includes('await addPilotReportNote(')
+    && campus.includes('await createPilotNotification('),
+  'Campus case cards are connected to lifecycle, note and notification services.',
+);
 check(configuration.includes('await createPilotProgram(') && configuration.includes('updatePilotProgram(selectedProgram.id')
   && superAdmin.includes('await invitePilotParticipant(') && superAdmin.includes('await requestPilotExport('), 'Super-admin programme, student and export controls are service-backed.');
 for (const [name, source] of [['student', student], ['campus', campus], ['super-admin', superAdmin], ['report-form', form], ['configuration', configuration]]) {
