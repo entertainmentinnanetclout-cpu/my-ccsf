@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { PILOT_LOCATION_STORAGE_KEY } from '@/config/pilot';
+import { captureBrowserPosition, normalizeGeolocationError } from '@/lib/browserGeolocation';
 import { insertPilotLocationEvent, recordPilotFeatureTest } from '@/services/pilot/pilotCoreService';
 import type { PilotReport } from '@/types/pilot';
 
@@ -25,6 +26,7 @@ export function usePilotLocationTracking(report?: PilotReport | null) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const watchId = useRef<number | null>(null);
+  const trackingRef = useRef(false);
   const startedAt = useRef<number | null>(null);
 
   const persistPosition = useCallback(async (
@@ -57,19 +59,12 @@ export function usePilotLocationTracking(report?: PilotReport | null) {
   }, [report]);
 
   const captureOnce = useCallback(async () => {
-    if (!navigator.geolocation) throw new Error('Geolocation is not supported by this browser.');
     if (!report) throw new Error('Create a simulated report before testing location.');
     setLoading(true);
     setError(null);
     const started = performance.now();
     try {
-      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: true,
-          timeout: 15000,
-          maximumAge: 0,
-        });
-      });
+      const { position, acquisition, permission } = await captureBrowserPosition();
       await persistPosition(position, 'initial_fix');
       await recordPilotFeatureTest({
         programId: report.program_id,
@@ -78,24 +73,26 @@ export function usePilotLocationTracking(report?: PilotReport | null) {
         featureKey: 'location_initial_fix',
         outcome: 'passed',
         durationMs: Math.round(performance.now() - started),
-        metadata: { accuracy: position.coords.accuracy },
+        metadata: {
+          accuracy: position.coords.accuracy,
+          acquisition,
+          permission,
+        },
       });
       return position;
     } catch (caught) {
-      const message = caught instanceof GeolocationPositionError
-        ? `${caught.code}:${caught.message}`
-        : caught instanceof Error ? caught.message : 'Location capture failed.';
-      setError(message);
+      const failure = normalizeGeolocationError(caught);
+      setError(failure.message);
       await recordPilotFeatureTest({
         programId: report.program_id,
         sessionId: report.session_id,
         reportId: report.id,
         featureKey: 'location_initial_fix',
-        outcome: caught instanceof GeolocationPositionError && caught.code === 1 ? 'denied' : 'failed',
+        outcome: failure.denied ? 'denied' : 'failed',
         durationMs: Math.round(performance.now() - started),
-        errorCode: message,
+        errorCode: `${failure.code ?? 'unknown'}:${failure.message}`,
       }).catch(() => undefined);
-      throw caught;
+      throw new Error(failure.message);
     } finally {
       setLoading(false);
     }
@@ -104,6 +101,7 @@ export function usePilotLocationTracking(report?: PilotReport | null) {
   const stopTracking = useCallback(async () => {
     if (watchId.current !== null) navigator.geolocation.clearWatch(watchId.current);
     watchId.current = null;
+    trackingRef.current = false;
     setTracking(false);
     localStorage.removeItem(PILOT_LOCATION_STORAGE_KEY);
     if (report && startedAt.current !== null) {
@@ -120,7 +118,7 @@ export function usePilotLocationTracking(report?: PilotReport | null) {
   }, [report]);
 
   const startTracking = useCallback((resumed = false) => {
-    if (!navigator.geolocation || !report || tracking) return;
+    if (!navigator.geolocation || !report || trackingRef.current) return;
     setError(null);
     startedAt.current = performance.now();
     const state: TrackingState = {
@@ -130,36 +128,47 @@ export function usePilotLocationTracking(report?: PilotReport | null) {
       startedAt: new Date().toISOString(),
     };
     localStorage.setItem(PILOT_LOCATION_STORAGE_KEY, JSON.stringify(state));
+    trackingRef.current = true;
+    setTracking(true);
     watchId.current = navigator.geolocation.watchPosition(
-      (position) => void persistPosition(position, resumed ? 'resumed_tracking' : 'live_tracking'),
+      (position) => {
+        void persistPosition(position, resumed ? 'resumed_tracking' : 'live_tracking').catch((caught) => {
+          const failure = normalizeGeolocationError(caught);
+          setError(failure.message);
+        });
+      },
       (positionError) => {
-        setError(positionError.message);
+        const failure = normalizeGeolocationError(positionError);
+        setError(failure.message);
         void recordPilotFeatureTest({
           programId: report.program_id,
           sessionId: report.session_id,
           reportId: report.id,
           featureKey: 'location_live_tracking',
-          outcome: positionError.code === 1 ? 'denied' : 'failed',
-          errorCode: `${positionError.code}:${positionError.message}`,
+          outcome: failure.denied ? 'denied' : 'failed',
+          errorCode: `${failure.code ?? 'unknown'}:${failure.message}`,
         }).catch(() => undefined);
       },
-      { enableHighAccuracy: true, timeout: 20000, maximumAge: 5000 },
+      { enableHighAccuracy: false, timeout: 25000, maximumAge: 10000 },
     );
-    setTracking(true);
-  }, [persistPosition, report, tracking]);
+  }, [persistPosition, report]);
 
   useEffect(() => {
     if (!report) return;
     const stored = localStorage.getItem(PILOT_LOCATION_STORAGE_KEY);
-    if (!stored) return;
-    try {
-      const state = JSON.parse(stored) as TrackingState;
-      if (state.reportId === report.id) startTracking(true);
-    } catch {
-      localStorage.removeItem(PILOT_LOCATION_STORAGE_KEY);
+    if (stored) {
+      try {
+        const state = JSON.parse(stored) as TrackingState;
+        if (state.reportId === report.id) startTracking(true);
+        else localStorage.removeItem(PILOT_LOCATION_STORAGE_KEY);
+      } catch {
+        localStorage.removeItem(PILOT_LOCATION_STORAGE_KEY);
+      }
     }
     return () => {
       if (watchId.current !== null) navigator.geolocation.clearWatch(watchId.current);
+      watchId.current = null;
+      trackingRef.current = false;
     };
   }, [report, startTracking]);
 
