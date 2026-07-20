@@ -31,6 +31,8 @@ import PilotAuth from './pages/pilot/PilotAuth';
 import PilotLanding from './pages/pilot/PilotLanding';
 import PilotSession from './pages/pilot/PilotSession';
 import PilotReportTracking from './pages/pilot/PilotReportTracking';
+import PilotReviews from './pages/pilot/PilotReviews';
+import PilotReviewManagement from './pages/pilot/PilotReviewManagement';
 import PilotResources from './pages/pilot/PilotResources';
 import CampusPilotPage from './pages/pilot/CampusPilotPage';
 import SuperAdminPilotPage from './pages/pilot/SuperAdminPilotPage';
@@ -74,6 +76,11 @@ const App = () => (
                         <PilotRouteGuard allowedRoles={['student', 'security', 'admin']}><PilotReportTracking /></PilotRouteGuard>
                       </ProtectedRoute>
                     } />
+                    <Route path="/pilot/reviews" element={
+                      <ProtectedRoute allowedRoles={['student']}>
+                        <PilotRouteGuard allowedRoles={['student']}><PilotReviews /></PilotRouteGuard>
+                      </ProtectedRoute>
+                    } />
                     <Route path="/pilot/resources" element={
                       <ProtectedRoute allowedRoles={['student']}>
                         <PilotRouteGuard allowedRoles={['student']}><PilotResources /></PilotRouteGuard>
@@ -84,9 +91,19 @@ const App = () => (
                         <PilotRouteGuard allowedRoles={['security', 'admin']}><CampusPilotPage /></PilotRouteGuard>
                       </ProtectedRoute>
                     } />
+                    <Route path="/security/pilot/reviews" element={
+                      <ProtectedRoute allowedRoles={['security', 'admin']}>
+                        <PilotRouteGuard allowedRoles={['security', 'admin']}><PilotReviewManagement /></PilotRouteGuard>
+                      </ProtectedRoute>
+                    } />
                     <Route path="/admin/pilot" element={
                       <ProtectedRoute allowedRoles={['admin']}>
                         <PilotRouteGuard allowedRoles={['admin']}><SuperAdminPilotPage /></PilotRouteGuard>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/pilot/reviews" element={
+                      <ProtectedRoute allowedRoles={['admin']}>
+                        <PilotRouteGuard allowedRoles={['admin']}><PilotReviewManagement /></PilotRouteGuard>
                       </ProtectedRoute>
                     } />
                   </Route>
