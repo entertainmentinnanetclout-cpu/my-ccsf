@@ -172,7 +172,7 @@ replaceRegex(
                         <p className="flex items-center gap-2"><GraduationCap className="h-4 w-4" />{identity?.student_number || 'Student number not supplied'}</p>
                         <p className="flex items-center gap-2"><Mail className="h-4 w-4" />{identity?.email || 'Email not supplied'}</p>
                         <p className="flex items-center gap-2"><Phone className="h-4 w-4" />{identity?.phone_number || 'Phone not supplied'}</p>
-                        <p>{identity?.course || 'Course not supplied'}{identity?.year_of_study ? ` · Year ${identity.year_of_study}` : ''}</p>
+                        <p>{identity?.course || 'Course not supplied'}{identity?.year_of_study ? ' · Year ' + identity.year_of_study : ''}</p>
                       </div>
                       <p className="mt-2 text-xs text-muted-foreground">{CAMPUS_LABELS[student.campus]} · invited {formatDate(student.invited_at)}</p>
                     </div>
@@ -219,7 +219,7 @@ replaceRegex(
     <div
       role="button"
       tabIndex={0}
-      aria-label={`Open case ${report.reference_number}`}
+      aria-label={'Open case ' + report.reference_number}
       onClick={onOpen}
       onKeyDown={(event) => {
         if (event.key === 'Enter' || event.key === ' ') {
