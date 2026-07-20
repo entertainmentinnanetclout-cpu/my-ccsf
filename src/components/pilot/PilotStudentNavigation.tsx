@@ -1,4 +1,4 @@
-import { BookOpen, FileText, Home, ShieldCheck } from 'lucide-react';
+import { BookOpen, FileText, Home, PlusCircle } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { usePilotMode } from '@/contexts/PilotModeContext';
 import { PILOT_ROUTES } from '@/config/pilot';
@@ -6,12 +6,36 @@ import { PILOT_ROUTES } from '@/config/pilot';
 export function PilotStudentNavigation() {
   const location = useLocation();
   const { session } = usePilotMode();
+  const sessionPath = session?.id ? PILOT_ROUTES.session(session.id) : PILOT_ROUTES.landing;
+  const reportPath = session?.id ? `${sessionPath}?tab=scenarios` : PILOT_ROUTES.landing;
+  const casesPath = session?.id ? `${sessionPath}?tab=reports` : PILOT_ROUTES.landing;
+  const selectedTab = new URLSearchParams(location.search).get('tab');
 
   const items = [
-    { href: PILOT_ROUTES.landing, label: 'Pilot Dashboard', icon: Home, active: location.pathname === PILOT_ROUTES.landing },
-    ...(session?.id ? [{ href: PILOT_ROUTES.session(session.id), label: 'Active Session', icon: ShieldCheck, active: location.pathname === PILOT_ROUTES.session(session.id) }] : []),
-    { href: PILOT_ROUTES.landing, label: 'My Cases', icon: FileText, active: location.pathname.startsWith('/pilot/report/') },
-    { href: PILOT_ROUTES.resources, label: 'Safety Resources', icon: BookOpen, active: location.pathname === PILOT_ROUTES.resources },
+    {
+      href: PILOT_ROUTES.landing,
+      label: 'Pilot Dashboard',
+      icon: Home,
+      active: location.pathname === PILOT_ROUTES.landing,
+    },
+    {
+      href: reportPath,
+      label: 'Report Incident',
+      icon: PlusCircle,
+      active: location.pathname === sessionPath && selectedTab !== 'reports',
+    },
+    {
+      href: casesPath,
+      label: 'My Cases',
+      icon: FileText,
+      active: location.pathname.startsWith('/pilot/report/') || (location.pathname === sessionPath && selectedTab === 'reports'),
+    },
+    {
+      href: PILOT_ROUTES.resources,
+      label: 'Safety Resources',
+      icon: BookOpen,
+      active: location.pathname === PILOT_ROUTES.resources,
+    },
   ];
 
   return (
@@ -19,7 +43,7 @@ export function PilotStudentNavigation() {
       <div className="mx-auto flex w-full max-w-7xl snap-x snap-mandatory gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {items.map(({ href, label, icon: Icon, active }) => (
           <Link
-            key={`${label}-${href}`}
+            key={label}
             to={href}
             aria-current={active ? 'page' : undefined}
             className={`flex min-w-fit snap-start items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${active ? 'bg-[#002F6C] text-white shadow-md' : 'border border-border bg-background text-foreground hover:border-primary hover:bg-primary/5'}`}
