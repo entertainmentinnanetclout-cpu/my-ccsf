@@ -1,10 +1,22 @@
 import type { Database, Json } from '@/integrations/supabase/types';
 
+export type PilotSimulatedSeverity = 'low' | 'medium' | 'high' | 'critical';
+export type PilotRoutingDestination = 'campus_security';
+
 export type PilotProgram = Database['public']['Tables']['pilot_programs']['Row'];
-export type PilotScenario = Database['public']['Tables']['pilot_scenarios']['Row'];
+export type PilotScenario = Database['public']['Tables']['pilot_scenarios']['Row'] & {
+  simulated_severity: PilotSimulatedSeverity;
+  routing_destination: PilotRoutingDestination;
+  simulation_notice: string;
+};
 export type PilotParticipant = Database['public']['Tables']['pilot_participants']['Row'];
 export type PilotSession = Database['public']['Tables']['pilot_sessions']['Row'];
-export type PilotReport = Database['public']['Tables']['pilot_reports']['Row'];
+export type PilotReport = Database['public']['Tables']['pilot_reports']['Row'] & {
+  simulated_severity: PilotSimulatedSeverity;
+  routing_destination: PilotRoutingDestination;
+  routing_campus: CampusLocation;
+  simulation_notice: string;
+};
 export type PilotReportEvent = Database['public']['Tables']['pilot_report_events']['Row'];
 export type PilotLocationEvent = Database['public']['Tables']['pilot_location_events']['Row'];
 export type PilotAttachment = Database['public']['Tables']['pilot_attachments']['Row'];
