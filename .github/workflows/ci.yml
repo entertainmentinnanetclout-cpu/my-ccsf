@@ -33,6 +33,9 @@ jobs:
       - name: Install dependencies
         run: npm ci --no-audit --no-fund --loglevel=error
 
+      - name: Verify Phase 1 Pilot authentication and navigation
+        run: npm run test:phase1-auth
+
       - name: Verify Pilot production isolation
         run: npm run test:pilot-isolation
 
