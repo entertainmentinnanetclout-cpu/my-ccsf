@@ -94,7 +94,7 @@ export function PilotReportForm({
   const [loading, setLoading] = useState(false);
   const [locationLoading, setLocationLoading] = useState(false);
 
-  const requiresLocation = emergency || scenario.requires_location || scenario.requires_live_tracking;
+  const requiresLocation = true;
   const requiresAttachment = !emergency && scenario.requires_attachment;
 
   const canSubmit = useMemo(() => {
@@ -223,23 +223,31 @@ export function PilotReportForm({
         description: emergency ? EMERGENCY_DESCRIPTION : description.trim(),
         category: selectedCategory,
         is_anonymous: emergency ? false : anonymous,
+        emergency_consent: emergency ? emergencyConsent : false,
         location_lat: location?.latitude ?? null,
         location_lng: location?.longitude ?? null,
         location_accuracy: location?.accuracy ?? null,
         location_description: locationDescription.trim() || null,
       });
 
+      const followUpWarnings: string[] = [];
+
       if (location) {
-        await insertPilotLocationEvent({
-          program_id: report.program_id,
-          session_id: report.session_id,
-          report_id: report.id,
-          user_id: report.submitted_by,
-          latitude: location.latitude,
-          longitude: location.longitude,
-          accuracy: location.accuracy,
-          source: 'initial_fix',
-        });
+        try {
+          await insertPilotLocationEvent({
+            program_id: report.program_id,
+            session_id: report.session_id,
+            report_id: report.id,
+            user_id: report.submitted_by,
+            latitude: location.latitude,
+            longitude: location.longitude,
+            accuracy: location.accuracy,
+            source: 'initial_fix',
+          });
+        } catch (locationEventError) {
+          console.error('Pilot report was created but location telemetry could not be recorded.', locationEventError);
+          followUpWarnings.push('The case location is saved, but location-test telemetry could not be recorded.');
+        }
       }
 
       if (!emergency && files.length) {
@@ -254,7 +262,7 @@ export function PilotReportForm({
             outcome: 'passed',
             durationMs: Math.round(performance.now() - attachmentStarted),
             metadata: { file_count: files.length },
-          });
+          }).catch(() => undefined);
         } catch (attachmentError) {
           await recordPilotFeatureTest({
             programId: report.program_id,
@@ -265,7 +273,8 @@ export function PilotReportForm({
             durationMs: Math.round(performance.now() - attachmentStarted),
             errorCode: attachmentError instanceof Error ? attachmentError.message : 'attachment_error',
           }).catch(() => undefined);
-          throw attachmentError;
+          console.error('Pilot report was created but one or more attachments failed.', attachmentError);
+          followUpWarnings.push('The case was submitted, but one or more attachments could not be added.');
         }
       }
 
@@ -279,15 +288,23 @@ export function PilotReportForm({
         metadata: {
           scenario_type: scenario.scenario_type,
           minimal_emergency_flow: emergency,
+          emergency_consent: emergency ? true : null,
           readable_location: locationDescription.trim(),
+          routing_campus: report.routing_campus,
+          routing_destination: report.routing_destination,
+          simulated_severity: report.simulated_severity,
         },
       }).catch(() => undefined);
 
       toast({
         title: emergency ? 'Emergency report created' : 'Report created',
-        description: emergency
-          ? `${report.reference_number}. Your identity and location are visible to authorised campus-security Pilot staff.`
-          : `${report.reference_number}. The case is now visible in the authorised campus-security Pilot queue.`,
+        description: [
+          emergency
+            ? `${report.reference_number}. Your identity and location are visible to authorised campus-security Pilot staff.`
+            : `${report.reference_number}. The case is now visible in the authorised campus-security Pilot queue.`,
+          ...followUpWarnings,
+        ].join(' '),
+        variant: followUpWarnings.length ? 'destructive' : 'default',
       });
       navigate(PILOT_ROUTES.report(report.id));
     } catch (caught) {
@@ -475,7 +492,7 @@ export function PilotReportForm({
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
             {emergency
               ? 'Capture your location and give consent to submit the emergency report.'
-              : 'Complete all required report fields before submitting.'}
+              : 'Complete all required report fields and capture your location before submitting.'}
           </div>
         )}
 
