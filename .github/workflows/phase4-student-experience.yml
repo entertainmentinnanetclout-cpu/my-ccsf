@@ -58,10 +58,35 @@ jobs:
           PY
 
       - name: Type-check application
-        run: npm run typecheck
+        id: typecheck
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          npm run typecheck 2>&1 | tee phase4-typecheck.log
 
       - name: Lint application
-        run: npm run lint
+        id: lint
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          npm run lint 2>&1 | tee phase4-lint.log
+
+      - name: Upload Phase 4 diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase4-student-experience-diagnostics
+          path: |
+            phase4-typecheck.log
+            phase4-lint.log
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Enforce code-quality results
+        if: always()
+        run: |
+          test "${{ steps.typecheck.outcome }}" = "success"
+          test "${{ steps.lint.outcome }}" = "success"
 
       - name: Build Pilot application
         run: npm run build
