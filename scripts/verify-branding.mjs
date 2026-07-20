@@ -32,8 +32,9 @@ function paeth(left, above, upperLeft) {
 }
 
 function decodePng(buffer, label) {
-  const signature = buffer.subarray(0, 8).toString('hex');
-  if (signature !== '89504e470d0a1a0a') throw new Error(`${label}: invalid PNG signature`);
+  if (buffer.subarray(0, 8).toString('hex') !== '89504e470d0a1a0a') {
+    throw new Error(`${label}: invalid PNG signature`);
+  }
 
   let offset = 8;
   let width = 0;
@@ -59,14 +60,13 @@ function decodePng(buffer, label) {
     offset += 12 + length;
   }
 
-  if (bitDepth !== 8 || ![4, 6].includes(colorType)) {
-    throw new Error(`${label}: expected 8-bit PNG with alpha; received bitDepth=${bitDepth}, colorType=${colorType}`);
+  if (bitDepth !== 8 || colorType !== 6) {
+    throw new Error(`${label}: expected an 8-bit RGBA PNG; received bitDepth=${bitDepth}, colorType=${colorType}`);
   }
 
-  const channels = colorType === 6 ? 4 : 2;
+  const channels = 4;
   const stride = width * channels;
-  const compressed = Buffer.concat(idat);
-  const raw = inflateSync(compressed);
+  const raw = inflateSync(Buffer.concat(idat));
   const rows = Buffer.alloc(stride * height);
   let rawOffset = 0;
 
@@ -93,50 +93,83 @@ function decodePng(buffer, label) {
 
   let minAlpha = 255;
   let maxAlpha = 0;
-  let left = width;
-  let top = height;
-  let right = 0;
-  let bottom = 0;
-  let visible = 0;
-  const alphaIndex = channels - 1;
+  let alphaLeft = width;
+  let alphaTop = height;
+  let alphaRight = 0;
+  let alphaBottom = 0;
+  let contentLeft = width;
+  let contentTop = height;
+  let contentRight = 0;
+  let contentBottom = 0;
 
   for (let y = 0; y < height; y += 1) {
     for (let x = 0; x < width; x += 1) {
-      const alpha = rows[y * stride + x * channels + alphaIndex];
+      const index = y * stride + x * channels;
+      const red = rows[index];
+      const green = rows[index + 1];
+      const blue = rows[index + 2];
+      const alpha = rows[index + 3];
       minAlpha = Math.min(minAlpha, alpha);
       maxAlpha = Math.max(maxAlpha, alpha);
       if (alpha > 0) {
-        visible += 1;
-        left = Math.min(left, x);
-        top = Math.min(top, y);
-        right = Math.max(right, x + 1);
-        bottom = Math.max(bottom, y + 1);
+        alphaLeft = Math.min(alphaLeft, x);
+        alphaTop = Math.min(alphaTop, y);
+        alphaRight = Math.max(alphaRight, x + 1);
+        alphaBottom = Math.max(alphaBottom, y + 1);
+      }
+      if (alpha > 0 && (red < 249 || green < 249 || blue < 249)) {
+        contentLeft = Math.min(contentLeft, x);
+        contentTop = Math.min(contentTop, y);
+        contentRight = Math.max(contentRight, x + 1);
+        contentBottom = Math.max(contentBottom, y + 1);
       }
     }
   }
+
+  const pixel = (x, y) => {
+    const index = y * stride + x * channels;
+    return [rows[index], rows[index + 1], rows[index + 2], rows[index + 3]];
+  };
+  const alphaFootprint = Math.max(alphaRight - alphaLeft, alphaBottom - alphaTop) / Math.max(width, height);
+  const contentFootprint = Math.max(contentRight - contentLeft, contentBottom - contentTop) / Math.max(width, height);
 
   return {
     width,
     height,
     minAlpha,
     maxAlpha,
-    visibleCoverage: visible / (width * height),
-    footprint: Math.max(right - left, bottom - top) / Math.max(width, height),
+    alphaFootprint,
+    contentFootprint,
+    corners: [pixel(0, 0), pixel(width - 1, 0), pixel(0, height - 1), pixel(width - 1, height - 1)],
   };
 }
 
-async function verifyPng(relativePath, expectedSize, footprintRange) {
+async function verifyPng(relativePath, expectedSize, footprintRange, background) {
   try {
     const buffer = await readFile(path.join(root, relativePath));
     const info = decodePng(buffer, relativePath);
     if (info.width !== expectedSize || info.height !== expectedSize) {
       violations.push(`${relativePath}: expected ${expectedSize}x${expectedSize}, received ${info.width}x${info.height}`);
     }
-    if (info.minAlpha !== 0 || info.maxAlpha !== 255) {
-      violations.push(`${relativePath}: expected genuine transparent and opaque pixels, alpha range is ${info.minAlpha}-${info.maxAlpha}`);
+
+    let footprint;
+    if (background === 'white') {
+      if (info.minAlpha !== 255 || info.maxAlpha !== 255) {
+        violations.push(`${relativePath}: installed app icon must be fully opaque; alpha range is ${info.minAlpha}-${info.maxAlpha}`);
+      }
+      if (info.corners.some((pixel) => pixel.some((value, index) => value !== 255 && index < 4))) {
+        violations.push(`${relativePath}: all app icon corners must be solid white RGBA(255,255,255,255)`);
+      }
+      footprint = info.contentFootprint;
+    } else {
+      if (info.minAlpha !== 0 || info.maxAlpha !== 255) {
+        violations.push(`${relativePath}: expected genuine transparent and opaque pixels; alpha range is ${info.minAlpha}-${info.maxAlpha}`);
+      }
+      footprint = info.alphaFootprint;
     }
-    if (footprintRange && (info.footprint < footprintRange[0] || info.footprint > footprintRange[1])) {
-      violations.push(`${relativePath}: optical footprint ${info.footprint.toFixed(3)} is outside ${footprintRange.join('–')}`);
+
+    if (footprintRange && (footprint < footprintRange[0] || footprint > footprintRange[1])) {
+      violations.push(`${relativePath}: optical footprint ${footprint.toFixed(3)} is outside ${footprintRange.join('–')}`);
     }
     return info;
   } catch (error) {
@@ -196,14 +229,14 @@ for (const obsoleteAsset of [
   }
 }
 
-await verifyPng('public/app-icon-1024.png', 1024, [0.74, 0.82]);
-await verifyPng('public/app-icon-512.png', 512, [0.74, 0.82]);
-await verifyPng('public/app-icon-192.png', 192, [0.74, 0.82]);
-await verifyPng('public/maskable-icon-512.png', 512, [0.62, 0.70]);
-await verifyPng('public/apple-touch-icon.png', 180, [0.74, 0.82]);
-await verifyPng('public/favicon.png', 64, [0.80, 0.92]);
-await verifyPng('public/favicon-32x32.png', 32, [0.80, 0.94]);
-await verifyPng('public/favicon-16x16.png', 16, [0.80, 1]);
+await verifyPng('public/app-icon-1024.png', 1024, [0.74, 0.82], 'white');
+await verifyPng('public/app-icon-512.png', 512, [0.74, 0.82], 'white');
+await verifyPng('public/app-icon-192.png', 192, [0.74, 0.82], 'white');
+await verifyPng('public/maskable-icon-512.png', 512, [0.62, 0.70], 'white');
+await verifyPng('public/apple-touch-icon.png', 180, [0.74, 0.82], 'white');
+await verifyPng('public/favicon.png', 64, [0.80, 0.92], 'transparent');
+await verifyPng('public/favicon-32x32.png', 32, [0.80, 0.94], 'transparent');
+await verifyPng('public/favicon-16x16.png', 16, [0.80, 1], 'transparent');
 
 try {
   const ico = await readFile(path.join(root, 'public', 'favicon.ico'));
@@ -249,4 +282,4 @@ if (violations.length > 0) {
   process.exit(1);
 }
 
-console.log(`Brand verification passed: transparent canonical CCSF artwork, ChatGPT-scale optical footprint, platform-correct icons, ${lockupCount} CCSF + TUT lockups, and no prohibited legacy production references.`);
+console.log(`Brand verification passed: transparent canonical CCSF artwork, solid-white installed app icons, transparent browser favicons, platform-correct dimensions, ${lockupCount} CCSF + TUT lockups, and no prohibited legacy production references.`);
