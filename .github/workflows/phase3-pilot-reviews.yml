@@ -1,0 +1,48 @@
+name: Phase 3 Pilot Reviews Gate
+
+on:
+  push:
+    branches:
+      - main
+      - 'feature/**'
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  phase3-reviews:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund --loglevel=error
+
+      - name: Verify Phase 3 Pilot reviews
+        run: npm run test:phase3-reviews
+
+      - name: Verify Phase 2 reporting remains intact
+        run: npm run test:phase2-routing
+
+      - name: Type-check review application changes
+        run: npm run typecheck
+
+      - name: Lint review application changes
+        run: npm run lint
+
+      - name: Build Pilot application
+        run: npm run build
+        env:
+          VITE_PILOT_MODE_ENABLED: 'true'
+          VERCEL_ENV: preview
+          VERCEL_GIT_COMMIT_REF: feature/phase-3-pilot-reviews
