@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import { pathToFileURL } from 'node:url';
 
+// This bootstrap repairs literal JSX template markers before running the guarded migration.
 const migrationPath = 'scripts/apply-super-admin-student-cases.mjs';
 let source = fs.readFileSync(migrationPath, 'utf8');
 
