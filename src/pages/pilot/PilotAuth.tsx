@@ -1,12 +1,13 @@
 import { type FormEvent, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Loader2, LockKeyhole } from 'lucide-react';
+import { LockKeyhole } from 'lucide-react';
+import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import {
+  PILOT_CAMPUS_VALUES,
   PILOT_ENABLED,
   PILOT_POST_PROFILE_REDIRECT_KEY,
-  PILOT_ROUTES,
   resolvePilotDestination,
 } from '@/config/pilot';
 import { useToast } from '@/hooks/use-toast';
@@ -14,15 +15,30 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { PilotAuthInstitutionalView } from '@/components/pilot/PilotAuthInstitutionalView';
 import { InstitutionalAccessError, InstitutionalLoadingState } from '@/components/auth/InstitutionalAccessState';
+import { invokePilotFunction } from '@/services/pilot/pilotEdgeService';
+import type { CampusLocation } from '@/types/pilot';
 
-const PILOT_ACCESS_REQUIREMENT = 'Student accounts must be invited to an active Pilot programme.';
+const PILOT_ACCESS_REQUIREMENT = 'Students may self-register for the active Pilot programme. Staff access remains administratively controlled.';
 
-type PilotAuthView = 'login' | 'forgot-password';
+type PilotAuthView = 'login' | 'signup' | 'forgot-password';
 type PilotRequestedLocation = string | {
   pathname?: unknown;
   search?: unknown;
   hash?: unknown;
 };
+
+const emailSchema = z.string().trim().email('Enter a valid email address.').max(255);
+const signupSchema = z.object({
+  email: emailSchema,
+  password: z.string().min(8, 'Password must contain at least 8 characters.').max(100),
+  confirmPassword: z.string(),
+  fullName: z.string().trim().min(2, 'Enter your full name.').max(100),
+  studentNumber: z.string().trim().max(20, 'Student number is too long.'),
+  campus: z.string().refine((value) => PILOT_CAMPUS_VALUES.includes(value as CampusLocation), 'Select your campus.'),
+}).refine((values) => values.password === values.confirmPassword, {
+  path: ['confirmPassword'],
+  message: 'Passwords do not match.',
+});
 
 export default function PilotAuth() {
   const navigate = useNavigate();
@@ -40,6 +56,11 @@ export default function PilotAuth() {
   const [view, setView] = useState<PilotAuthView>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [studentNumber, setStudentNumber] = useState('');
+  const [campus, setCampus] = useState<CampusLocation | ''>('');
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const requestedFrom = (location.state as { from?: PilotRequestedLocation } | null)?.from;
 
@@ -60,20 +81,44 @@ export default function PilotAuth() {
     navigate(destination, { replace: true });
   }, [user, userRole, profileCompleted, requestedFrom, navigate]);
 
+  const switchView = (next: PilotAuthView) => {
+    setView(next);
+    setErrors({});
+    setPassword('');
+    setConfirmPassword('');
+  };
+
+  const validate = (): boolean => {
+    try {
+      if (view === 'login') {
+        emailSchema.parse(email);
+        if (!password) throw new z.ZodError([{ code: 'custom', path: ['password'], message: 'Password is required.' }]);
+      } else if (view === 'signup') {
+        signupSchema.parse({ email, password, confirmPassword, fullName, studentNumber, campus });
+      } else {
+        emailSchema.parse(email);
+      }
+      setErrors({});
+      return true;
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const nextErrors: Record<string, string> = {};
+        for (const issue of error.errors) {
+          const field = issue.path[0];
+          if (typeof field === 'string' && !nextErrors[field]) nextErrors[field] = issue.message;
+          if (issue.path.length === 0 && !nextErrors.email) nextErrors.email = issue.message;
+        }
+        setErrors(nextErrors);
+      }
+      return false;
+    }
+  };
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!validate()) return;
+
     const normalizedEmail = email.trim().toLowerCase();
-
-    if (!normalizedEmail) {
-      toast({ title: 'Email required', description: 'Enter the email linked to your existing CCSF account.', variant: 'destructive' });
-      return;
-    }
-
-    if (view === 'login' && !password) {
-      toast({ title: 'Password required', description: 'Enter your existing account password.', variant: 'destructive' });
-      return;
-    }
-
     setLoading(true);
     try {
       if (view === 'forgot-password') {
@@ -82,14 +127,36 @@ export default function PilotAuth() {
         });
         if (error) throw error;
         toast({ title: 'Recovery email sent', description: 'Use the official CCSF recovery page to set your new password, then return to Pilot Mode.' });
-        setView('login');
+        switchView('login');
+        return;
+      }
+
+      if (view === 'signup') {
+        await invokePilotFunction<{ created: boolean }>('pilot-student-signup', {
+          email: normalizedEmail,
+          password,
+          full_name: fullName.trim(),
+          student_number: studentNumber.trim(),
+          campus,
+        });
+
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: normalizedEmail,
+          password,
+        });
+        if (signInError) throw signInError;
+
+        toast({
+          title: 'Pilot account created',
+          description: 'You are signed in immediately. No email confirmation is required for Pilot registration.',
+        });
         return;
       }
 
       const { error } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password });
       if (error) {
         if (error.message.includes('Invalid login credentials')) {
-          throw new Error('Invalid email or password. Use the credentials for your existing CCSF account.');
+          throw new Error('Invalid email or password. Create a Pilot student account if you have not registered before.');
         }
         throw error;
       }
@@ -97,7 +164,7 @@ export default function PilotAuth() {
       toast({ title: 'Pilot sign-in successful', description: 'Your Pilot access and institutional role are being verified.' });
     } catch (error) {
       toast({
-        title: view === 'login' ? 'Pilot sign-in failed' : 'Recovery request failed',
+        title: view === 'login' ? 'Pilot sign-in failed' : view === 'signup' ? 'Pilot registration failed' : 'Recovery request failed',
         description: error instanceof Error ? error.message : 'Please try again.',
         variant: 'destructive',
       });
@@ -139,11 +206,20 @@ export default function PilotAuth() {
         view={view}
         email={email}
         password={password}
+        confirmPassword={confirmPassword}
+        fullName={fullName}
+        studentNumber={studentNumber}
+        campus={campus}
+        errors={errors}
         loading={loading}
         onEmailChange={setEmail}
         onPasswordChange={setPassword}
+        onConfirmPasswordChange={setConfirmPassword}
+        onFullNameChange={setFullName}
+        onStudentNumberChange={setStudentNumber}
+        onCampusChange={setCampus}
         onSubmit={handleSubmit}
-        onToggleView={() => setView((current) => current === 'login' ? 'forgot-password' : 'login')}
+        onViewChange={switchView}
         onOfficialPortal={() => navigate('/auth')}
       />
     </div>
