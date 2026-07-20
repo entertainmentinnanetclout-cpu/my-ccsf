@@ -15,6 +15,7 @@ const campus = read('src/components/pilot/PilotCampusSecurityDashboard.tsx');
 const superAdmin = read('src/components/pilot/PilotSuperAdminDashboard.tsx');
 const app = read('src/App.tsx');
 const config = read('src/config/pilot.ts');
+const vite = read('vite.config.ts');
 const brand = read('src/components/shared/InstitutionBrand.tsx');
 const mobile = read('src/components/shared/MobileBottomNav.tsx');
 const splash = read('src/components/shared/SplashScreen.tsx');
@@ -56,6 +57,22 @@ for (const source of [core, admin, form, student, campus, superAdmin]) {
 }
 check(config.includes('No external emergency service or production dispatch workflow is contacted.'), 'Canonical no-dispatch warning remains permanent.');
 check(student.includes('ready-pilot-student-dashboard') && campus.includes('ready-pilot-campus-parity') && superAdmin.includes('ready-pilot-super-admin-parity'), 'All role dashboards expose readiness markers.');
+
+check(vite.includes('APPROVED_PILOT_PRODUCTION_BRANCH = "main"') && vite.includes('vercelEnvironment === "production"') && vite.includes('vercelBranch === APPROVED_PILOT_PRODUCTION_BRANCH'), 'Production main is an explicitly authorised Pilot build target.');
+check(vite.includes('explicitPilotFlag === "false" ? "false"'), 'The explicit false Pilot flag remains an emergency kill switch.');
+
+check(student.includes('title="Track your cases"') && student.includes("onClick={() => setView('mycases')}")
+  && student.includes('title="Test location"') && student.includes("onClick={() => setView('map')}")
+  && student.includes('title="Support centre"') && student.includes("onClick={() => setView('support')}")
+  && student.includes('<button onClick={onClick}'), 'Every student quick-action card has a real destination and click handler.');
+check(student.includes('onClick={openEmergencySimulation}') && student.includes('onClick={() => void refresh(true)}') && student.includes('onClick={() => void markRead(item)}'), 'Student emergency, refresh and notification actions have working handlers.');
+check(campus.includes('onClick={() => openAction(report)}') && campus.includes('onClick={() => openNote(report)}') && campus.includes('onClick={() => openUpdate(report)}')
+  && campus.includes('await transitionPilotReport(') && campus.includes('await addPilotReportNote(') && campus.includes('await createPilotNotification('), 'Campus case controls are connected to lifecycle, note and notification services.');
+check(superAdmin.includes('await createPilotProgram(') && superAdmin.includes('await updatePilotProgram(')
+  && superAdmin.includes('await invitePilotParticipant(') && superAdmin.includes('await requestPilotExport('), 'Super-admin programme, participant and export controls are service-backed.');
+for (const [name, source] of [['student', student], ['campus', campus], ['super-admin', superAdmin], ['report-form', form]]) {
+  check(!/href=["']#["']|onClick=\{\(\) => undefined\}|onClick=\{\(\) => \{\s*\}\}|coming soon|placeholder action/i.test(source), `${name} Pilot UI contains no placeholder links, empty handlers or coming-soon actions.`);
+}
 
 check([student,campus,superAdmin].every((x) => x.includes('role="tablist"') && x.includes('aria-selected=')), 'All role navigation exposes accessible tab state.');
 check(mobile.includes("typeof maxItems === 'number' ? items.slice(0, maxItems) : items") && mobile.includes('overflow-x-auto') && mobile.includes('safe-area-inset-bottom'), 'Mobile navigation shows every section by default and remains safe-area aware.');
