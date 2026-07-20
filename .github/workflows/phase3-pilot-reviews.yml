@@ -49,6 +49,11 @@ jobs:
           set -o pipefail
           npm run test:phase8-release 2>&1 | tee phase8-release.log
 
+      - name: Verify canonical institutional branding
+        run: |
+          set -o pipefail
+          npm run test:branding 2>&1 | tee branding.log
+
       - name: Type-check review application changes
         run: npm run typecheck
 
@@ -66,6 +71,7 @@ jobs:
             phase3-isolation.log
             phase4-5-parity.log
             phase8-release.log
+            branding.log
             phase3-lint.log
           if-no-files-found: ignore
           retention-days: 7
