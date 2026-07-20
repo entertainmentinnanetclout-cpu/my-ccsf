@@ -1,9 +1,8 @@
 import type { FormEvent, ReactNode } from 'react';
-import { ArrowLeft, Loader2, MapPin, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Loader2, MapPin } from 'lucide-react';
 import { InstitutionalAuthFrame } from '@/components/auth/InstitutionalAuthFrame';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -20,7 +19,6 @@ export function PilotAuthInstitutionalView({
   fullName,
   studentNumber,
   campus,
-  consentAccepted,
   errors,
   loading,
   onEmailChange,
@@ -29,7 +27,6 @@ export function PilotAuthInstitutionalView({
   onFullNameChange,
   onStudentNumberChange,
   onCampusChange,
-  onConsentChange,
   onSubmit,
   onViewChange,
   onOfficialPortal,
@@ -41,7 +38,6 @@ export function PilotAuthInstitutionalView({
   fullName: string;
   studentNumber: string;
   campus: CampusLocation | '';
-  consentAccepted: boolean;
   errors: Record<string, string>;
   loading: boolean;
   onEmailChange: (value: string) => void;
@@ -50,7 +46,6 @@ export function PilotAuthInstitutionalView({
   onFullNameChange: (value: string) => void;
   onStudentNumberChange: (value: string) => void;
   onCampusChange: (value: CampusLocation) => void;
-  onConsentChange: (value: boolean) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onViewChange: (view: PilotAuthView) => void;
   onOfficialPortal: () => void;
@@ -58,7 +53,7 @@ export function PilotAuthInstitutionalView({
   const heading = view === 'signup'
     ? {
         title: 'Join the student Pilot',
-        description: 'Create a student account and enter the Pilot dashboard immediately. No email confirmation is required.',
+        description: 'Create a student account and enter Pilot testing immediately. No email confirmation is required.',
       }
     : view === 'forgot-password'
       ? {
@@ -93,104 +88,34 @@ export function PilotAuthInstitutionalView({
             {view === 'signup' && (
               <>
                 <Field label="Full name" error={errors.fullName}>
-                  <Input
-                    id="pilot-full-name"
-                    autoComplete="name"
-                    value={fullName}
-                    onChange={(event) => onFullNameChange(event.target.value)}
-                    className="h-12"
-                    aria-invalid={Boolean(errors.fullName)}
-                  />
+                  <Input id="pilot-full-name" autoComplete="name" value={fullName} onChange={(event) => onFullNameChange(event.target.value)} className="h-12" aria-invalid={Boolean(errors.fullName)} />
                 </Field>
-
                 <Field label="Student number" error={errors.studentNumber} optional>
-                  <Input
-                    id="pilot-student-number"
-                    autoComplete="off"
-                    value={studentNumber}
-                    onChange={(event) => onStudentNumberChange(event.target.value)}
-                    className="h-12"
-                    aria-invalid={Boolean(errors.studentNumber)}
-                  />
+                  <Input id="pilot-student-number" autoComplete="off" value={studentNumber} onChange={(event) => onStudentNumberChange(event.target.value)} className="h-12" aria-invalid={Boolean(errors.studentNumber)} />
                 </Field>
-
                 <Field label="Campus" error={errors.campus}>
                   <Select value={campus} onValueChange={(value) => onCampusChange(value as CampusLocation)}>
-                    <SelectTrigger id="pilot-campus" className="h-12" aria-invalid={Boolean(errors.campus)}>
-                      <SelectValue placeholder="Select your TUT campus" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {PILOT_CAMPUS_VALUES.map((value) => (
-                        <SelectItem key={value} value={value}>
-                          <span className="flex items-center gap-2">
-                            <MapPin className="h-4 w-4" aria-hidden="true" />
-                            {CAMPUS_LABELS[value]}
-                          </span>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
+                    <SelectTrigger id="pilot-campus" className="h-12" aria-invalid={Boolean(errors.campus)}><SelectValue placeholder="Select your TUT campus" /></SelectTrigger>
+                    <SelectContent>{PILOT_CAMPUS_VALUES.map((value) => <SelectItem key={value} value={value}><span className="flex items-center gap-2"><MapPin className="h-4 w-4" aria-hidden="true" />{CAMPUS_LABELS[value]}</span></SelectItem>)}</SelectContent>
                   </Select>
                 </Field>
               </>
             )}
 
             <Field label="Email address" error={errors.email}>
-              <Input
-                id="pilot-email"
-                type="email"
-                inputMode="email"
-                autoComplete="email"
-                value={email}
-                onChange={(event) => onEmailChange(event.target.value)}
-                placeholder="name@example.com"
-                className="h-12"
-                aria-invalid={Boolean(errors.email)}
-              />
+              <Input id="pilot-email" type="email" inputMode="email" autoComplete="email" value={email} onChange={(event) => onEmailChange(event.target.value)} placeholder="name@example.com" className="h-12" aria-invalid={Boolean(errors.email)} />
             </Field>
 
             {view !== 'forgot-password' && (
               <Field label="Password" error={errors.password}>
-                <Input
-                  id="pilot-password"
-                  type="password"
-                  autoComplete={view === 'login' ? 'current-password' : 'new-password'}
-                  value={password}
-                  onChange={(event) => onPasswordChange(event.target.value)}
-                  className="h-12"
-                  aria-invalid={Boolean(errors.password)}
-                />
+                <Input id="pilot-password" type="password" autoComplete={view === 'login' ? 'current-password' : 'new-password'} value={password} onChange={(event) => onPasswordChange(event.target.value)} className="h-12" aria-invalid={Boolean(errors.password)} />
               </Field>
             )}
 
             {view === 'signup' && (
-              <>
-                <Field label="Confirm password" error={errors.confirmPassword}>
-                  <Input
-                    id="pilot-confirm-password"
-                    type="password"
-                    autoComplete="new-password"
-                    value={confirmPassword}
-                    onChange={(event) => onConfirmPasswordChange(event.target.value)}
-                    className="h-12"
-                    aria-invalid={Boolean(errors.confirmPassword)}
-                  />
-                </Field>
-
-                <div className="rounded-2xl border border-[#002F6C]/20 bg-[#002F6C]/5 p-4">
-                  <div className="flex items-start gap-3">
-                    <Checkbox
-                      id="pilot-signup-consent"
-                      checked={consentAccepted}
-                      onCheckedChange={(checked) => onConsentChange(checked === true)}
-                      aria-invalid={Boolean(errors.consent)}
-                    />
-                    <Label htmlFor="pilot-signup-consent" className="leading-relaxed">
-                      I consent to participate in the controlled CCSF Pilot and understand that Pilot reports are test records. Pilot Mode does not contact CPS, SAPS, an ambulance or another external emergency service.
-                    </Label>
-                  </div>
-                  {errors.consent && <p className="mt-2 text-sm font-medium text-destructive" role="alert">{errors.consent}</p>}
-                </div>
-              </>
+              <Field label="Confirm password" error={errors.confirmPassword}>
+                <Input id="pilot-confirm-password" type="password" autoComplete="new-password" value={confirmPassword} onChange={(event) => onConfirmPasswordChange(event.target.value)} className="h-12" aria-invalid={Boolean(errors.confirmPassword)} />
+              </Field>
             )}
 
             <Button type="submit" className="h-12 w-full bg-gradient-to-r from-[#002F6C] to-[#0055A5] text-base font-bold text-white shadow-lg" disabled={loading}>
@@ -209,10 +134,7 @@ export function PilotAuthInstitutionalView({
           </div>
 
           <div className="mt-6 rounded-2xl border border-border bg-muted/45 p-4 text-xs leading-5 text-muted-foreground">
-            <div className="flex items-start gap-2">
-              <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-[#002F6C] dark:text-[#F2A900]" />
-              <p>Student registration creates only a student role, records Pilot consent and enrols the account into the active Pilot programme for the selected campus. It cannot create campus-security or super-admin access.</p>
-            </div>
+            Student registration creates only a student role and enrols the account into the active Pilot programme for the selected campus. It cannot create campus-security or super-admin access.
           </div>
         </CardContent>
       </Card>
@@ -220,22 +142,6 @@ export function PilotAuthInstitutionalView({
   );
 }
 
-function Field({
-  label,
-  error,
-  optional = false,
-  children,
-}: {
-  label: string;
-  error?: string;
-  optional?: boolean;
-  children: ReactNode;
-}) {
-  return (
-    <div className="space-y-2">
-      <Label>{label}{optional ? ' (optional)' : ''}</Label>
-      {children}
-      {error && <p className="text-sm font-medium text-destructive" role="alert">{error}</p>}
-    </div>
-  );
+function Field({ label, error, optional = false, children }: { label: string; error?: string; optional?: boolean; children: ReactNode }) {
+  return <div className="space-y-2"><Label>{label}{optional ? ' (optional)' : ''}</Label>{children}{error && <p className="text-sm font-medium text-destructive" role="alert">{error}</p>}</div>;
 }
