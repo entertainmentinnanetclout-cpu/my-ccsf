@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { PilotBanner } from '@/components/pilot/PilotBanner';
 import { PILOT_MAX_ATTACHMENTS, PILOT_ROUTES } from '@/config/pilot';
+import { captureBrowserPosition, normalizeGeolocationError } from '@/lib/browserGeolocation';
 import {
   createPilotReport,
   insertPilotLocationEvent,
@@ -68,6 +69,7 @@ export function PilotReportForm({
   const [category, setCategory] = useState<IncidentCategory | ''>(scenario.expected_category ?? '');
   const [locationDescription, setLocationDescription] = useState('');
   const [location, setLocation] = useState<CapturedLocation | null>(null);
+  const [locationError, setLocationError] = useState<string | null>(null);
   const [files, setFiles] = useState<File[]>([]);
   const [anonymous, setAnonymous] = useState(false);
   const [simulationConfirmed, setSimulationConfirmed] = useState(false);
@@ -85,48 +87,47 @@ export function PilotReportForm({
   }, [title, description, category, emergency, simulationConfirmed, requiresLocation, location, requiresAttachment, files.length]);
 
   const captureLocation = async () => {
-    if (!navigator.geolocation) {
-      toast({ title: 'Location unavailable', description: 'This browser does not support geolocation.', variant: 'destructive' });
-      return;
-    }
     setLocationLoading(true);
+    setLocationError(null);
     const started = performance.now();
     try {
-      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: true,
-          timeout: 15000,
-          maximumAge: 0,
-        });
-      });
+      const { position, acquisition, permission } = await captureBrowserPosition();
       setLocation({
         latitude: position.coords.latitude,
         longitude: position.coords.longitude,
         accuracy: position.coords.accuracy ?? null,
       });
       setLocationDescription((current) => current || `${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}`);
-      toast({ title: 'Pilot location captured', description: `Accuracy: ${Math.round(position.coords.accuracy)} metres` });
+      toast({
+        title: acquisition === 'network_fallback' ? 'Pilot location captured using network fallback' : 'Pilot location captured',
+        description: `Accuracy: ${Math.round(position.coords.accuracy)} metres`,
+      });
       await recordPilotFeatureTest({
         programId: participant.program_id,
         sessionId: session.id,
         featureKey: 'location_permission_capture',
         outcome: 'passed',
         durationMs: Math.round(performance.now() - started),
-        metadata: { accuracy: position.coords.accuracy },
+        metadata: {
+          accuracy: position.coords.accuracy,
+          acquisition,
+          permission,
+        },
       });
     } catch (caught) {
-      const denied = caught instanceof GeolocationPositionError && caught.code === 1;
+      const failure = normalizeGeolocationError(caught);
+      setLocationError(failure.message);
       await recordPilotFeatureTest({
         programId: participant.program_id,
         sessionId: session.id,
         featureKey: 'location_permission_capture',
-        outcome: denied ? 'denied' : 'failed',
+        outcome: failure.denied ? 'denied' : 'failed',
         durationMs: Math.round(performance.now() - started),
-        errorCode: caught instanceof Error ? caught.message : 'location_error',
+        errorCode: `${failure.code ?? 'unknown'}:${failure.message}`,
       }).catch(() => undefined);
       toast({
-        title: denied ? 'Location permission denied' : 'Location capture failed',
-        description: caught instanceof Error ? caught.message : 'Try again or review browser permissions.',
+        title: failure.denied ? 'Location permission denied' : 'Location capture failed',
+        description: failure.message,
         variant: 'destructive',
       });
     } finally {
@@ -295,13 +296,19 @@ export function PilotReportForm({
             </div>
             <Button type="button" variant="outline" onClick={captureLocation} disabled={locationLoading}>
               {locationLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Navigation className="mr-2 h-4 w-4" />}
-              Capture Pilot location
+              {locationLoading ? 'Finding location…' : location ? 'Capture again' : 'Capture Pilot location'}
             </Button>
           </div>
           {location && (
             <div className="mt-3 flex items-center gap-2 rounded-md bg-muted p-3 text-sm">
               <CheckCircle2 className="h-4 w-4 text-green-600" />
               {location.latitude.toFixed(6)}, {location.longitude.toFixed(6)} · accuracy {Math.round(location.accuracy ?? 0)} m
+            </div>
+          )}
+          {locationError && (
+            <div className="mt-3 flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive" role="alert">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>{locationError}</span>
             </div>
           )}
           <div className="mt-3 space-y-2">
