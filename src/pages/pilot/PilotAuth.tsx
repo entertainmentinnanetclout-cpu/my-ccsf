@@ -28,6 +28,11 @@ type PilotRequestedLocation = string | {
 };
 
 const emailSchema = z.string().trim().email('Enter a valid email address.').max(255);
+const loginSchema = z.object({
+  email: emailSchema,
+  password: z.string().min(1, 'Password is required.'),
+});
+const recoverySchema = z.object({ email: emailSchema });
 const signupSchema = z.object({
   email: emailSchema,
   password: z.string().min(8, 'Password must contain at least 8 characters.').max(100),
@@ -90,14 +95,9 @@ export default function PilotAuth() {
 
   const validate = (): boolean => {
     try {
-      if (view === 'login') {
-        emailSchema.parse(email);
-        if (!password) throw new z.ZodError([{ code: 'custom', path: ['password'], message: 'Password is required.' }]);
-      } else if (view === 'signup') {
-        signupSchema.parse({ email, password, confirmPassword, fullName, studentNumber, campus });
-      } else {
-        emailSchema.parse(email);
-      }
+      if (view === 'login') loginSchema.parse({ email, password });
+      else if (view === 'signup') signupSchema.parse({ email, password, confirmPassword, fullName, studentNumber, campus });
+      else recoverySchema.parse({ email });
       setErrors({});
       return true;
     } catch (error) {
@@ -106,7 +106,6 @@ export default function PilotAuth() {
         for (const issue of error.errors) {
           const field = issue.path[0];
           if (typeof field === 'string' && !nextErrors[field]) nextErrors[field] = issue.message;
-          if (issue.path.length === 0 && !nextErrors.email) nextErrors.email = issue.message;
         }
         setErrors(nextErrors);
       }
