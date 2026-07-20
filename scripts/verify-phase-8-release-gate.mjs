@@ -13,6 +13,7 @@ const form = read('src/components/pilot/PilotReportForm.tsx');
 const student = read('src/components/pilot/PilotStudentDashboard.tsx');
 const campus = read('src/components/pilot/PilotCampusSecurityDashboard.tsx');
 const superAdmin = read('src/components/pilot/PilotSuperAdminDashboard.tsx');
+const configuration = read('src/components/pilot/PilotConfigurationPanel.tsx');
 const app = read('src/App.tsx');
 const config = read('src/config/pilot.ts');
 const vite = read('vite.config.ts');
@@ -32,10 +33,14 @@ check(core.includes("from('pilot_location_events')") && form.includes("source: '
 check(form.includes('enableHighAccuracy: true') && form.includes('scenario.requires_live_tracking'), 'High-accuracy and live tracking workflows remain enabled.');
 check(form.includes('uploadPilotAttachments') && core.includes('PILOT_MAX_ATTACHMENTS') && core.includes('PILOT_MAX_FILE_BYTES'), 'Evidence upload limits and workflow remain enabled.');
 check(core.includes('createSignedUrl') && core.includes('PILOT_ATTACHMENT_BUCKET'), 'Private evidence retrieval uses signed URLs.');
-check(form.includes('will not contact CPS, SAPS, an ambulance, security personnel or any emergency service'), 'Emergency simulation requires explicit no-dispatch consent.');
+check(
+  form.includes('I consent to share my current location and registered student profile')
+    && form.includes('does not contact CPS, SAPS, an ambulance or another external emergency service.'),
+  'Emergency reporting requires explicit profile/location sharing and no-dispatch consent.',
+);
 
 check(core.includes("table: 'pilot_reports'") && core.includes("table: 'pilot_report_events'"), 'Student report and timeline Realtime sources are subscribed.');
-check(core.includes("table: 'pilot_notifications'") && core.includes("pilot_mark_notification_read"), 'Pilot notifications support Realtime and owner read receipts.');
+check(core.includes("table: 'pilot_notifications'") && core.includes('pilot_mark_notification_read'), 'Pilot notifications support Realtime and owner read receipts.');
 check(campus.includes("'pilot_feature_tests'") && superAdmin.includes("'pilot_audit_logs'"), 'Campus and super-admin Realtime coverage includes telemetry and audit.');
 
 check(['Overview','Incidents','Analytics','Students','Updates','Comms'].every((x) => campus.includes(`label: '${x}'`)), 'Campus portal matches all official operational sections.');
@@ -43,7 +48,7 @@ check(campus.includes("received: 'assessing'") && campus.includes("assigned: 'in
 check(campus.includes("transitionPilotReport(actionReport.id, 'assigned'") && campus.includes('userProfile.id'), 'Campus assignment uses the authenticated staff profile.');
 check(campus.includes('Assign to me') && !campus.includes('Campus officer profile UUID'), 'Campus assignment exposes no raw UUID control.');
 check(campus.includes('addPilotReportNote') && campus.includes('createPilotNotification'), 'Campus notes and student updates are available.');
-check(['Overview','Operations','Campuses','Programmes','Participants','Analytics','Governance','Audit'].every((x) => superAdmin.includes(`label: '${x}'`)), 'Super-admin portal matches all official governance sections.');
+check(['Overview','Operations','Campuses','Programmes','Students','Analytics','Governance','Audit'].every((x) => superAdmin.includes(`label: '${x}'`)), 'Super-admin portal matches all official governance sections.');
 check(admin.includes('pilot_export_data') && admin.includes('pilot_add_report_note'), 'Governed export and note RPCs remain connected.');
 
 check(migration.includes('pilot_private.transition_report'), 'Remote-ledger Phase 8 assignment migration is committed.');
@@ -51,7 +56,17 @@ check(migration.includes("'security'::public.user_role") && migration.includes("
 check(migration.includes('p_assigned_to <> v_actor') && migration.includes('raw_get_user_campus'), 'Admin self-ownership and security campus scope remain enforced.');
 check(!['public.incidents','public.notifications','public.case_updates','send-push-notification'].some((x) => migration.includes(x)), 'Migration does not touch production case or dispatch paths.');
 
-check(['/pilot','/pilot/session/:sessionId','/pilot/report/:reportId','/security/pilot','/admin/pilot'].every((x) => app.includes(`path="${x}"`)), 'All direct Pilot routes remain registered.');
+check([
+  '/pilot',
+  '/pilot/session/:sessionId',
+  '/pilot/report/:reportId',
+  '/pilot/reviews',
+  '/pilot/resources',
+  '/security/pilot',
+  '/security/pilot/reviews',
+  '/admin/pilot',
+  '/admin/pilot/reviews',
+].every((x) => app.includes(`path="${x}"`)), 'All direct Pilot routes, including Phase 3 reviews, remain registered.');
 for (const source of [core, admin, form, student, campus, superAdmin]) {
   check(!["from('incidents')","from('notifications')","from('case_updates')",'send-push-notification'].some((x) => source.includes(x)), 'Active Pilot source is isolated from production workflow tables.');
 }
@@ -68,9 +83,9 @@ check(student.includes('title="Track your cases"') && student.includes("onClick=
 check(student.includes('onClick={openEmergencySimulation}') && student.includes('onClick={() => void refresh(true)}') && student.includes('onClick={() => void markRead(item)}'), 'Student emergency, refresh and notification actions have working handlers.');
 check(campus.includes('onClick={() => openAction(report)}') && campus.includes('onClick={() => openNote(report)}') && campus.includes('onClick={() => openUpdate(report)}')
   && campus.includes('await transitionPilotReport(') && campus.includes('await addPilotReportNote(') && campus.includes('await createPilotNotification('), 'Campus case controls are connected to lifecycle, note and notification services.');
-check(superAdmin.includes('await createPilotProgram(') && superAdmin.includes('await updatePilotProgram(')
-  && superAdmin.includes('await invitePilotParticipant(') && superAdmin.includes('await requestPilotExport('), 'Super-admin programme, participant and export controls are service-backed.');
-for (const [name, source] of [['student', student], ['campus', campus], ['super-admin', superAdmin], ['report-form', form]]) {
+check(configuration.includes('await createPilotProgram(') && configuration.includes('updatePilotProgram(selectedProgram.id')
+  && superAdmin.includes('await invitePilotParticipant(') && superAdmin.includes('await requestPilotExport('), 'Super-admin programme, student and export controls are service-backed.');
+for (const [name, source] of [['student', student], ['campus', campus], ['super-admin', superAdmin], ['report-form', form], ['configuration', configuration]]) {
   check(!/href=["']#["']|onClick=\{\(\) => undefined\}|onClick=\{\(\) => \{\s*\}\}|coming soon|placeholder action/i.test(source), `${name} Pilot UI contains no placeholder links, empty handlers or coming-soon actions.`);
 }
 
