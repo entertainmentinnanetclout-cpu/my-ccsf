@@ -127,8 +127,9 @@ assert(app.includes("allowedRoles={['admin']}"), 'Super-admin Pilot route is adm
 const pilotAuth = read('src/pages/pilot/PilotAuth.tsx');
 assert(pilotAuth.includes('signInWithPassword'), 'Pilot authentication reuses existing Supabase accounts.');
 assert(pilotAuth.includes('resolvePilotDestination'), 'Pilot authentication redirects by role while preserving approved deep links.');
-assert(!pilotAuth.includes('signUp('), 'Pilot authentication does not create uninvited accounts.');
-assert(pilotAuth.includes('Student accounts must be invited'), 'Pilot authentication explains the student allowlist requirement.');
+assert(!pilotAuth.includes('signUp('), 'Pilot authentication does not use an uncontrolled browser sign-up path.');
+assert(pilotAuth.includes("'pilot-student-signup'"), 'Pilot student registration uses the controlled server-side signup function.');
+assert(pilotAuth.includes('Students may self-register for the active Pilot programme'), 'Pilot authentication explains the controlled student self-registration requirement.');
 
 const protectedRoute = read('src/components/ProtectedRoute.tsx');
 assert(protectedRoute.includes("? '/pilot/auth' : '/auth'"), 'Unauthenticated Pilot routes redirect to the dedicated Pilot login.');
