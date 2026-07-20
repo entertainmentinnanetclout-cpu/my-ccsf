@@ -8,6 +8,7 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "typecheck": "tsc -p tsconfig.app.json --noEmit",
+    "test:phase1-auth": "node scripts/verify-phase-1-pilot-auth-navigation.mjs",
     "test:pilot-isolation": "node scripts/verify-pilot-isolation.mjs",
     "test:phase3-routing": "node scripts/verify-phase-3-routing.mjs",
     "test:phase4-product": "node scripts/verify-phase-4-product.mjs",
@@ -17,7 +18,7 @@
     "test:phase8-release": "node scripts/verify-phase-8-release-gate.mjs",
     "test:branding": "node scripts/verify-branding.mjs",
     "test:student-home": "node scripts/verify-student-home-parity.mjs",
-    "qa:pilot": "npm run test:pilot-isolation && npm run test:phase3-routing && npm run test:phase4-product && npm run test:phase4-5-parity && npm run test:phase6-parity && npm run test:phase7-consistency && npm run test:phase8-release && npm run test:branding && npm run test:student-home && npm run typecheck && npm run lint && npm run build",
+    "qa:pilot": "npm run test:phase1-auth && npm run test:pilot-isolation && npm run test:phase3-routing && npm run test:phase4-product && npm run test:phase4-5-parity && npm run test:phase6-parity && npm run test:phase7-consistency && npm run test:phase8-release && npm run test:branding && npm run test:student-home && npm run typecheck && npm run lint && npm run build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
