@@ -38,7 +38,7 @@ export function PilotStudentNavigation() {
     },
     {
       href: PILOT_ROUTES.resources,
-      label: 'Safety Resources',
+      label: 'Safety Guide',
       icon: BookOpen,
       active: location.pathname === PILOT_ROUTES.resources,
     },
