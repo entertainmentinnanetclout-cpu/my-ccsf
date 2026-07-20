@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Activity,
   AlertCircle,
@@ -7,14 +8,19 @@ import {
   Bell,
   Building2,
   CheckCircle2,
+  ChevronRight,
   Database,
   Download,
   FileText,
+  GraduationCap,
   History,
   LayoutDashboard,
   Loader2,
+  Mail,
+  MapPin,
   MessageSquarePlus,
   Pause,
+  Phone,
   Play,
   RefreshCw,
   Search,
@@ -54,7 +60,12 @@ import {
   updatePilotParticipant,
   updatePilotProgram,
 } from '@/services/pilot/pilotAdminService';
-import { CAMPUS_LABELS, PILOT_CAMPUS_VALUES, PILOT_STATUS_LABELS } from '@/config/pilot';
+import {
+  getPilotStudentName,
+  loadPilotStudentIdentities,
+  type PilotStudentIdentity,
+} from '@/services/pilot/pilotProfileService';
+import { CAMPUS_LABELS, PILOT_CAMPUS_VALUES, PILOT_ROUTES, PILOT_STATUS_LABELS } from '@/config/pilot';
 import type {
   CampusLocation,
   PilotAdminData,
@@ -78,10 +89,12 @@ const FINAL_STATUSES = new Set<PilotReportStatus>(['simulation_completed', 'canc
 const STATUS_OPTIONS: PilotReportStatus[] = ['received', 'assessing', 'assigned', 'in_progress', 'simulation_completed', 'cancelled', 'withdrawn', 'expired'];
 
 export function PilotSuperAdminDashboard() {
+  const navigate = useNavigate();
   const { userProfile } = useAuth();
   const { toast } = useToast();
   const [activeView, setActiveView] = useState<AdminView>('overview');
   const [data, setData] = useState<PilotAdminData>(EMPTY_DATA);
+  const [studentIdentities, setStudentIdentities] = useState<PilotStudentIdentity[]>([]);
   const [selectedProgramId, setSelectedProgramId] = useState('all');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -109,7 +122,9 @@ export function PilotSuperAdminDashboard() {
     if (showSpinner) setRefreshing(true);
     try {
       const next = await loadPilotAdminData({ programId });
+      const identities = await loadPilotStudentIdentities(next.participants.map((item) => item.user_id));
       setData(next);
+      setStudentIdentities(identities);
       setLoadError(null);
       if (selectedProgramId === 'all' && next.programs.length === 1) setSelectedProgramId(next.programs[0].id);
     } catch (error) {
@@ -132,7 +147,7 @@ export function PilotSuperAdminDashboard() {
     };
 
     let channel = supabase.channel('pilot-super-admin-parity');
-    (['pilot_programs', 'pilot_scenarios', 'pilot_participants', 'pilot_sessions', 'pilot_reports', 'pilot_report_events', 'pilot_notifications', 'pilot_feedback', 'pilot_feature_tests', 'pilot_audit_logs'] as const)
+    (['pilot_programs', 'pilot_scenarios', 'pilot_participants', 'pilot_sessions', 'pilot_reports', 'pilot_report_events', 'pilot_notifications', 'pilot_feedback', 'pilot_feature_tests', 'pilot_audit_logs', 'profiles'] as const)
       .forEach((table) => { channel = channel.on('postgres_changes', { event: '*', schema: 'public', table }, scheduleRefresh); });
     channel.subscribe((status) => {
       if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
@@ -148,6 +163,11 @@ export function PilotSuperAdminDashboard() {
     };
   }, [refresh, toast]);
 
+  const identityByUserId = useMemo(
+    () => new Map(studentIdentities.map((identity) => [identity.id, identity])),
+    [studentIdentities],
+  );
+
   const selectedProgram = useMemo<PilotProgram | null>(
     () => data.programs.find((program) => program.id === selectedProgramId) ?? data.programs[0] ?? null,
     [data.programs, selectedProgramId],
@@ -157,11 +177,23 @@ export function PilotSuperAdminDashboard() {
   const unassignedReports = useMemo(() => data.reports.filter((report) => ['received', 'assessing'].includes(report.status)), [data.reports]);
   const filteredReports = useMemo(() => data.reports.filter((report) => {
     const query = search.trim().toLowerCase();
-    const matchesSearch = !query || report.reference_number.toLowerCase().includes(query) || report.title.toLowerCase().includes(query) || report.category.toLowerCase().includes(query);
+    const identity = identityByUserId.get(report.submitted_by);
+    const studentText = [
+      getPilotStudentName(identity, report.submitted_by),
+      identity?.student_number,
+      identity?.email,
+      identity?.phone_number,
+    ].filter(Boolean).join(' ').toLowerCase();
+    const matchesSearch = !query
+      || report.reference_number.toLowerCase().includes(query)
+      || report.title.toLowerCase().includes(query)
+      || report.category.toLowerCase().includes(query)
+      || (report.location_description ?? '').toLowerCase().includes(query)
+      || studentText.includes(query);
     const matchesStatus = statusFilter === 'all' || report.status === statusFilter;
     const matchesCampus = campusFilter === 'all' || report.campus === campusFilter;
     return matchesSearch && matchesStatus && matchesCampus;
-  }), [data.reports, search, statusFilter, campusFilter]);
+  }), [data.reports, identityByUserId, search, statusFilter, campusFilter]);
   const campusSummaries = useMemo(() => PILOT_CAMPUS_VALUES.map((campus) => {
     const reports = data.reports.filter((report) => report.campus === campus);
     const participants = data.participants.filter((participant) => participant.campus === campus);
@@ -199,7 +231,7 @@ export function PilotSuperAdminDashboard() {
     { view: 'operations', icon: AlertCircle, label: 'Operations' },
     { view: 'campuses', icon: Building2, label: 'Campuses' },
     { view: 'programmes', icon: Settings2, label: 'Programmes' },
-    { view: 'participants', icon: Users, label: 'Participants' },
+    { view: 'participants', icon: Users, label: 'Students' },
     { view: 'analytics', icon: BarChart3, label: 'Analytics' },
     { view: 'governance', icon: Database, label: 'Governance' },
     { view: 'audit', icon: History, label: 'Audit' },
@@ -291,7 +323,7 @@ export function PilotSuperAdminDashboard() {
     try {
       await invitePilotParticipant({ program_id: selectedProgram.id, user_id: profile.id, campus: profile.campus });
       await refresh();
-      toast({ title: 'Pilot participant invited' });
+      toast({ title: 'Pilot student invited' });
     } catch (error) {
       toast({ title: 'Invitation failed', description: error instanceof Error ? error.message : 'Try again.', variant: 'destructive' });
     }
@@ -301,9 +333,9 @@ export function PilotSuperAdminDashboard() {
     try {
       await updatePilotParticipant(participant.id, { status });
       await refresh();
-      toast({ title: `Participant marked ${status}` });
+      toast({ title: `Student marked ${status}` });
     } catch (error) {
-      toast({ title: 'Participant update failed', description: error instanceof Error ? error.message : 'Try again.', variant: 'destructive' });
+      toast({ title: 'Student update failed', description: error instanceof Error ? error.message : 'Try again.', variant: 'destructive' });
     }
   };
 
@@ -378,7 +410,7 @@ export function PilotSuperAdminDashboard() {
   }
 
   return (
-    <div className="min-h-[calc(100vh-12rem)] space-y-6" data-testid="ready-pilot-super-admin-parity">
+    <div className="min-h-[calc(100vh-12rem)] space-y-6" data-testid="ready-pilot-super-admin-parity" data-super-admin-student-case-migration="complete">
       <PilotBanner />
 
       <Card className="overflow-hidden border-primary/20 shadow-large">
@@ -412,14 +444,14 @@ export function PilotSuperAdminDashboard() {
         <div className="space-y-6">
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <Metric icon={Settings2} label="Pilot programmes" value={data.programs.length} />
-            <Metric icon={Users} label="Participants" value={data.participants.length} />
+            <Metric icon={Users} label="Students" value={data.participants.length} />
             <Metric icon={AlertCircle} label="Active simulated cases" value={activeReports.length} />
             <Metric icon={CheckCircle2} label="Completion rate" value={`${metrics.completionRate}%`} />
           </div>
           <div className="grid gap-6 xl:grid-cols-[1.4fr_1fr]">
             <Card>
-              <CardHeader><CardTitle className="flex items-center gap-2"><Bell className="h-5 w-5 text-destructive" />Institution-wide Pilot Queue</CardTitle><CardDescription>Newest active simulations across all authorised campuses.</CardDescription></CardHeader>
-              <CardContent className="space-y-3">{activeReports.slice(0, 8).map((report) => <ReportRow key={report.id} report={report} onAdvance={moveReport} onNote={() => beginAction(report, 'note')} onNotify={() => beginAction(report, 'notify')} />)}{!activeReports.length && <EmptyState title="No active Pilot cases" description="Student simulations will appear here in realtime." />}</CardContent>
+              <CardHeader><CardTitle className="flex items-center gap-2"><Bell className="h-5 w-5 text-destructive" />Institution-wide Pilot Queue</CardTitle><CardDescription>Tap any incident card to open the full student profile, readable location, evidence and case timeline.</CardDescription></CardHeader>
+              <CardContent className="space-y-3">{activeReports.slice(0, 8).map((report) => <ReportRow key={report.id} report={report} identity={identityByUserId.get(report.submitted_by)} onOpen={() => navigate(PILOT_ROUTES.report(report.id))} onAdvance={moveReport} onNote={() => beginAction(report, 'note')} onNotify={() => beginAction(report, 'notify')} />)}{!activeReports.length && <EmptyState title="No active Pilot cases" description="Student simulations will appear here in realtime." />}</CardContent>
             </Card>
             <Card>
               <CardHeader><CardTitle>Governance pulse</CardTitle><CardDescription>Release-candidate operational indicators.</CardDescription></CardHeader>
@@ -437,14 +469,14 @@ export function PilotSuperAdminDashboard() {
 
       {activeView === 'operations' && (
         <Card>
-          <CardHeader><CardTitle>Cross-Campus Pilot Operations</CardTitle><CardDescription>Global triage and lifecycle controls affect only isolated Pilot records.</CardDescription></CardHeader>
+          <CardHeader><CardTitle>Cross-Campus Pilot Operations</CardTitle><CardDescription>Tap a case for full details. Global triage and lifecycle controls affect only isolated Pilot records.</CardDescription></CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-3 lg:grid-cols-[1fr_220px_240px]">
-              <div className="relative"><Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /><Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search reference, title or category" className="pl-9" aria-label="Search Pilot reports" /></div>
+              <div className="relative"><Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /><Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search case, student, email, phone or location" className="pl-9" aria-label="Search Pilot reports" /></div>
               <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as typeof statusFilter)}><SelectTrigger aria-label="Filter Pilot status"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All statuses</SelectItem>{STATUS_OPTIONS.map((status) => <SelectItem key={status} value={status}>{PILOT_STATUS_LABELS[status]}</SelectItem>)}</SelectContent></Select>
               <Select value={campusFilter} onValueChange={(value) => setCampusFilter(value as typeof campusFilter)}><SelectTrigger aria-label="Filter Pilot campus"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All campuses</SelectItem>{PILOT_CAMPUS_VALUES.map((campus) => <SelectItem key={campus} value={campus}>{CAMPUS_LABELS[campus]}</SelectItem>)}</SelectContent></Select>
             </div>
-            <div className="space-y-3">{filteredReports.map((report) => <ReportRow key={report.id} report={report} onAdvance={moveReport} onNote={() => beginAction(report, 'note')} onNotify={() => beginAction(report, 'notify')} />)}{!filteredReports.length && <EmptyState title="No reports match the filters" description="Change the programme, campus, status or search query." />}</div>
+            <div className="space-y-3">{filteredReports.map((report) => <ReportRow key={report.id} report={report} identity={identityByUserId.get(report.submitted_by)} onOpen={() => navigate(PILOT_ROUTES.report(report.id))} onAdvance={moveReport} onNote={() => beginAction(report, 'note')} onNotify={() => beginAction(report, 'notify')} />)}{!filteredReports.length && <EmptyState title="No reports match the filters" description="Change the programme, campus, status or search query." />}</div>
           </CardContent>
         </Card>
       )}
@@ -455,7 +487,7 @@ export function PilotSuperAdminDashboard() {
             <Card key={summary.campus} className="shadow-soft">
               <CardHeader><div className="flex items-start justify-between gap-3"><div><CardTitle className="text-lg">{CAMPUS_LABELS[summary.campus]}</CardTitle><CardDescription>{summary.lastActivity ? `Last Pilot activity ${formatDate(summary.lastActivity)}` : 'No Pilot report activity yet'}</CardDescription></div><Badge variant={summary.active ? 'default' : 'secondary'}>{summary.active} active</Badge></div></CardHeader>
               <CardContent className="grid grid-cols-2 gap-3 text-sm">
-                <CampusStat label="Participants" value={summary.participants} />
+                <CampusStat label="Students" value={summary.participants} />
                 <CampusStat label="Sessions" value={summary.sessions} />
                 <CampusStat label="Reports" value={summary.reports} />
                 <CampusStat label="Completion" value={`${summary.completionRate}%`} />
@@ -471,7 +503,7 @@ export function PilotSuperAdminDashboard() {
             <Card>
               <CardHeader><div className="flex flex-col justify-between gap-3 lg:flex-row lg:items-start"><div><CardTitle>{selectedProgram.name}</CardTitle><CardDescription>{selectedProgram.description || 'Controlled CCSF Pilot programme.'}</CardDescription></div><Badge className="capitalize" variant={selectedProgram.status === 'active' ? 'default' : 'secondary'}>{selectedProgram.status}</Badge></div></CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><CampusStat label="Retention" value={`${selectedProgram.retention_days} days`} /><CampusStat label="Eligible campuses" value={selectedProgram.eligible_campuses.length} /><CampusStat label="Scenarios" value={data.scenarios.length} /><CampusStat label="Participants" value={data.participants.length} /></div>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><CampusStat label="Retention" value={`${selectedProgram.retention_days} days`} /><CampusStat label="Eligible campuses" value={selectedProgram.eligible_campuses.length} /><CampusStat label="Scenarios" value={data.scenarios.length} /><CampusStat label="Students" value={data.participants.length} /></div>
                 <div className="flex flex-wrap gap-2 border-t pt-4">
                   <Button size="sm" onClick={() => void setProgramStatus('active')}><Play className="mr-2 h-4 w-4" />Activate</Button>
                   <Button size="sm" variant="outline" onClick={() => void setProgramStatus('paused')}><Pause className="mr-2 h-4 w-4" />Pause</Button>
@@ -489,15 +521,40 @@ export function PilotSuperAdminDashboard() {
       {activeView === 'participants' && (
         <div className="grid gap-6 xl:grid-cols-[1fr_1.25fr]">
           <Card>
-            <CardHeader><CardTitle className="flex items-center gap-2"><UserPlus className="h-5 w-5" />Invite Participant</CardTitle><CardDescription>{selectedProgram ? `Add a student to ${selectedProgram.name}.` : 'Select one programme before inviting participants.'}</CardDescription></CardHeader>
+            <CardHeader><CardTitle className="flex items-center gap-2"><UserPlus className="h-5 w-5" />Invite Student</CardTitle><CardDescription>{selectedProgram ? `Add a student to ${selectedProgram.name}.` : 'Select one programme before inviting students.'}</CardDescription></CardHeader>
             <CardContent className="space-y-4">
               <div className="flex gap-2"><Input value={participantSearch} onChange={(event) => setParticipantSearch(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') void searchProfiles(); }} placeholder="Name, email or student number" aria-label="Search student profiles" /><Button onClick={() => void searchProfiles()} disabled={searchingProfiles || !participantSearch.trim()} aria-label="Search students">{searchingProfiles ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}</Button></div>
               <div className="space-y-2">{profiles.map((profile) => <div key={profile.id} className="flex items-center justify-between gap-3 rounded-lg border p-3"><div className="min-w-0"><p className="truncate font-semibold">{profile.full_name || profile.email}</p><p className="truncate text-xs text-muted-foreground">{profile.student_number || profile.id} · {profile.campus ? CAMPUS_LABELS[profile.campus] : 'Campus missing'}</p></div><Button size="sm" onClick={() => void inviteProfile(profile)} disabled={!selectedProgram || !profile.campus}>Invite</Button></div>)}{participantSearch && !searchingProfiles && !profiles.length && <EmptyState title="No students found" description="Try another name, email address or student number." />}</div>
             </CardContent>
           </Card>
           <Card>
-            <CardHeader><CardTitle>Pilot Participant Register</CardTitle><CardDescription>Programme status, campus allocation and controlled removal.</CardDescription></CardHeader>
-            <CardContent className="space-y-3">{data.participants.map((participant) => <div key={participant.id} className="flex flex-col justify-between gap-3 rounded-lg border p-4 sm:flex-row sm:items-center"><div><p className="font-semibold">Participant {participant.user_id.slice(0, 8)}</p><p className="text-sm text-muted-foreground">{CAMPUS_LABELS[participant.campus]} · invited {formatDate(participant.invited_at)}</p></div><div className="flex flex-wrap items-center gap-2"><Badge variant="secondary" className="capitalize">{participant.status}</Badge>{participant.status === 'removed' ? <Button size="sm" variant="outline" onClick={() => void setParticipantStatus(participant, 'invited')}>Restore invitation</Button> : <Button size="sm" variant="destructive" onClick={() => void setParticipantStatus(participant, 'removed')}><Trash2 className="mr-2 h-4 w-4" />Remove</Button>}</div></div>)}{!data.participants.length && <EmptyState title="No participants in scope" description="Select a programme or invite its first student." />}</CardContent>
+            <CardHeader><CardTitle>Pilot Student Register</CardTitle><CardDescription>Registered names, student details, programme status, campus allocation and controlled removal.</CardDescription></CardHeader>
+            <CardContent className="space-y-3">
+              {data.participants.map((student) => {
+                const identity = identityByUserId.get(student.user_id);
+                return (
+                  <div key={student.id} className="flex flex-col justify-between gap-4 rounded-lg border p-4 lg:flex-row lg:items-center">
+                    <div>
+                      <p className="font-semibold">{getPilotStudentName(identity, student.user_id)}</p>
+                      <div className="mt-2 grid gap-1 text-sm text-muted-foreground sm:grid-cols-2">
+                        <p className="flex items-center gap-2"><GraduationCap className="h-4 w-4" />{identity?.student_number || 'Student number not supplied'}</p>
+                        <p className="flex items-center gap-2"><Mail className="h-4 w-4" />{identity?.email || 'Email not supplied'}</p>
+                        <p className="flex items-center gap-2"><Phone className="h-4 w-4" />{identity?.phone_number || 'Phone not supplied'}</p>
+                        <p>{identity?.course || 'Course not supplied'}{identity?.year_of_study ? ` · Year ${identity.year_of_study}` : ''}</p>
+                      </div>
+                      <p className="mt-2 text-xs text-muted-foreground">{CAMPUS_LABELS[student.campus]} · invited {formatDate(student.invited_at)}</p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant="secondary" className="capitalize">{student.status}</Badge>
+                      {student.status === 'removed'
+                        ? <Button size="sm" variant="outline" onClick={() => void setParticipantStatus(student, 'invited')}>Restore invitation</Button>
+                        : <Button size="sm" variant="destructive" onClick={() => void setParticipantStatus(student, 'removed')}><Trash2 className="mr-2 h-4 w-4" />Remove</Button>}
+                    </div>
+                  </div>
+                );
+              })}
+              {!data.participants.length && <EmptyState title="No students in scope" description="Select a programme or invite its first student." />}
+            </CardContent>
           </Card>
         </div>
       )}
@@ -511,7 +568,7 @@ export function PilotSuperAdminDashboard() {
             <Metric icon={BarChart3} label="Average ease rating" value={metrics.averageEaseRating || '—'} />
           </div>
           <div className="grid gap-6 xl:grid-cols-2">
-            <Card><CardHeader><CardTitle>Feature Validation Results</CardTitle><CardDescription>Aggregated across the selected programme scope.</CardDescription></CardHeader><CardContent className="grid gap-3 sm:grid-cols-2">{Object.entries(featureSummary).map(([key, result]) => <div key={key} className="rounded-lg border p-4"><p className="font-semibold capitalize">{key.replace(/_/g, ' ')}</p><p className="mt-2 text-sm text-muted-foreground">Passed {result.passed} · Failed {result.failed} · Denied {result.denied} · Total {result.total}</p></div>)}{!Object.keys(featureSummary).length && <EmptyState title="No feature results yet" description="Feature validation events appear after participant testing." />}</CardContent></Card>
+            <Card><CardHeader><CardTitle>Feature Validation Results</CardTitle><CardDescription>Aggregated across the selected programme scope.</CardDescription></CardHeader><CardContent className="grid gap-3 sm:grid-cols-2">{Object.entries(featureSummary).map(([key, result]) => <div key={key} className="rounded-lg border p-4"><p className="font-semibold capitalize">{key.replace(/_/g, ' ')}</p><p className="mt-2 text-sm text-muted-foreground">Passed {result.passed} · Failed {result.failed} · Denied {result.denied} · Total {result.total}</p></div>)}{!Object.keys(featureSummary).length && <EmptyState title="No feature results yet" description="Feature validation events appear after student testing." />}</CardContent></Card>
             <Card><CardHeader><CardTitle>Campus Performance</CardTitle><CardDescription>Completion and activity across all ten CCSF campuses.</CardDescription></CardHeader><CardContent className="space-y-3">{campusSummaries.map((summary) => <div key={summary.campus} className="grid grid-cols-[1fr_auto_auto] items-center gap-3 rounded-lg border p-3 text-sm"><span className="font-medium">{CAMPUS_LABELS[summary.campus]}</span><span className="text-muted-foreground">{summary.reports} reports</span><Badge variant="secondary">{summary.completionRate}%</Badge></div>)}</CardContent></Card>
           </div>
         </div>
@@ -572,13 +629,73 @@ function CampusStat({ label, value }: { label: string; value: string | number })
   return <div className="rounded-lg bg-muted/45 p-3"><p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</p><p className="mt-1 text-lg font-bold">{value}</p></div>;
 }
 
-function ReportRow({ report, onAdvance, onNote, onNotify }: { report: PilotReport; onAdvance: (report: PilotReport) => Promise<void>; onNote: () => void; onNotify: () => void }) {
-  const nextLabel: Partial<Record<PilotReportStatus, string>> = { received: 'Assess', assessing: 'Take ownership', assigned: 'Start response', in_progress: 'Complete simulation' };
+function ReportRow({
+  report,
+  identity,
+  onOpen,
+  onAdvance,
+  onNote,
+  onNotify,
+}: {
+  report: PilotReport;
+  identity?: PilotStudentIdentity;
+  onOpen: () => void;
+  onAdvance: (report: PilotReport) => Promise<void>;
+  onNote: () => void;
+  onNotify: () => void;
+}) {
+  const nextLabel: Partial<Record<PilotReportStatus, string>> = {
+    received: 'Assess',
+    assessing: 'Take ownership',
+    assigned: 'Start response',
+    in_progress: 'Complete simulation',
+  };
+
   return (
-    <div className="rounded-xl border p-4">
+    <div
+      role="button"
+      tabIndex={0}
+      aria-label={`Open case ${report.reference_number}`}
+      onClick={onOpen}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onOpen();
+        }
+      }}
+      className="group cursor-pointer rounded-xl border p-4 transition hover:border-primary hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
       <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
-        <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><p className="font-bold">{report.title}</p><Badge variant="secondary">{PILOT_STATUS_LABELS[report.status]}</Badge></div><p className="mt-1 text-sm text-muted-foreground">{report.reference_number} · {CAMPUS_LABELS[report.campus]} · {report.category}</p><p className="mt-1 text-xs text-muted-foreground">Submitted {formatDate(report.submitted_at)}</p></div>
-        <div className="flex flex-wrap gap-2">{nextLabel[report.status] && <Button size="sm" onClick={() => void onAdvance(report)}>{nextLabel[report.status]}</Button>}<Button size="sm" variant="outline" onClick={onNote}><MessageSquarePlus className="mr-2 h-4 w-4" />Note</Button><Button size="sm" variant="outline" onClick={onNotify}><Bell className="mr-2 h-4 w-4" />Notify</Button></div>
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="font-bold">{report.title}</p>
+            <Badge variant="secondary">{PILOT_STATUS_LABELS[report.status]}</Badge>
+          </div>
+          <p className="mt-1 font-semibold text-primary">{getPilotStudentName(identity, report.submitted_by)}</p>
+          <p className="text-sm text-muted-foreground">
+            {identity?.student_number || 'Student number not supplied'} · {report.reference_number} · {CAMPUS_LABELS[report.campus]} · {report.category}
+          </p>
+          <p className="mt-2 flex items-start gap-2 text-sm">
+            <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            <span>{report.location_description || 'Readable location unavailable'}</span>
+          </p>
+          <p className="mt-2 flex items-center gap-1 text-xs font-semibold text-primary">
+            Open full case <ChevronRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {nextLabel[report.status] && (
+            <Button size="sm" onClick={(event) => { event.stopPropagation(); void onAdvance(report); }}>
+              {nextLabel[report.status]}
+            </Button>
+          )}
+          <Button size="sm" variant="outline" onClick={(event) => { event.stopPropagation(); onNote(); }}>
+            <MessageSquarePlus className="mr-2 h-4 w-4" />Note
+          </Button>
+          <Button size="sm" variant="outline" onClick={(event) => { event.stopPropagation(); onNotify(); }}>
+            <Bell className="mr-2 h-4 w-4" />Notify
+          </Button>
+        </div>
       </div>
     </div>
   );
