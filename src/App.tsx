@@ -69,8 +69,8 @@ const App = () => (
                       </ProtectedRoute>
                     } />
                     <Route path="/pilot/report/:reportId" element={
-                      <ProtectedRoute allowedRoles={['student']}>
-                        <PilotRouteGuard allowedRoles={['student']}><PilotReportTracking /></PilotRouteGuard>
+                      <ProtectedRoute allowedRoles={['student', 'security', 'admin']}>
+                        <PilotRouteGuard allowedRoles={['student', 'security', 'admin']}><PilotReportTracking /></PilotRouteGuard>
                       </ProtectedRoute>
                     } />
                     <Route path="/pilot/resources" element={
