@@ -304,7 +304,7 @@ grant execute on function public.pilot_update_guide_preferences(integer,boolean,
 insert into public.pilot_carousel_slides(
   id, title, description, eyebrow, icon_key, button_label, action_key, display_order, image_fit
 ) values
-  ('40000000-0000-4000-8000-000000000001', 'Welcome to the My CCSF Pilot', 'Use this controlled environment to learn the safety workflow, test reporting and understand how campus-security teams receive Pilot cases.', 'Start here', 'shield', 'Explore the dashboard', 'none', 10, 'contain'),
+  ('40000000-0000-4000-8000-000000000001', 'Welcome to the My CCSF Pilot', 'Use this controlled environment to learn the safety workflow, test reporting and understand how campus-security teams receive Pilot cases.', 'Start here', 'shield', null, 'none', 10, 'contain'),
   ('40000000-0000-4000-8000-000000000002', 'Submit a clear standard report', 'Choose an approved workflow, describe what happened, confirm the readable location and add relevant test evidence when required.', 'Reporting', 'report', 'Open reporting', 'report', 20, 'contain'),
   ('40000000-0000-4000-8000-000000000003', 'Emergency reporting stays deliberately simple', 'The Emergency Test requires your current location and consent. Your registered profile is attached automatically; no long explanation is required.', 'Emergency Test', 'emergency', 'Open Emergency Test', 'emergency', 30, 'contain'),
   ('40000000-0000-4000-8000-000000000004', 'Understand how location is shared', 'A readable street or campus-area description is shown first. Coordinates and accuracy are retained as supporting technical evidence.', 'Location', 'location', 'View location guidance', 'resources', 40, 'contain'),
