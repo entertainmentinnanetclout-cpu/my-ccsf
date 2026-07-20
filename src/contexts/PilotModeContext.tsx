@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { isApprovedPilotPath, PILOT_ENABLED } from '@/config/pilot';
 import { loadStudentPilotContext } from '@/services/pilot/pilotCoreService';
+import { invokePilotFunction } from '@/services/pilot/pilotEdgeService';
 import { supabase } from '@/integrations/supabase/client';
 import type { PilotParticipant, PilotProgram, PilotSession } from '@/types/pilot';
 
@@ -47,6 +48,7 @@ export function PilotModeProvider({ children }: { children: React.ReactNode }) {
     setError(null);
     try {
       if (userRole === 'student') {
+        await invokePilotFunction('pilot-enrol-student', {});
         const context = await loadStudentPilotContext(user.id);
         setProgram(context.program);
         setParticipant(context.participant);
