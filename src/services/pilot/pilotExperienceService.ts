@@ -26,8 +26,8 @@ export const PILOT_SAFETY_GUIDE_FALLBACK: PilotSafetyDocument = {
   updated_at: '2026-07-20T00:00:00.000Z',
 };
 
-const phase4Table = (table: 'pilot_carousel_slides' | 'pilot_resource_documents') =>
-  supabase.from(table as keyof Database['public']['Tables']);
+const carouselTable = () => supabase.from('pilot_carousel_slides' as keyof Database['public']['Tables']);
+const resourceTable = () => supabase.from('pilot_resource_documents' as keyof Database['public']['Tables']);
 
 const fail = (message: string, error?: unknown): never => {
   if (error) console.error(message, error);
@@ -35,7 +35,7 @@ const fail = (message: string, error?: unknown): never => {
 };
 
 export async function loadPilotCarouselSlides(programId: string): Promise<PilotCarouselSlide[]> {
-  const { data, error } = await phase4Table('pilot_carousel_slides')
+  const { data, error } = await carouselTable()
     .select('*')
     .or(`program_id.is.null,program_id.eq.${programId}`)
     .order('display_order', { ascending: true })
@@ -46,7 +46,7 @@ export async function loadPilotCarouselSlides(programId: string): Promise<PilotC
 }
 
 export async function loadPilotSafetyDocument(programId: string): Promise<PilotSafetyDocument> {
-  const { data, error } = await phase4Table('pilot_resource_documents')
+  const { data, error } = await resourceTable()
     .select('*')
     .eq('document_type', 'safety_guide')
     .or(`program_id.is.null,program_id.eq.${programId}`)
