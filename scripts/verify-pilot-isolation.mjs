@@ -150,6 +150,12 @@ assert(reviewService.includes("rpc('pilot_moderate_review'"), 'Review moderation
 assert(!reviewService.includes("from('feedback')"), 'Pilot reviews do not use a production feedback table.');
 assert(!reviewService.includes("from('incidents')"), 'Pilot reviews do not use production incidents.');
 
+const experienceService = read('src/services/pilot/pilotExperienceService.ts');
+assert(experienceService.includes("'pilot_carousel_slides'") && experienceService.includes("'pilot_resource_documents'"), 'Phase 4 content reads only isolated Pilot carousel and resource tables.');
+assert(experienceService.includes("rpc('pilot_get_guide_preferences'") && experienceService.includes("rpc('pilot_update_guide_preferences'"), 'Cross-device guide state uses authenticated Pilot RPCs.');
+assert(!experienceService.includes("from('carousel_images')"), 'The Pilot dashboard carousel does not read the production carousel table.');
+assert(!experienceService.includes("from('app_settings')"), 'The Pilot experience service does not read production application settings.');
+
 const adminService = read('src/services/pilot/pilotAdminService.ts');
 for (const functionSlug of ['pilot-transition-status', 'pilot-create-notification', 'pilot-delete-report']) {
   assert(adminService.includes(`'${functionSlug}'`), `Admin service invokes ${functionSlug}.`);
@@ -171,10 +177,11 @@ assert(locationHook.includes('clearWatch'), 'Pilot location tracking clears brow
 assert(locationHook.includes('localStorage.removeItem(PILOT_LOCATION_STORAGE_KEY)'), 'Stopping Pilot tracking clears persisted tracking state.');
 
 const resources = read('src/pages/pilot/PilotResources.tsx');
-assert(resources.includes("recordDownload('safety_resource_print_pdf')"), 'Print / Save as PDF activity is recorded as a Pilot feature test.');
-assert(resources.includes("recordDownload('safety_resource_download')"), 'Safety-resource download activity is recorded as a Pilot feature test.');
+assert(resources.includes("recordDownload('safety_resource_print_pdf')"), 'Printing the interactive Safety Guide is recorded as a Pilot feature test.');
+assert(resources.includes("recordDownload('safety_guide_pdf_download')"), 'Downloading the versioned Safety Guide PDF is recorded as a Pilot feature test.');
 assert(resources.includes('window.print()'), 'Printable Pilot resources use the browser print/PDF workflow.');
 assert(resources.includes('sm:flex-row') && resources.includes('flex-wrap'), 'Pilot resources expose responsive mobile and desktop controls.');
+assert(resources.includes('Reset Guide Across Devices'), 'Students can reset their profile-bound guide preference from Safety Guide.');
 
 const indexHtml = read('index.html');
 assert(indexHtml.includes('width=device-width, initial-scale=1.0'), 'Application viewport metadata supports mobile rendering.');
