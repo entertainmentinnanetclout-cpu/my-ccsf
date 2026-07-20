@@ -1,5 +1,4 @@
 import { supabase } from '@/integrations/supabase/client';
-import type { Database } from '@/integrations/supabase/types';
 import type { CampusLocation } from '@/types/pilot';
 import type {
   PilotCarouselSlide,
@@ -26,8 +25,25 @@ export const PILOT_SAFETY_GUIDE_FALLBACK: PilotSafetyDocument = {
   updated_at: '2026-07-20T00:00:00.000Z',
 };
 
-const carouselTable = () => supabase.from('pilot_carousel_slides' as keyof Database['public']['Tables']);
-const resourceTable = () => supabase.from('pilot_resource_documents' as keyof Database['public']['Tables']);
+type Phase4QueryResponse<T> = {
+  data: T | null;
+  error: unknown;
+};
+
+interface Phase4QueryBuilder<T> extends PromiseLike<Phase4QueryResponse<T>> {
+  select(columns?: string): Phase4QueryBuilder<T>;
+  or(filters: string): Phase4QueryBuilder<T>;
+  order(column: string, options?: { ascending?: boolean }): Phase4QueryBuilder<T>;
+  eq(column: string, value: unknown): Phase4QueryBuilder<T>;
+  limit(count: number): Phase4QueryBuilder<T>;
+  maybeSingle(): PromiseLike<Phase4QueryResponse<T>>;
+}
+
+interface Phase4DataClient {
+  from<T>(table: string): Phase4QueryBuilder<T>;
+}
+
+const phase4DataClient = supabase as unknown as Phase4DataClient;
 
 const fail = (message: string, error?: unknown): never => {
   if (error) console.error(message, error);
@@ -35,18 +51,20 @@ const fail = (message: string, error?: unknown): never => {
 };
 
 export async function loadPilotCarouselSlides(programId: string): Promise<PilotCarouselSlide[]> {
-  const { data, error } = await carouselTable()
+  const { data, error } = await phase4DataClient
+    .from<PilotCarouselSlide[]>('pilot_carousel_slides')
     .select('*')
     .or(`program_id.is.null,program_id.eq.${programId}`)
     .order('display_order', { ascending: true })
     .order('created_at', { ascending: true });
 
   if (error) fail('Unable to load the Pilot dashboard carousel.', error);
-  return (data ?? []) as unknown as PilotCarouselSlide[];
+  return data ?? [];
 }
 
 export async function loadPilotSafetyDocument(programId: string): Promise<PilotSafetyDocument> {
-  const { data, error } = await resourceTable()
+  const { data, error } = await phase4DataClient
+    .from<PilotSafetyDocument>('pilot_resource_documents')
     .select('*')
     .eq('document_type', 'safety_guide')
     .or(`program_id.is.null,program_id.eq.${programId}`)
@@ -58,7 +76,7 @@ export async function loadPilotSafetyDocument(programId: string): Promise<PilotS
     console.error('Unable to load the versioned Pilot safety document. Using the approved static fallback.', error);
     return PILOT_SAFETY_GUIDE_FALLBACK;
   }
-  return (data as unknown as PilotSafetyDocument | null) ?? PILOT_SAFETY_GUIDE_FALLBACK;
+  return data ?? PILOT_SAFETY_GUIDE_FALLBACK;
 }
 
 export async function loadPilotGuidePreferences(): Promise<PilotGuidePreferences> {
