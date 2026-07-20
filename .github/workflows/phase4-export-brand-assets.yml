@@ -1,0 +1,31 @@
+name: Phase 4 Export Brand Assets
+
+on:
+  push:
+    branches:
+      - feature/phase-4-student-dashboard-safety
+
+permissions:
+  contents: read
+
+jobs:
+  export-assets:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Package approved Phase 4 assets
+        run: |
+          mkdir -p phase4-assets
+          cp "src/assets/Campus safety forum logo design(1).png" phase4-assets/ccsf-logo.png
+          cp "src/assets/tut_light_theme.png" phase4-assets/tut-logo-light.png
+          cp "src/assets/tut-logo.png" phase4-assets/tut-logo-dark.png
+          cp "public/og-image.png" phase4-assets/og-image.png
+
+      - name: Upload approved Phase 4 assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase4-approved-brand-assets
+          path: phase4-assets
+          retention-days: 1
