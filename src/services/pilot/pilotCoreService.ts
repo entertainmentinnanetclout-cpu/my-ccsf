@@ -141,6 +141,7 @@ export async function createPilotReport(input: PilotReportInput): Promise<PilotR
     description: input.description,
     category: input.category,
     is_anonymous: input.is_anonymous ?? false,
+    emergency_consent: input.emergency_consent ?? false,
     location_lat: input.location_lat ?? null,
     location_lng: input.location_lng ?? null,
     location_accuracy: input.location_accuracy ?? null,
