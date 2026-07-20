@@ -10,6 +10,7 @@ import { PilotModeProvider } from './contexts/PilotModeContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { PilotRouteGuard } from './components/pilot/PilotRouteGuard';
 import { PilotPostProfileRedirect } from './components/pilot/PilotPostProfileRedirect';
+import { OfficialEntryIntentBoundary, PilotEntryIntentBoundary } from './components/pilot/PilotIntentBoundary';
 import PilotInstitutionalLayout from './components/pilot/PilotInstitutionalLayout';
 import Layout from './components/shared/Layout';
 import PWAInstallPrompt from './components/shared/PWAInstallPrompt';
@@ -55,7 +56,7 @@ const App = () => (
             <AuthProvider>
               <PilotModeProvider>
                 <Routes>
-                  <Route path="/pilot/auth" element={<PilotAuth />} />
+                  <Route path="/pilot/auth" element={<PilotEntryIntentBoundary><PilotAuth /></PilotEntryIntentBoundary>} />
 
                   <Route element={<PilotInstitutionalLayout />}>
                     <Route path="/pilot" element={
@@ -92,7 +93,7 @@ const App = () => (
 
                   <Route element={<Layout />}>
                     <Route path="/" element={<Index />} />
-                    <Route path="/auth" element={<Auth />} />
+                    <Route path="/auth" element={<OfficialEntryIntentBoundary><Auth /></OfficialEntryIntentBoundary>} />
 
                     <Route path="/dashboard" element={
                       <ProtectedRoute allowedRoles={['student']}>
@@ -112,7 +113,7 @@ const App = () => (
                       <ProtectedRoute allowedRoles={['student', 'security', 'admin']}><Profile /></ProtectedRoute>
                     } />
                     <Route path="/profile-completion" element={
-                      <ProtectedRoute allowedRoles={['student', 'security', 'admin']}><ProfileCompletion /></ProtectedRoute>
+                      <ProtectedRoute allowedRoles={['student', 'security', 'admin']}><PilotPostProfileRedirect><ProfileCompletion /></PilotPostProfileRedirect></ProtectedRoute>
                     } />
                     <Route path="/judiciary" element={
                       <ProtectedRoute allowedRoles={['security', 'admin']}><Judiciary /></ProtectedRoute>
