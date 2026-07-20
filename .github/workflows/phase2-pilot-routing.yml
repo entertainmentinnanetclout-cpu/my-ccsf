@@ -1,0 +1,42 @@
+name: Phase 2 Pilot Report Routing Gate
+
+on:
+  push:
+    branches:
+      - main
+      - 'feature/**'
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  phase2-routing:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund --loglevel=error
+
+      - name: Verify isolated reporting and campus case routing
+        run: npm run test:phase2-routing
+
+      - name: Type-check Phase 2 application changes
+        run: npm run typecheck
+
+      - name: Build production application
+        run: npm run build
+        env:
+          VITE_PILOT_MODE_ENABLED: 'true'
+          VERCEL_ENV: production
+          VERCEL_GIT_COMMIT_REF: main
