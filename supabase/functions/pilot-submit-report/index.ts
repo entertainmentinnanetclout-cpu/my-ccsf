@@ -91,6 +91,11 @@ Deno.serve(async (req) => {
     }
 
     const emergency = scenario?.scenario_type === 'emergency_simulation';
+    const emergencyConsent = optionalBoolean(body.emergency_consent);
+    if (emergency && !emergencyConsent) {
+      throw new PilotHttpError(400, 'Emergency location and profile-sharing consent is required.', 'emergency_consent_required');
+    }
+
     const title = emergency
       ? optionalText(body.title, 'title', 160) ?? EMERGENCY_TITLE
       : requiredText(body.title, 'title', 160);
@@ -108,11 +113,10 @@ Deno.serve(async (req) => {
     const locationLat = optionalNumber(body.location_lat, 'location_lat', -90, 90);
     const locationLng = optionalNumber(body.location_lng, 'location_lng', -180, 180);
     const locationAccuracy = optionalNumber(body.location_accuracy, 'location_accuracy', 0, 100000);
-    const locationDescription = optionalText(body.location_description, 'location_description', 500)
-      ?? (emergency ? 'Emergency location captured; readable address lookup was unavailable.' : null);
+    const locationDescription = requiredText(body.location_description, 'location_description', 500);
 
-    if ((emergency || scenario?.requires_location) && (locationLat === null || locationLng === null)) {
-      throw new PilotHttpError(400, 'This Pilot scenario requires a captured location.', 'scenario_location_required');
+    if (locationLat === null || locationLng === null) {
+      throw new PilotHttpError(400, 'Every Pilot report requires a captured location.', 'report_location_required');
     }
 
     const { data: report, error: reportError } = await context.adminClient
@@ -138,7 +142,10 @@ Deno.serve(async (req) => {
       .single();
     if (reportError || !report) throw reportError ?? new Error('Report submission returned no record.');
 
-    if (report.routing_campus !== session.campus || report.routing_destination !== 'campus_security') {
+    if (report.routing_campus !== session.campus
+      || report.routing_destination !== 'campus_security'
+      || !report.simulated_severity
+      || !report.simulation_notice) {
       throw new PilotHttpError(500, 'Pilot report routing verification failed.', 'routing_verification_failed');
     }
 
@@ -159,6 +166,7 @@ Deno.serve(async (req) => {
         edge_function: 'pilot-submit-report',
         scenario_id: scenarioId,
         minimal_emergency_flow: emergency,
+        emergency_consent: emergency ? true : null,
         location_description: locationDescription,
         simulation_only: true,
         simulated_severity: report.simulated_severity,
