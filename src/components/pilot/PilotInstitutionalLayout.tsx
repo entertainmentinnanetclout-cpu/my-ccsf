@@ -1,12 +1,15 @@
+import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, LogOut, MapPin, Shield, ShieldCheck } from 'lucide-react';
-import { Link, Outlet, useLocation } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/shared/ThemeToggle';
 import { InstitutionBrand } from '@/components/shared/InstitutionBrand';
+import { PilotStudentNavigation } from '@/components/pilot/PilotStudentNavigation';
 import { BRAND } from '@/brand';
-import { CAMPUS_LABELS } from '@/config/pilot';
+import { CAMPUS_LABELS, isPilotStudentPath, PILOT_ROUTES } from '@/config/pilot';
+import { clearPilotIntent, markPilotIntent } from '@/lib/pilotIntent';
 import type { CampusLocation } from '@/types/pilot';
 
 type PilotPortalContext = {
@@ -49,10 +52,30 @@ function resolvePortalContext(pathname: string): PilotPortalContext {
 
 export default function PilotInstitutionalLayout() {
   const location = useLocation();
-  const { userProfile, signOut } = useAuth();
+  const navigate = useNavigate();
+  const { userProfile, userRole, signOut } = useAuth();
   const context = resolvePortalContext(location.pathname);
   const campus = userProfile?.campus as CampusLocation | null | undefined;
   const campusLabel = campus ? CAMPUS_LABELS[campus] : null;
+  const studentPilotRoute = userRole === 'student' && isPilotStudentPath(location.pathname);
+
+  useEffect(() => {
+    markPilotIntent(`${location.pathname}${location.search}${location.hash}`);
+  }, [location.pathname, location.search, location.hash]);
+
+  const openOfficialPortal = () => {
+    clearPilotIntent();
+    navigate(context.officialHref);
+  };
+
+  const handlePilotSignOut = async () => {
+    markPilotIntent(PILOT_ROUTES.landing);
+    try {
+      await signOut();
+    } finally {
+      navigate(PILOT_ROUTES.auth, { replace: true });
+    }
+  };
 
   return (
     <div className="pilot-institutional-shell min-h-screen bg-background" data-testid="pilot-institutional-layout">
@@ -93,11 +116,11 @@ export default function PilotInstitutionalLayout() {
 
               <ThemeToggle />
 
-              <Button variant="outline" size="sm" asChild className="hidden sm:inline-flex">
-                <Link to={context.officialHref}><ArrowLeft className="mr-2 h-4 w-4" aria-hidden="true" />{context.officialLabel}</Link>
+              <Button variant="outline" size="sm" className="hidden sm:inline-flex" onClick={openOfficialPortal}>
+                <ArrowLeft className="mr-2 h-4 w-4" aria-hidden="true" />{context.officialLabel}
               </Button>
 
-              <Button variant="ghost" size="icon" onClick={() => void signOut()} aria-label="Sign out of CCSF">
+              <Button variant="ghost" size="icon" onClick={() => void handlePilotSignOut()} aria-label="Sign out of Pilot Mode">
                 <LogOut className="h-5 w-5" aria-hidden="true" />
               </Button>
             </div>
@@ -118,6 +141,8 @@ export default function PilotInstitutionalLayout() {
           </div>
         </div>
       </section>
+
+      {studentPilotRoute && <PilotStudentNavigation />}
 
       <main className="pilot-premium-surface w-full pb-8"><Outlet /></main>
 
