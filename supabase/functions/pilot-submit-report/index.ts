@@ -3,6 +3,10 @@ import { handleError, jsonResponse, readJson, requirePost, PilotHttpError } from
 import { optionalBoolean, optionalNumber, optionalText, optionalUuid, requiredText, requiredUuid } from '../_shared/pilot/validation.ts';
 import { writePilotAudit } from '../_shared/pilot/audit.ts';
 
+const EMERGENCY_TITLE = 'Emergency assistance request';
+const EMERGENCY_DESCRIPTION = 'Emergency assistance requested. The student may be unable to provide further details.';
+const EMERGENCY_FALLBACK_CATEGORY = 'Public violence';
+
 Deno.serve(async (req) => {
   const early = requirePost(req);
   if (early) return early;
@@ -14,9 +18,6 @@ Deno.serve(async (req) => {
 
     const sessionId = requiredUuid(body.session_id, 'session_id');
     const scenarioId = optionalUuid(body.scenario_id, 'scenario_id');
-    const title = requiredText(body.title, 'title', 160);
-    const description = requiredText(body.description, 'description', 5000);
-    const category = requiredText(body.category, 'category', 120);
 
     const { data: session, error: sessionError } = await context.adminClient
       .from('pilot_sessions')
@@ -36,26 +37,55 @@ Deno.serve(async (req) => {
       context.adminClient.from('pilot_programs').select('*').eq('id', session.program_id).maybeSingle(),
     ]);
     if (participantError || programError) throw participantError ?? programError;
-    if (!participant || participant.user_id !== context.user.id || !['consented','active'].includes(participant.status)) {
+    if (!participant || participant.user_id !== context.user.id || !['consented', 'active'].includes(participant.status)) {
       throw new PilotHttpError(403, 'Pilot participation is no longer active.', 'participant_inactive');
     }
     if (!program || program.status !== 'active') {
       throw new PilotHttpError(409, 'The Pilot programme is not accepting reports.', 'programme_inactive');
     }
 
+    let scenario: {
+      id: string;
+      scenario_type: string;
+      expected_category: string | null;
+    } | null = null;
+
     if (scenarioId) {
-      const { data: scenario, error: scenarioError } = await context.adminClient
+      const { data, error: scenarioError } = await context.adminClient
         .from('pilot_scenarios')
-        .select('*')
+        .select('id, scenario_type, expected_category')
         .eq('id', scenarioId)
         .eq('program_id', session.program_id)
         .eq('is_active', true)
         .maybeSingle();
       if (scenarioError) throw scenarioError;
-      if (!scenario) throw new PilotHttpError(400, 'The selected Pilot scenario is not active.', 'scenario_inactive');
-      if (scenario.expected_category && scenario.expected_category !== category) {
-        throw new PilotHttpError(400, 'The report category does not match the selected scenario.', 'scenario_category_mismatch');
-      }
+      if (!data) throw new PilotHttpError(400, 'The selected Pilot scenario is not active.', 'scenario_inactive');
+      scenario = data;
+    }
+
+    const emergency = scenario?.scenario_type === 'emergency_simulation';
+    const title = emergency
+      ? optionalText(body.title, 'title', 160) ?? EMERGENCY_TITLE
+      : requiredText(body.title, 'title', 160);
+    const description = emergency
+      ? optionalText(body.description, 'description', 5000) ?? EMERGENCY_DESCRIPTION
+      : requiredText(body.description, 'description', 5000);
+    const category = emergency
+      ? optionalText(body.category, 'category', 120) ?? scenario?.expected_category ?? EMERGENCY_FALLBACK_CATEGORY
+      : requiredText(body.category, 'category', 120);
+
+    if (scenario?.expected_category && scenario.expected_category !== category) {
+      throw new PilotHttpError(400, 'The report category does not match the selected scenario.', 'scenario_category_mismatch');
+    }
+
+    const locationLat = optionalNumber(body.location_lat, 'location_lat', -90, 90);
+    const locationLng = optionalNumber(body.location_lng, 'location_lng', -180, 180);
+    const locationAccuracy = optionalNumber(body.location_accuracy, 'location_accuracy', 0, 100000);
+    const locationDescription = optionalText(body.location_description, 'location_description', 500)
+      ?? (emergency ? 'Emergency location captured; readable address lookup was unavailable.' : null);
+
+    if (emergency && (locationLat === null || locationLng === null)) {
+      throw new PilotHttpError(400, 'Emergency reports require a captured location.', 'emergency_location_required');
     }
 
     const { data: report, error: reportError } = await context.adminClient
@@ -71,26 +101,35 @@ Deno.serve(async (req) => {
         description,
         category,
         reference_number: '',
-        is_anonymous: optionalBoolean(body.is_anonymous),
-        location_lat: optionalNumber(body.location_lat, 'location_lat', -90, 90),
-        location_lng: optionalNumber(body.location_lng, 'location_lng', -180, 180),
-        location_accuracy: optionalNumber(body.location_accuracy, 'location_accuracy', 0, 100000),
-        location_description: optionalText(body.location_description, 'location_description', 500),
+        is_anonymous: emergency ? false : optionalBoolean(body.is_anonymous),
+        location_lat: locationLat,
+        location_lng: locationLng,
+        location_accuracy: locationAccuracy,
+        location_description: locationDescription,
       })
       .select('*')
       .single();
     if (reportError || !report) throw reportError ?? new Error('Report submission returned no record.');
 
-    await context.adminClient.from('pilot_sessions').update({ last_activity_at: new Date().toISOString() }).eq('id', session.id);
+    await context.adminClient
+      .from('pilot_sessions')
+      .update({ last_activity_at: new Date().toISOString() })
+      .eq('id', session.id);
+
     await writePilotAudit(context.adminClient, {
       programId: session.program_id,
       actorId: context.user.id,
       actorRole: context.role,
       actorCampus: context.campus,
-      action: 'report_submitted',
+      action: emergency ? 'emergency_report_submitted' : 'report_submitted',
       entityType: 'pilot_report',
       entityId: report.id,
-      metadata: { edge_function: 'pilot-submit-report', scenario_id: scenarioId },
+      metadata: {
+        edge_function: 'pilot-submit-report',
+        scenario_id: scenarioId,
+        minimal_emergency_flow: emergency,
+        location_description: locationDescription,
+      },
     });
 
     return jsonResponse({ report }, 201);
