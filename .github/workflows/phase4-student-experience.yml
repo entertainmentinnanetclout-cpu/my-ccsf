@@ -1,0 +1,65 @@
+name: Phase 4 Student Experience Gate
+
+on:
+  push:
+    branches:
+      - feature/phase-4-student-dashboard-safety
+  pull_request:
+    branches:
+      - feature/phase-3-pilot-reviews
+
+permissions:
+  contents: read
+
+jobs:
+  phase4-experience:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund --loglevel=error
+
+      - name: Verify Phase 4 student experience
+        run: npm run test:phase4-experience
+
+      - name: Verify Phase 3 reviews remain intact
+        run: npm run test:phase3-reviews
+
+      - name: Verify Phase 2 reporting remains intact
+        run: npm run test:phase2-routing
+
+      - name: Verify Pilot production isolation
+        run: npm run test:pilot-isolation
+
+      - name: Inspect PDF structure
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          pdf = Path('public/downloads/CCSF-Pilot-Safety-Guide-v1.0.pdf')
+          data = pdf.read_bytes()
+          assert data.startswith(b'%PDF-')
+          assert len(data) > 250_000
+          assert data.count(b'/Type /Page') >= 12
+          print(f'{pdf}: {len(data)} bytes, at least 12 pages')
+          PY
+
+      - name: Type-check application
+        run: npm run typecheck
+
+      - name: Lint application
+        run: npm run lint
+
+      - name: Build Pilot application
+        run: npm run build
+        env:
+          VITE_PILOT_MODE_ENABLED: 'true'
+          VERCEL_ENV: preview
+          VERCEL_GIT_COMMIT_REF: feature/phase-4-student-dashboard-safety
