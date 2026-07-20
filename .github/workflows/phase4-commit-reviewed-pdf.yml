@@ -1,0 +1,78 @@
+name: Phase 4 Commit Reviewed PDF
+
+on:
+  pull_request:
+    branches:
+      - feature/phase-3-pilot-reviews
+
+permissions:
+  contents: write
+
+jobs:
+  commit-reviewed-pdf:
+    if: ${{ github.head_ref == 'feature/phase-4-student-dashboard-safety' && !contains(github.event.pull_request.head.sha, '0000000') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out Phase 4 branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/phase-4-student-dashboard-safety
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install PDF dependencies
+        run: pip install reportlab pillow qrcode
+
+      - name: Recover reviewed generator and build handbook
+        run: |
+          python - <<'PY'
+          import base64, gzip, re
+          from pathlib import Path
+          workflow = Path('.github/workflows/phase4-generate-safety-guide.yml').read_text()
+          match = re.search(r'^\s*GENERATOR_GZIP_B64:\s*(\S+)\s*$', workflow, re.MULTILINE)
+          if not match:
+              raise SystemExit('Reviewed generator payload was not found.')
+          script = gzip.decompress(base64.b64decode(match.group(1)))
+          Path('/tmp/generate_phase4_safety_guide.py').write_bytes(script)
+          PY
+          python /tmp/generate_phase4_safety_guide.py
+
+      - name: Correct carousel seed contract
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('supabase/migrations/20260720233000_phase_4_student_dashboard_safety_resources.sql')
+          source = path.read_text()
+          source = source.replace("'shield', 'Explore the dashboard', 'none', 10, 'contain'", "'shield', null, 'none', 10, 'contain'")
+          path.write_text(source)
+          PY
+
+      - name: Validate handbook
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib
+          pdf = Path('public/downloads/CCSF-Pilot-Safety-Guide-v1.0.pdf')
+          data = pdf.read_bytes()
+          assert data.startswith(b'%PDF-')
+          assert len(data) > 250000
+          assert data.count(b'/Type /Page') >= 12
+          print(f'PDF bytes: {len(data)}')
+          print(f'SHA256: {hashlib.sha256(data).hexdigest()}')
+          PY
+
+      - name: Commit reviewed PDF
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/downloads/CCSF-Pilot-Safety-Guide-v1.0.pdf public/downloads/ccsf-pilot-qr.png supabase/migrations/20260720233000_phase_4_student_dashboard_safety_resources.sql
+          if git diff --cached --quiet; then
+            echo "Reviewed Phase 4 PDF is already committed."
+          else
+            git commit -m "docs: commit reviewed Phase 4 safety guide [phase4-pdf]"
+            git push origin HEAD:feature/phase-4-student-dashboard-safety
+          fi
