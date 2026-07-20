@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - feature/phase-4-student-dashboard-safety
+  pull_request:
+    branches:
+      - feature/phase-3-pilot-reviews
 
 permissions:
   contents: read
