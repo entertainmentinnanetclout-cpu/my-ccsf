@@ -1,15 +1,20 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   AlertCircle,
   BarChart3,
   Bell,
   CheckCircle2,
+  ChevronRight,
   FileText,
+  GraduationCap,
   LayoutDashboard,
   Loader2,
+  Mail,
   MapPin,
   Megaphone,
   MessageSquare,
+  Phone,
   RefreshCw,
   Search,
   ShieldCheck,
@@ -36,11 +41,16 @@ import {
   loadPilotAdminData,
   transitionPilotReport,
 } from '@/services/pilot/pilotAdminService';
-import { CAMPUS_LABELS, PILOT_STATUS_LABELS } from '@/config/pilot';
+import {
+  getPilotStudentName,
+  loadPilotStudentIdentities,
+  type PilotStudentIdentity,
+} from '@/services/pilot/pilotProfileService';
+import { CAMPUS_LABELS, PILOT_ROUTES, PILOT_STATUS_LABELS } from '@/config/pilot';
 import type { CampusLocation, PilotAdminData, PilotReport, PilotReportStatus } from '@/types/pilot';
 
-type CampusView = 'overview' | 'incidents' | 'analytics' | 'students' | 'announcements' | 'communication';
-type ActionMode = 'assign' | 'note' | 'notify' | null;
+ type CampusView = 'overview' | 'incidents' | 'analytics' | 'students' | 'announcements' | 'communication';
+ type ActionMode = 'assign' | 'note' | 'notify' | null;
 
 const EMPTY_DATA: PilotAdminData = {
   programs: [], scenarios: [], participants: [], sessions: [], reports: [], events: [],
@@ -50,10 +60,12 @@ const EMPTY_DATA: PilotAdminData = {
 const FINAL_STATUSES = new Set<PilotReportStatus>(['simulation_completed', 'cancelled', 'withdrawn', 'expired']);
 
 export function PilotCampusSecurityDashboard({ campus }: { campus: CampusLocation }) {
+  const navigate = useNavigate();
   const { userProfile } = useAuth();
   const { toast } = useToast();
   const [activeView, setActiveView] = useState<CampusView>('overview');
   const [data, setData] = useState<PilotAdminData>(EMPTY_DATA);
+  const [studentIdentities, setStudentIdentities] = useState<PilotStudentIdentity[]>([]);
   const [selectedProgramId, setSelectedProgramId] = useState('all');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -72,7 +84,9 @@ export function PilotCampusSecurityDashboard({ campus }: { campus: CampusLocatio
     if (showSpinner) setRefreshing(true);
     try {
       const next = await loadPilotAdminData({ programId, campus });
+      const identities = await loadPilotStudentIdentities(next.participants.map((item) => item.user_id));
       setData(next);
+      setStudentIdentities(identities);
       setLoadError(null);
       if (selectedProgramId === 'all' && next.programs.length === 1) setSelectedProgramId(next.programs[0].id);
     } catch (error) {
@@ -94,7 +108,7 @@ export function PilotCampusSecurityDashboard({ campus }: { campus: CampusLocatio
       timer = window.setTimeout(() => void refresh(), 300);
     };
     let channel = supabase.channel(`pilot-campus-parity-${campus}`);
-    (['pilot_reports', 'pilot_report_events', 'pilot_notifications', 'pilot_participants', 'pilot_sessions', 'pilot_feature_tests'] as const)
+    (['pilot_reports', 'pilot_report_events', 'pilot_notifications', 'pilot_participants', 'pilot_sessions', 'pilot_feature_tests', 'profiles'] as const)
       .forEach((table) => { channel = channel.on('postgres_changes', { event: '*', schema: 'public', table }, scheduleRefresh); });
     channel.subscribe((status) => {
       if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
@@ -109,15 +123,28 @@ export function PilotCampusSecurityDashboard({ campus }: { campus: CampusLocatio
     };
   }, [campus, refresh, toast]);
 
+  const identityByUserId = useMemo(
+    () => new Map(studentIdentities.map((identity) => [identity.id, identity])),
+    [studentIdentities],
+  );
   const metrics = useMemo(() => calculatePilotMetrics(data), [data]);
   const filteredReports = useMemo(() => data.reports.filter((report) => {
     const query = search.trim().toLowerCase();
+    const identity = identityByUserId.get(report.submitted_by);
+    const searchableStudent = [
+      getPilotStudentName(identity, report.submitted_by),
+      identity?.student_number,
+      identity?.email,
+      identity?.phone_number,
+    ].filter(Boolean).join(' ').toLowerCase();
     const matchesQuery = !query
       || report.title.toLowerCase().includes(query)
       || report.reference_number.toLowerCase().includes(query)
-      || report.category.toLowerCase().includes(query);
+      || report.category.toLowerCase().includes(query)
+      || (report.location_description ?? '').toLowerCase().includes(query)
+      || searchableStudent.includes(query);
     return matchesQuery && (statusFilter === 'all' || report.status === statusFilter);
-  }), [data.reports, search, statusFilter]);
+  }), [data.reports, identityByUserId, search, statusFilter]);
   const activeReports = data.reports.filter((report) => !FINAL_STATUSES.has(report.status));
   const unassignedReports = data.reports.filter((report) => ['received', 'assessing'].includes(report.status));
   const navItems = [
@@ -193,6 +220,8 @@ export function PilotCampusSecurityDashboard({ campus }: { campus: CampusLocatio
     }
   };
 
+  const openReport = (report: PilotReport) => navigate(PILOT_ROUTES.report(report.id));
+
   if (loading && !data.programs.length) {
     return <div className="flex min-h-[55vh] items-center justify-center" role="status" aria-label="Loading campus-security Pilot dashboard"><Loader2 className="h-9 w-9 animate-spin text-primary" /></div>;
   }
@@ -228,21 +257,21 @@ export function PilotCampusSecurityDashboard({ campus }: { campus: CampusLocatio
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <Metric icon={AlertCircle} label="Active simulated cases" value={activeReports.length} />
           <Metric icon={UserCheck} label="Awaiting assignment" value={unassignedReports.length} />
-          <Metric icon={Users} label="Pilot participants" value={data.participants.length} />
+          <Metric icon={Users} label="Pilot students" value={data.participants.length} />
           <Metric icon={CheckCircle2} label="Completion rate" value={`${metrics.completionRate}%`} />
         </div>
-        <Card><CardHeader><CardTitle className="flex items-center gap-2"><Bell className="h-5 w-5 text-destructive" />Realtime Campus Queue</CardTitle><CardDescription>Newest simulated reports visible under campus RLS.</CardDescription></CardHeader><CardContent className="space-y-3">{activeReports.slice(0, 6).map((report) => <ReportRow key={report.id} report={report} onAdvance={moveReport} onNote={() => beginAction(report, 'note')} onNotify={() => beginAction(report, 'notify')} />)}{!activeReports.length && <EmptyState title="No active Pilot cases" description="New student simulations will appear here in realtime." />}</CardContent></Card>
+        <Card><CardHeader><CardTitle className="flex items-center gap-2"><Bell className="h-5 w-5 text-destructive" />Realtime Campus Queue</CardTitle><CardDescription>Tap any incident card to open the complete case, student profile, readable location, evidence and timeline.</CardDescription></CardHeader><CardContent className="space-y-3">{activeReports.slice(0, 6).map((report) => <ReportRow key={report.id} report={report} identity={identityByUserId.get(report.submitted_by)} onOpen={() => openReport(report)} onAdvance={moveReport} onNote={() => beginAction(report, 'note')} onNotify={() => beginAction(report, 'notify')} />)}{!activeReports.length && <EmptyState title="No active Pilot cases" description="New student simulations will appear here in realtime." />}</CardContent></Card>
       </div>}
 
-      {activeView === 'incidents' && <Card><CardHeader><CardTitle>Pilot Incident Queue</CardTitle><CardDescription>Assignment and lifecycle controls affect only isolated Pilot records.</CardDescription></CardHeader><CardContent className="space-y-4"><div className="grid gap-3 md:grid-cols-[1fr_240px]"><div className="relative"><Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /><Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search reference, title or category" className="pl-9" aria-label="Search Pilot reports" /></div><Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as typeof statusFilter)}><SelectTrigger aria-label="Filter Pilot reports by status"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All statuses</SelectItem>{Object.entries(PILOT_STATUS_LABELS).map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}</SelectContent></Select></div><div className="space-y-3">{filteredReports.map((report) => <ReportRow key={report.id} report={report} onAdvance={moveReport} onNote={() => beginAction(report, 'note')} onNotify={() => beginAction(report, 'notify')} />)}{!filteredReports.length && <EmptyState title="No matching Pilot cases" description="Adjust the search or status filter." />}</div></CardContent></Card>}
+      {activeView === 'incidents' && <Card><CardHeader><CardTitle>Pilot Incident Queue</CardTitle><CardDescription>Tap an incident to open its full details. Assignment and lifecycle controls affect only isolated Pilot records.</CardDescription></CardHeader><CardContent className="space-y-4"><div className="grid gap-3 md:grid-cols-[1fr_240px]"><div className="relative"><Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /><Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search case, student, number, email or location" className="pl-9" aria-label="Search Pilot reports" /></div><Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as typeof statusFilter)}><SelectTrigger aria-label="Filter Pilot reports by status"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All statuses</SelectItem>{Object.entries(PILOT_STATUS_LABELS).map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}</SelectContent></Select></div><div className="space-y-3">{filteredReports.map((report) => <ReportRow key={report.id} report={report} identity={identityByUserId.get(report.submitted_by)} onOpen={() => openReport(report)} onAdvance={moveReport} onNote={() => beginAction(report, 'note')} onNotify={() => beginAction(report, 'notify')} />)}{!filteredReports.length && <EmptyState title="No matching Pilot cases" description="Adjust the search or status filter." />}</div></CardContent></Card>}
 
       {activeView === 'analytics' && <div className="space-y-6"><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><Metric icon={MapPin} label="Location success" value={`${metrics.locationSuccessRate}%`} /><Metric icon={FileText} label="Evidence success" value={`${metrics.attachmentSuccessRate}%`} /><Metric icon={Bell} label="Notification read rate" value={`${metrics.notificationReadRate}%`} /><Metric icon={BarChart3} label="Average ease" value={metrics.averageEaseRating || '—'} /></div><Card><CardHeader><CardTitle>Feature Test Results</CardTitle><CardDescription>Campus-scoped Pilot telemetry only.</CardDescription></CardHeader><CardContent className="grid gap-3 md:grid-cols-2">{Object.entries(groupTests(data)).map(([key, result]) => <div key={key} className="rounded-lg border p-4"><p className="font-semibold capitalize">{key.replace(/_/g, ' ')}</p><p className="mt-1 text-sm text-muted-foreground">Passed {result.passed} · Failed {result.failed} · Denied {result.denied}</p></div>)}{!data.featureTests.length && <p className="col-span-full py-8 text-center text-muted-foreground">No feature tests recorded for this campus yet.</p>}</CardContent></Card></div>}
 
-      {activeView === 'students' && <Card><CardHeader><CardTitle>Campus Pilot Students ({data.participants.length})</CardTitle><CardDescription>Only participants authorised for {CAMPUS_LABELS[campus]} are visible.</CardDescription></CardHeader><CardContent className="space-y-3">{data.participants.map((participant) => { const sessions = data.sessions.filter((item) => item.participant_id === participant.id); const reports = data.reports.filter((item) => item.participant_id === participant.id); return <div key={participant.id} className="grid gap-3 rounded-xl border p-4 sm:grid-cols-[1fr_auto] sm:items-center"><div><p className="font-bold">Participant {participant.user_id.slice(0, 8)}</p><p className="text-sm text-muted-foreground">{CAMPUS_LABELS[participant.campus]} · {reports.length} report(s) · {sessions.length} session(s)</p></div><Badge variant="secondary" className="w-fit capitalize">{participant.status}</Badge></div>; })}{!data.participants.length && <EmptyState title="No campus participants" description="Students enrolled in the permanent Pilot programme will appear automatically." />}</CardContent></Card>}
+      {activeView === 'students' && <Card><CardHeader><CardTitle>Campus Pilot Students ({data.participants.length})</CardTitle><CardDescription>Registered student names and contact details for {CAMPUS_LABELS[campus]}.</CardDescription></CardHeader><CardContent className="space-y-3">{data.participants.map((student) => { const identity = identityByUserId.get(student.user_id); const sessions = data.sessions.filter((item) => item.participant_id === student.id); const reports = data.reports.filter((item) => item.participant_id === student.id); return <div key={student.id} className="grid gap-4 rounded-xl border p-4 lg:grid-cols-[1fr_auto] lg:items-center"><div><p className="font-bold">{getPilotStudentName(identity, student.user_id)}</p><div className="mt-2 grid gap-1 text-sm text-muted-foreground sm:grid-cols-2"><p className="flex items-center gap-2"><GraduationCap className="h-4 w-4" />{identity?.student_number || 'Student number not supplied'}</p><p className="flex items-center gap-2"><Mail className="h-4 w-4" />{identity?.email || 'Email not supplied'}</p><p className="flex items-center gap-2"><Phone className="h-4 w-4" />{identity?.phone_number || 'Phone not supplied'}</p><p>{identity?.course || 'Course not supplied'}{identity?.year_of_study ? ` · Year ${identity.year_of_study}` : ''}</p></div><p className="mt-2 text-xs text-muted-foreground">{CAMPUS_LABELS[student.campus]} · {reports.length} report(s) · {sessions.length} session(s)</p></div><Badge variant="secondary" className="w-fit capitalize">{student.status}</Badge></div>; })}{!data.participants.length && <EmptyState title="No campus students" description="Students enrolled in the permanent Pilot programme will appear automatically." />}</CardContent></Card>}
 
       {activeView === 'announcements' && <Card><CardHeader><CardTitle>Pilot Updates</CardTitle><CardDescription>Case-linked notifications issued by authorised Pilot staff.</CardDescription></CardHeader><CardContent className="space-y-3">{data.notifications.map((item) => <div key={item.id} className="rounded-xl border p-4"><div className="flex items-start justify-between gap-3"><div><p className="font-bold">{item.title}</p><p className="mt-1 text-sm text-muted-foreground">{item.message}</p><p className="mt-2 text-xs text-muted-foreground">{new Date(item.created_at).toLocaleString('en-ZA')}</p></div><Badge variant={item.is_read ? 'secondary' : 'default'}>{item.is_read ? 'Read' : 'Unread'}</Badge></div></div>)}{!data.notifications.length && <EmptyState title="No Pilot updates sent" description="Use Comms or a case action to send a student update." />}</CardContent></Card>}
 
-      {activeView === 'communication' && <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]"><Card><CardHeader><CardTitle>Student Communication</CardTitle><CardDescription>Send an in-app Pilot notification linked to a selected simulated case.</CardDescription></CardHeader><CardContent className="space-y-3">{data.reports.map((report) => <button key={report.id} className="w-full rounded-xl border p-4 text-left transition hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" onClick={() => beginAction(report, 'notify')}><p className="font-bold">{report.title}</p><p className="text-sm text-muted-foreground">{report.reference_number} · {PILOT_STATUS_LABELS[report.status]}</p></button>)}{!data.reports.length && <EmptyState title="No reports available" description="Communication becomes available after a student submits a Pilot report." />}</CardContent></Card><Card><CardHeader><CardTitle>Recent Timeline Activity</CardTitle><CardDescription>Campus-scoped status, assignment, note and notification events.</CardDescription></CardHeader><CardContent className="space-y-3">{data.events.slice(0, 20).map((event) => <div key={event.id} className="rounded-xl border p-4"><p className="font-bold capitalize">{event.event_type.replace(/_/g, ' ')}</p><p className="mt-1 text-sm text-muted-foreground">{event.notes || 'Pilot workflow event recorded.'}</p><p className="mt-2 text-xs text-muted-foreground">{new Date(event.created_at).toLocaleString('en-ZA')}</p></div>)}{!data.events.length && <EmptyState title="No timeline activity" description="Case actions will appear here in realtime." />}</CardContent></Card></div>}
+      {activeView === 'communication' && <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]"><Card><CardHeader><CardTitle>Student Communication</CardTitle><CardDescription>Send an in-app Pilot notification linked to a selected simulated case.</CardDescription></CardHeader><CardContent className="space-y-3">{data.reports.map((report) => { const identity = identityByUserId.get(report.submitted_by); return <button key={report.id} className="w-full rounded-xl border p-4 text-left transition hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" onClick={() => beginAction(report, 'notify')}><p className="font-bold">{getPilotStudentName(identity, report.submitted_by)}</p><p className="mt-1 text-sm">{report.title}</p><p className="text-sm text-muted-foreground">{report.reference_number} · {PILOT_STATUS_LABELS[report.status]}</p></button>; })}{!data.reports.length && <EmptyState title="No reports available" description="Communication becomes available after a student submits a Pilot report." />}</CardContent></Card><Card><CardHeader><CardTitle>Recent Timeline Activity</CardTitle><CardDescription>Campus-scoped status, assignment, note and notification events.</CardDescription></CardHeader><CardContent className="space-y-3">{data.events.slice(0, 20).map((event) => <div key={event.id} className="rounded-xl border p-4"><p className="font-bold capitalize">{event.event_type.replace(/_/g, ' ')}</p><p className="mt-1 text-sm text-muted-foreground">{event.notes || 'Pilot workflow event recorded.'}</p><p className="mt-2 text-xs text-muted-foreground">{new Date(event.created_at).toLocaleString('en-ZA')}</p></div>)}{!data.events.length && <EmptyState title="No timeline activity" description="Case actions will appear here in realtime." />}</CardContent></Card></div>}
 
       <MobileBottomNav items={navItems} activeView={activeView} onViewChange={(view) => setActiveView(view as CampusView)} />
 
@@ -261,9 +290,46 @@ export function PilotCampusSecurityDashboard({ campus }: { campus: CampusLocatio
   );
 }
 
-function ReportRow({ report, onAdvance, onNote, onNotify }: { report: PilotReport; onAdvance: (report: PilotReport) => void; onNote: () => void; onNotify: () => void }) {
+function ReportRow({ report, identity, onOpen, onAdvance, onNote, onNotify }: {
+  report: PilotReport;
+  identity?: PilotStudentIdentity;
+  onOpen: () => void;
+  onAdvance: (report: PilotReport) => void;
+  onNote: () => void;
+  onNotify: () => void;
+}) {
   const nextLabel = report.status === 'received' ? 'Start Assessment' : report.status === 'assessing' ? 'Accept Case' : report.status === 'assigned' ? 'Start Response' : report.status === 'in_progress' ? 'Complete Simulation' : null;
-  return <div className="rounded-xl border p-4"><div className="flex flex-col justify-between gap-4 xl:flex-row xl:items-center"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><p className="font-bold">{report.title}</p><Badge variant="outline">{PILOT_STATUS_LABELS[report.status]}</Badge>{report.assigned_to && <Badge variant="secondary"><UserCheck className="mr-1 h-3 w-3" />Assigned</Badge>}</div><p className="mt-1 text-sm text-muted-foreground">{report.reference_number} · {report.category}</p><p className="mt-2 line-clamp-2 text-sm">{report.description}</p></div><div className="flex flex-wrap gap-2">{nextLabel && <Button size="sm" onClick={() => onAdvance(report)}>{nextLabel}</Button>}<Button size="sm" variant="outline" onClick={onNote}><FileText className="mr-1 h-4 w-4" />Note</Button><Button size="sm" variant="outline" onClick={onNotify}><Bell className="mr-1 h-4 w-4" />Notify</Button></div></div></div>;
+  const stop = (event: React.MouseEvent, action: () => void) => { event.stopPropagation(); action(); };
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      aria-label={`Open case ${report.reference_number}`}
+      onClick={onOpen}
+      onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onOpen(); } }}
+      className="group cursor-pointer rounded-xl border p-4 transition hover:border-primary hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      <div className="flex flex-col justify-between gap-4 xl:flex-row xl:items-center">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="font-bold">{report.title}</p>
+            <Badge variant="outline">{PILOT_STATUS_LABELS[report.status]}</Badge>
+            {report.assigned_to && <Badge variant="secondary"><UserCheck className="mr-1 h-3 w-3" />Assigned</Badge>}
+          </div>
+          <p className="mt-1 font-semibold text-primary">{getPilotStudentName(identity, report.submitted_by)}</p>
+          <p className="text-sm text-muted-foreground">{identity?.student_number || 'Student number not supplied'} · {report.reference_number} · {report.category}</p>
+          <p className="mt-2 flex items-start gap-2 text-sm"><MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" /><span>{report.location_description || 'Readable location unavailable'}</span></p>
+          <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{report.description}</p>
+          <p className="mt-2 flex items-center gap-1 text-xs font-semibold text-primary">Open full case <ChevronRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" /></p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {nextLabel && <Button size="sm" onClick={(event) => stop(event, () => onAdvance(report))}>{nextLabel}</Button>}
+          <Button size="sm" variant="outline" onClick={(event) => stop(event, onNote)}><FileText className="mr-1 h-4 w-4" />Note</Button>
+          <Button size="sm" variant="outline" onClick={(event) => stop(event, onNotify)}><Bell className="mr-1 h-4 w-4" />Notify</Button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function Metric({ icon: Icon, label, value }: { icon: typeof AlertCircle; label: string; value: string | number }) {
