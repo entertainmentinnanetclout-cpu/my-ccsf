@@ -17,15 +17,20 @@ for (const label of ['Home', 'My Cases', 'Report', 'Map', 'Support']) {
 }
 assert(student.includes('<StudentDashboardHome campus={participant.campus} />'), 'Student Pilot retains official home carousel, welcome and news content.');
 assert(student.includes('loadOwnPilotReports') && student.includes('loadPilotScenarios') && student.includes('loadPilotNotifications'), 'Student Pilot loads isolated cases, workflows and notifications.');
-assert(student.includes('Emergency Simulation') && student.includes('openEmergencySimulation'), 'Student Pilot exposes an always-available emergency simulation.');
+assert(
+  student.includes('Emergency Test')
+    && student.includes('openEmergencySimulation')
+    && student.includes("scenario_type === 'emergency_simulation'"),
+  'Student Pilot exposes an always-available controlled emergency test.',
+);
 assert(student.includes('<PilotReportForm') && student.includes('requires_location'), 'Student Pilot retains isolated report, evidence and location workflows.');
-assert(student.includes('This is not live emergency chat and does not dispatch emergency services.'), 'Student support states its no-dispatch boundary.');
+assert(student.includes('This Pilot does not dispatch external emergency services.'), 'Student support states its no-dispatch boundary.');
 assert(student.includes('setNotifications(previous)'), 'Student notification updates roll back after backend failure.');
 assert(student.includes('role="tablist"') && student.includes('aria-selected='), 'Student Pilot navigation exposes accessible tab semantics.');
 assert(student.includes('role="log"') && student.includes('aria-live="polite"'), 'Student Pilot notifications are announced accessibly.');
 assert(student.includes('data-testid="ready-pilot-student-dashboard"'), 'Student Pilot has a stable readiness marker.');
 
-for (const prohibited of ["from('incidents')", "from('notifications')", "from('case_updates')", "from('incident_media')", "send-push-notification", '<EmergencyReport', '<ReportIncident']) {
+for (const prohibited of ["from('incidents')", "from('notifications')", "from('case_updates')", "from('incident_media')", 'send-push-notification', '<EmergencyReport', '<ReportIncident']) {
   assert(!student.includes(prohibited), `Student Pilot does not reference production workflow: ${prohibited}.`);
 }
 
