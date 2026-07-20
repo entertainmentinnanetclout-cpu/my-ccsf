@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
-"""Generate transparent, optically balanced CCSF application and favicon assets.
+"""Generate CCSF brand assets from the user-supplied canonical logo.
 
-The user-supplied PNG remains the only artwork source. This script removes only
-edge-connected background pixels, tightly crops the artwork, and generates each
-platform asset on its required canvas without stretching or recolouring it.
+The canonical CCSF logo remains transparent for application layouts and print.
+Installed application icons use a solid white square background so Android,
+iOS, Windows and browser launchers do not choose an uncontrolled fill colour.
+The artwork is never stretched, redrawn or recoloured.
 """
 
 from __future__ import annotations
 
 from collections import Counter, deque
 from pathlib import Path
-from typing import Iterable
 
-from PIL import Image, ImageFilter
+from PIL import Image, ImageChops, ImageFilter
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "src/assets/Campus safety forum logo design(1).png"
@@ -22,11 +22,11 @@ CANONICAL_COPIES = [
     ROOT / "public/ccsf-logo.png",
 ]
 
-# ChatGPT-style optical footprint: the mark occupies roughly 78% of the square
-# while retaining enough transparent breathing room for Android/iOS launchers.
 STANDARD_FOOTPRINT = 0.78
 MASKABLE_FOOTPRINT = 0.66
 BACKGROUND_DISTANCE = 54
+TRANSPARENT = (0, 0, 0, 0)
+WHITE = (255, 255, 255, 255)
 
 
 def colour_distance(a: tuple[int, int, int], b: tuple[int, int, int]) -> int:
@@ -90,12 +90,8 @@ def remove_edge_background(image: Image.Image) -> Image.Image:
     for y in range(height):
         row = y * width
         for x in range(width):
-            if seen[row + x]:
-                alpha_pixels[x, y] = 0
-            else:
-                alpha_pixels[x, y] = pixels[x, y][3]
+            alpha_pixels[x, y] = 0 if seen[row + x] else pixels[x, y][3]
 
-    # A tiny blur produces clean antialiased edges without softening the artwork.
     alpha = alpha.filter(ImageFilter.GaussianBlur(radius=max(width, height) / 1800))
     rgba.putalpha(alpha)
     return rgba
@@ -107,19 +103,24 @@ def crop_with_padding(image: Image.Image, padding_ratio: float = 0.025) -> Image
         raise RuntimeError("Background removal produced an empty logo")
     cropped = image.crop(bbox)
     padding = max(2, round(max(cropped.size) * padding_ratio))
-    output = Image.new("RGBA", (cropped.width + padding * 2, cropped.height + padding * 2), (0, 0, 0, 0))
+    output = Image.new("RGBA", (cropped.width + padding * 2, cropped.height + padding * 2), TRANSPARENT)
     output.alpha_composite(cropped, (padding, padding))
     return output
 
 
-def square_asset(mark: Image.Image, canvas_size: int, footprint: float) -> Image.Image:
+def square_asset(
+    mark: Image.Image,
+    canvas_size: int,
+    footprint: float,
+    background: tuple[int, int, int, int] = TRANSPARENT,
+) -> Image.Image:
     target = max(1, round(canvas_size * footprint))
     scale = min(target / mark.width, target / mark.height)
     resized = mark.resize(
         (max(1, round(mark.width * scale)), max(1, round(mark.height * scale))),
         Image.Resampling.LANCZOS,
     )
-    canvas = Image.new("RGBA", (canvas_size, canvas_size), (0, 0, 0, 0))
+    canvas = Image.new("RGBA", (canvas_size, canvas_size), background)
     x = (canvas_size - resized.width) // 2
     y = (canvas_size - resized.height) // 2
     canvas.alpha_composite(resized, (x, y))
@@ -131,24 +132,41 @@ def save_png(image: Image.Image, path: Path) -> None:
     image.save(path, "PNG", optimize=True)
 
 
-def alpha_coverage(image: Image.Image) -> tuple[float, tuple[int, int, int, int]]:
-    alpha = image.getchannel("A")
-    bbox = alpha.getbbox()
-    if not bbox:
-        return 0.0, (0, 0, 0, 0)
-    coverage = sum(1 for value in alpha.getdata() if value > 0) / (image.width * image.height)
-    return coverage, bbox
+def content_bbox(image: Image.Image, white_background: bool) -> tuple[int, int, int, int] | None:
+    if not white_background:
+        return image.getchannel("A").getbbox()
+    rgb = image.convert("RGB")
+    difference = ImageChops.difference(rgb, Image.new("RGB", rgb.size, (255, 255, 255))).convert("L")
+    mask = difference.point(lambda value: 255 if value > 6 else 0)
+    return mask.getbbox()
 
 
-def assert_asset(path: Path, size: tuple[int, int], transparent_required: bool = True) -> None:
+def assert_asset(
+    path: Path,
+    size: tuple[int, int],
+    *,
+    white_background: bool,
+) -> None:
     image = Image.open(path).convert("RGBA")
     if image.size != size:
         raise RuntimeError(f"{path}: expected {size}, received {image.size}")
-    alpha = image.getchannel("A")
-    if transparent_required and alpha.getextrema()[0] != 0:
+
+    alpha_extrema = image.getchannel("A").getextrema()
+    if white_background:
+        if alpha_extrema != (255, 255):
+            raise RuntimeError(f"{path}: app icon background must be fully opaque")
+        corners = [
+            image.getpixel((0, 0)),
+            image.getpixel((image.width - 1, 0)),
+            image.getpixel((0, image.height - 1)),
+            image.getpixel((image.width - 1, image.height - 1)),
+        ]
+        if any(pixel != WHITE for pixel in corners):
+            raise RuntimeError(f"{path}: app icon corners must be solid white")
+    elif alpha_extrema[0] != 0:
         raise RuntimeError(f"{path}: transparent background is missing")
-    bbox = alpha.getbbox()
-    if not bbox:
+
+    if not content_bbox(image, white_background):
         raise RuntimeError(f"{path}: contains no visible logo")
 
 
@@ -158,11 +176,13 @@ transparent_logo = crop_with_padding(remove_edge_background(original))
 for destination in CANONICAL_COPIES:
     save_png(transparent_logo, destination)
 
-master = square_asset(transparent_logo, 1024, STANDARD_FOOTPRINT)
-app_512 = square_asset(transparent_logo, 512, STANDARD_FOOTPRINT)
-app_192 = square_asset(transparent_logo, 192, STANDARD_FOOTPRINT)
-maskable_512 = square_asset(transparent_logo, 512, MASKABLE_FOOTPRINT)
-apple_180 = square_asset(transparent_logo, 180, STANDARD_FOOTPRINT)
+# Installed application icons use white backgrounds. Browser favicons remain
+# transparent so they retain clean edges inside browser UI.
+master = square_asset(transparent_logo, 1024, STANDARD_FOOTPRINT, WHITE)
+app_512 = square_asset(transparent_logo, 512, STANDARD_FOOTPRINT, WHITE)
+app_192 = square_asset(transparent_logo, 192, STANDARD_FOOTPRINT, WHITE)
+maskable_512 = square_asset(transparent_logo, 512, MASKABLE_FOOTPRINT, WHITE)
+apple_180 = square_asset(transparent_logo, 180, STANDARD_FOOTPRINT, WHITE)
 favicon_64 = square_asset(transparent_logo, 64, 0.84)
 favicon_32 = square_asset(transparent_logo, 32, 0.86)
 favicon_16 = square_asset(transparent_logo, 16, 0.88)
@@ -197,22 +217,28 @@ for path, size in [
     (ROOT / "public/app-icon-192.png", (192, 192)),
     (ROOT / "public/maskable-icon-512.png", (512, 512)),
     (ROOT / "public/apple-touch-icon.png", (180, 180)),
+]:
+    assert_asset(path, size, white_background=True)
+
+for path, size in [
     (ROOT / "public/favicon.png", (64, 64)),
     (ROOT / "public/favicon-32x32.png", (32, 32)),
     (ROOT / "public/favicon-16x16.png", (16, 16)),
 ]:
-    assert_asset(path, size)
+    assert_asset(path, size, white_background=False)
 
-coverage, bbox = alpha_coverage(master)
+bbox = content_bbox(master, True)
+if not bbox:
+    raise RuntimeError("Master app icon contains no visible mark")
 left, top, right, bottom = bbox
 footprint = max(right - left, bottom - top) / 1024
 if not 0.74 <= footprint <= 0.82:
     raise RuntimeError(f"Master app icon optical footprint {footprint:.3f} is outside 0.74–0.82")
 
 print(
-    "Generated transparent CCSF brand assets:",
+    "Generated CCSF assets:",
     f"source={original.size}",
     f"canonical={transparent_logo.size}",
-    f"master_coverage={coverage:.3f}",
+    "app_background=white",
     f"master_footprint={footprint:.3f}",
 )
