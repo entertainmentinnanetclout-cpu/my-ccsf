@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   commit-reviewed-pdf:
-    if: ${{ github.head_ref == 'feature/phase-4-student-dashboard-safety' && !contains(github.event.pull_request.head.sha, '0000000') }}
+    if: ${{ github.head_ref == 'feature/phase-4-student-dashboard-safety' }}
     runs-on: ubuntu-latest
     steps:
       - name: Check out Phase 4 branch
@@ -36,8 +36,9 @@ jobs:
           match = re.search(r'^\s*GENERATOR_GZIP_B64:\s*(\S+)\s*$', workflow, re.MULTILINE)
           if not match:
               raise SystemExit('Reviewed generator payload was not found.')
-          script = gzip.decompress(base64.b64decode(match.group(1)))
-          Path('/tmp/generate_phase4_safety_guide.py').write_bytes(script)
+          script = gzip.decompress(base64.b64decode(match.group(1))).decode('utf-8')
+          script = script.replace("ROOT = Path(__file__).resolve().parents[1]", "ROOT = Path.cwd()")
+          Path('/tmp/generate_phase4_safety_guide.py').write_text(script)
           PY
           python /tmp/generate_phase4_safety_guide.py
 
