@@ -1,8 +1,9 @@
-name: Phase 4 CCSF Brand Asset Generation
+name: CCSF Brand Asset Generation
 
 on:
   push:
     branches:
+      - main
       - feature/ccsf-phases-3-8-release-candidate
     paths:
       - scripts/generate-brand-assets.py
@@ -16,10 +17,10 @@ jobs:
   generate:
     runs-on: ubuntu-latest
     steps:
-      - name: Check out release-candidate branch
+      - name: Check out triggering branch
         uses: actions/checkout@v4
         with:
-          ref: feature/ccsf-phases-3-8-release-candidate
+          ref: ${{ github.ref_name }}
           fetch-depth: 0
 
       - name: Set up Python
@@ -30,7 +31,7 @@ jobs:
       - name: Install image tooling
         run: python -m pip install --disable-pip-version-check pillow==11.3.0
 
-      - name: Generate transparent platform assets
+      - name: Generate platform assets
         run: python scripts/generate-brand-assets.py
 
       - name: Verify generated image metadata
@@ -56,11 +57,13 @@ jobs:
           for value in paths:
               path = Path(value)
               with Image.open(path) as image:
-                  alpha = image.convert('RGBA').getchannel('A')
-                  print(f'{path}: format={image.format} size={image.size} alpha={alpha.getextrema()}')
+                  rgba = image.convert('RGBA')
+                  alpha = rgba.getchannel('A')
+                  corners = [rgba.getpixel(point) for point in [(0, 0), (rgba.width - 1, 0), (0, rgba.height - 1), (rgba.width - 1, rgba.height - 1)]]
+                  print(f'{path}: format={image.format} size={image.size} alpha={alpha.getextrema()} corners={corners}')
           PY
 
-      - name: Commit generated binaries to release candidate
+      - name: Commit generated binaries
         run: |
           if git diff --quiet -- \
             'src/assets/Campus safety forum logo design(1).png' \
@@ -94,5 +97,5 @@ jobs:
             'public/favicon-32x32.png' \
             'public/favicon-16x16.png' \
             'public/favicon.ico'
-          git commit -m 'phase 4: regenerate transparent CCSF app and favicon assets'
-          git push origin HEAD:feature/ccsf-phases-3-8-release-candidate
+          git commit -m 'fix: regenerate white-background CCSF app icons'
+          git push origin HEAD:${GITHUB_REF_NAME}
