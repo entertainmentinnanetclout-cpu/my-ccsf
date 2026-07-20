@@ -3,7 +3,8 @@ import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { AlertCircle, Loader2, LockKeyhole, ShieldAlert } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePilotMode } from '@/contexts/PilotModeContext';
-import { PILOT_ENABLED, pilotDefaultDestination, type PilotRole } from '@/config/pilot';
+import { PILOT_ENABLED, PILOT_ROUTES, pilotDefaultDestination, type PilotRole } from '@/config/pilot';
+import { markPilotIntent } from '@/lib/pilotIntent';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { PilotBanner } from '@/components/pilot/PilotBanner';
@@ -17,9 +18,18 @@ export function PilotRouteGuard({
 }) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, userRole, userProfile, loading: authLoading, profileCompleted } = useAuth();
-  const { loading, error, program, participant } = usePilotMode();
+  const { user, userRole, userProfile, loading: authLoading, profileCompleted, signOut } = useAuth();
+  const { loading, error, program, participant, refresh } = usePilotMode();
   const requestedPath = `${location.pathname}${location.search}${location.hash}`;
+
+  const leavePilotSession = async () => {
+    markPilotIntent(PILOT_ROUTES.landing);
+    try {
+      await signOut();
+    } finally {
+      navigate(PILOT_ROUTES.auth, { replace: true });
+    }
+  };
 
   if (!PILOT_ENABLED) {
     return (
@@ -27,8 +37,8 @@ export function PilotRouteGuard({
         icon={LockKeyhole}
         title="Pilot Mode is disabled"
         description="This deployment has not been authorised for Controlled Pilot Mode. Production safety services remain unchanged."
-        actionLabel="Return to portal"
-        onAction={() => navigate(userRole === 'admin' ? '/admin' : userRole === 'security' ? '/security' : '/dashboard')}
+        actionLabel="Return to Pilot sign in"
+        onAction={() => navigate(PILOT_ROUTES.auth)}
       />
     );
   }
@@ -44,7 +54,7 @@ export function PilotRouteGuard({
     );
   }
 
-  if (!user) return <Navigate to="/pilot/auth" replace state={{ from: requestedPath }} />;
+  if (!user) return <Navigate to={PILOT_ROUTES.auth} replace state={{ from: requestedPath }} />;
   if (!userRole || !allowedRoles.includes(userRole as PilotRole)) {
     return (
       <GuardState
@@ -52,7 +62,7 @@ export function PilotRouteGuard({
         title="Role not authorised"
         description="Your current portal role cannot access this Pilot route."
         actionLabel="Open your Pilot portal"
-        onAction={() => navigate(userRole ? pilotDefaultDestination(userRole as PilotRole) : '/pilot/auth')}
+        onAction={() => navigate(userRole ? pilotDefaultDestination(userRole as PilotRole) : PILOT_ROUTES.auth)}
       />
     );
   }
@@ -79,8 +89,8 @@ export function PilotRouteGuard({
         icon={AlertCircle}
         title="Pilot access could not be verified"
         description={error}
-        actionLabel="Return to portal"
-        onAction={() => navigate(userRole === 'admin' ? '/admin' : userRole === 'security' ? '/security' : '/dashboard')}
+        actionLabel="Retry Pilot access"
+        onAction={() => void refresh()}
       />
     );
   }
@@ -90,10 +100,10 @@ export function PilotRouteGuard({
       return (
         <GuardState
           icon={LockKeyhole}
-          title="No active Pilot invitation"
-          description="Your account is not currently allowlisted for an active Controlled Pilot programme. Preview access alone does not grant participation."
-          actionLabel="Return to student dashboard"
-          onAction={() => navigate('/dashboard')}
+          title="Pilot enrolment is still loading"
+          description="Your student account is signed in, but the active Pilot participant record could not be confirmed yet."
+          actionLabel="Retry Pilot enrolment"
+          onAction={() => void refresh()}
         />
       );
     }
@@ -103,8 +113,8 @@ export function PilotRouteGuard({
           icon={ShieldAlert}
           title="Campus not eligible"
           description="Your Pilot participation campus is outside the programme’s approved campus scope."
-          actionLabel="Return to student dashboard"
-          onAction={() => navigate('/dashboard')}
+          actionLabel="Sign out of Pilot"
+          onAction={() => void leavePilotSession()}
         />
       );
     }
@@ -114,8 +124,8 @@ export function PilotRouteGuard({
           icon={LockKeyhole}
           title="Pilot programme unavailable"
           description="This programme is not currently open for participant access."
-          actionLabel="Return to student dashboard"
-          onAction={() => navigate('/dashboard')}
+          actionLabel="Sign out of Pilot"
+          onAction={() => void leavePilotSession()}
         />
       );
     }
