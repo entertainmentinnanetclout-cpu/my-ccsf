@@ -3,15 +3,19 @@ export const PILOT_ROUTES = {
   landing: '/pilot',
   session: (sessionId: string) => `/pilot/session/${sessionId}`,
   report: (reportId: string) => `/pilot/report/${reportId}`,
+  reviews: '/pilot/reviews',
   resources: '/pilot/resources',
   campus: '/security/pilot',
+  campusReviews: '/security/pilot/reviews',
   admin: '/admin/pilot',
+  adminReviews: '/admin/pilot/reviews',
 } as const;
 
 export type PilotRole = 'student' | 'security' | 'admin';
 
 export function isPilotStudentPath(pathname: string): boolean {
   return pathname === PILOT_ROUTES.landing
+    || pathname === PILOT_ROUTES.reviews
     || pathname === PILOT_ROUTES.resources
     || pathname.startsWith('/pilot/session/')
     || pathname.startsWith('/pilot/report/');

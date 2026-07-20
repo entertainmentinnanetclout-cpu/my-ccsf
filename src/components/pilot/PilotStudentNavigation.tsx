@@ -1,4 +1,4 @@
-import { BookOpen, FileText, Home, PlusCircle } from 'lucide-react';
+import { BookOpen, FileText, Home, MessageSquareText, PlusCircle } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { usePilotMode } from '@/contexts/PilotModeContext';
 import { PILOT_ROUTES } from '@/config/pilot';
@@ -29,6 +29,12 @@ export function PilotStudentNavigation() {
       label: 'My Cases',
       icon: FileText,
       active: location.pathname.startsWith('/pilot/report/') || (location.pathname === sessionPath && selectedTab === 'reports'),
+    },
+    {
+      href: PILOT_ROUTES.reviews,
+      label: 'Reviews',
+      icon: MessageSquareText,
+      active: location.pathname === PILOT_ROUTES.reviews,
     },
     {
       href: PILOT_ROUTES.resources,
