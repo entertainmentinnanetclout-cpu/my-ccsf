@@ -50,6 +50,7 @@ export interface PilotReportInput {
   description: string;
   category: IncidentCategory;
   is_anonymous?: boolean;
+  emergency_consent?: boolean;
   location_lat?: number | null;
   location_lng?: number | null;
   location_accuracy?: number | null;
