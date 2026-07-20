@@ -4,6 +4,7 @@ import path from "path";
 import { componentTagger } from "lovable-tagger";
 
 const APPROVED_PILOT_PREVIEW_BRANCH = "feature/ccsf-phases-3-8-release-candidate";
+const APPROVED_PILOT_PRODUCTION_BRANCH = "main";
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
@@ -23,8 +24,12 @@ export default defineConfig(({ mode }) => {
   const vercelBranch = env.VERCEL_GIT_COMMIT_REF || process.env.VERCEL_GIT_COMMIT_REF;
   const approvedPreviewBranch =
     vercelEnvironment === "preview" && vercelBranch === APPROVED_PILOT_PREVIEW_BRANCH;
+  const approvedProductionBranch =
+    vercelEnvironment === "production" && vercelBranch === APPROVED_PILOT_PRODUCTION_BRANCH;
+  const pilotAuthorised =
+    explicitPilotFlag === "true" || approvedPreviewBranch || approvedProductionBranch;
   const pilotModeEnabled =
-    explicitPilotFlag === "true" || approvedPreviewBranch ? "true" : "false";
+    explicitPilotFlag === "false" ? "false" : pilotAuthorised ? "true" : "false";
 
   return {
     server: {
