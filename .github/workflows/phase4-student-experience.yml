@@ -39,6 +39,12 @@ jobs:
       - name: Verify Pilot production isolation
         run: npm run test:pilot-isolation
 
+      - name: Verify student and campus-security parity
+        run: npm run test:phase4-5-parity
+
+      - name: Verify production and Pilot student-home separation
+        run: npm run test:student-home
+
       - name: Inspect PDF structure
         run: |
           python - <<'PY'
