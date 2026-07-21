@@ -7,6 +7,7 @@ import { motion } from 'framer-motion';
 import { Shield, LayoutDashboard, AlertCircle, Megaphone, MessageSquare, MapPin, Users, BarChart3, Settings, Wifi } from 'lucide-react';
 import { InstitutionBrand } from '@/components/shared/InstitutionBrand';
 import { CampusDashboard } from '@/components/admin/CampusDashboard';
+import { CampusAdminVisuals } from '@/components/admin/visualizations/CampusAdminVisuals';
 import { AdminIncidents } from '@/components/admin/AdminIncidents';
 import { AdminAnnouncements } from '@/components/admin/AdminAnnouncements';
 import { ResolveCases } from '@/components/admin/ResolveCases';
@@ -83,8 +84,6 @@ const Security = () => {
     const fetchCampusStats = async () => {
       if (!userProfile?.campus) return;
       const campusValue = userProfile.campus as CampusLocation;
-
-      // Fetch campus student count (will be filtered by RLS)
       const {
         count: studentCount
       } = await supabase.from('profiles').select('*', {
@@ -92,8 +91,6 @@ const Security = () => {
         head: true
       }).eq('campus', campusValue);
       setCampusStudentCount(studentCount || 0);
-
-      // Fetch campus incident count (will be filtered by RLS)
       const {
         count: incidentCount
       } = await supabase.from('incidents').select('*', {
@@ -107,7 +104,6 @@ const Security = () => {
   return <MasterSyncProvider>
       <CasesProvider>
       <div className="min-h-screen bg-background" data-testid="ready-campus-admin">
-        {/* Header */}
         <motion.header initial={{
           y: -100,
           opacity: 0
@@ -120,7 +116,6 @@ const Security = () => {
         }} className="sticky top-0 z-50 bg-primary border-b border-white/10 shadow-large">
           <div className="container mx-auto px-4 py-3">
             <div className="flex items-center justify-between gap-4">
-              {/* Left: Logo and Title */}
               <div className="flex items-center gap-3 min-w-0 flex-shrink-0">
                 <motion.div className="shrink-0 text-white" whileHover={{
                   scale: 1.1,
@@ -146,7 +141,6 @@ const Security = () => {
                 </div>
               </div>
 
-              {/* Right: Stats and Actions */}
               <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 flex-shrink-0">
                 <div className="hidden lg:flex items-center gap-3 px-3 py-1.5 bg-white/10 rounded-lg">
                   <div className="text-center">
@@ -177,14 +171,11 @@ const Security = () => {
           </div>
         </motion.header>
 
-        {/* Real-Time Incidents - Filtered by Campus */}
         <div className="container mx-auto px-4 py-6">
           <RealTimeIncidents />
         </div>
 
-        {/* Main Content */}
         <main className="container mx-auto px-4 py-6 pb-20 md:pb-6">
-          {/* Navigation - Desktop Tabs + Mobile Menu */}
           <motion.div initial={{
             opacity: 0,
             y: 25
@@ -195,8 +186,6 @@ const Security = () => {
             delay: 0.2,
             duration: 0.4
           }} className="mb-6">
-
-            {/* Desktop Navigation Tabs */}
             <Card className="hidden md:block p-3 shadow-large">
               <div className="flex flex-wrap justify-center gap-2">
                 {navItems.map(({
@@ -217,7 +206,6 @@ const Security = () => {
             </Card>
           </motion.div>
 
-          {/* Content Views */}
           <motion.div key={activeView} initial={{
             opacity: 0,
             x: 20,
@@ -235,7 +223,7 @@ const Security = () => {
             stiffness: 300,
             damping: 30
           }}>
-            {activeView === 'overview' && <CampusDashboard />}
+            {activeView === 'overview' && <div className="space-y-8"><CampusAdminVisuals onOpenIncidents={() => setActiveView('incidents')} onOpenAnalytics={() => setActiveView('analytics')} /><CampusDashboard /></div>}
             {activeView === 'incidents' && <div className="space-y-6">
                 <AdminIncidents />
                 <ResolveCases />
@@ -248,7 +236,6 @@ const Security = () => {
             {activeView === 'settings' && <OfficerSettings />}
           </motion.div>
 
-          {/* Footer */}
           <footer className="mt-12 pb-6 text-center text-sm text-muted-foreground">
             <p className="text-sm font-bold text-primary">Powered By Campus Protection Service</p>
           </footer>
@@ -263,7 +250,6 @@ const Security = () => {
     </MasterSyncProvider>;
 };
 
-// Campus Students List Component using MasterSync + Virtual Scrolling
 const CampusStudentsList = ({
   campus
 }: {
@@ -278,7 +264,6 @@ const CampusStudentsList = ({
   } = useMasterSync();
   const [selectedStudent, setSelectedStudent] = useState<any | null>(null);
 
-  // Get students for the current campus
   const campusStudents = useMemo(() => {
     if (!campus) return [];
     return getProfilesByCampus(campus);
@@ -302,8 +287,6 @@ const CampusStudentsList = ({
           </Button>}
       </div>
       <VirtualStudentList students={campusStudents} height={500} onStudentClick={student => setSelectedStudent(student)} />
-      
-      {/* Student Details Dialog */}
       <Dialog open={!!selectedStudent} onOpenChange={() => setSelectedStudent(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
