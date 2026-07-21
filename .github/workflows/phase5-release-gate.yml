@@ -1,0 +1,144 @@
+name: Phase 5 Release Gate
+
+on:
+  push:
+    branches:
+      - feature/phase-5-admin-release-gate
+  pull_request:
+    branches:
+      - feature/phase-4-student-dashboard-safety
+
+permissions:
+  contents: read
+
+jobs:
+  phase5-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund --loglevel=error
+
+      - name: Verify Phase 5 release contract
+        run: npm run test:phase5-release
+
+      - name: Verify Pilot authentication
+        run: npm run test:phase1-auth
+
+      - name: Verify Phase 2 reporting and campus routing
+        run: npm run test:phase2-routing
+
+      - name: Verify Phase 3 review workflow
+        run: npm run test:phase3-reviews
+
+      - name: Verify Phase 4 student experience
+        run: npm run test:phase4-experience
+
+      - name: Verify production isolation
+        run: npm run test:pilot-isolation
+
+      - name: Verify student and campus-security parity
+        run: npm run test:phase4-5-parity
+
+      - name: Verify student-home separation
+        run: npm run test:student-home
+
+      - name: Type-check application
+        id: typecheck
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          npm run typecheck 2>&1 | tee phase5-typecheck.log
+
+      - name: Lint application
+        id: lint
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          npm run lint 2>&1 | tee phase5-lint.log
+
+      - name: Build Vercel Preview bundle
+        id: build
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          npm run build 2>&1 | tee phase5-build.log
+        env:
+          VITE_PILOT_MODE_ENABLED: 'true'
+          VERCEL_ENV: preview
+          VERCEL_GIT_COMMIT_REF: feature/phase-5-admin-release-gate
+
+      - name: Start local production preview
+        if: steps.build.outcome == 'success'
+        run: |
+          npm run preview -- --host 127.0.0.1 --port 4173 > phase5-preview.log 2>&1 &
+          echo $! > phase5-preview.pid
+          for attempt in {1..30}; do
+            if curl --silent --fail http://127.0.0.1:4173/ > /dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat phase5-preview.log
+          exit 1
+
+      - name: Smoke-test Preview routes and assets
+        if: steps.build.outcome == 'success'
+        run: |
+          set -euo pipefail
+          for route in \
+            / \
+            /pilot/auth \
+            /pilot \
+            /pilot/reviews \
+            /pilot/resources \
+            /security/pilot \
+            /security/pilot/reviews \
+            /admin/pilot \
+            /admin/pilot/reviews \
+            /admin/pilot/content; do
+            status=$(curl --silent --output /tmp/phase5-route.html --write-out '%{http_code}' "http://127.0.0.1:4173${route}")
+            test "$status" = "200"
+            grep -qi '<div id="root"></div>' /tmp/phase5-route.html
+            echo "$route -> $status"
+          done
+          pdf_status=$(curl --silent --output /tmp/phase5-safety.pdf --write-out '%{http_code}' http://127.0.0.1:4173/downloads/CCSF-Pilot-Safety-Guide-v1.0.pdf)
+          test "$pdf_status" = "200"
+          head -c 5 /tmp/phase5-safety.pdf | grep -q '%PDF-'
+          test "$(wc -c < /tmp/phase5-safety.pdf)" -gt 250000
+          echo "/downloads/CCSF-Pilot-Safety-Guide-v1.0.pdf -> $pdf_status"
+
+      - name: Stop local production preview
+        if: always()
+        run: |
+          if test -f phase5-preview.pid; then
+            kill "$(cat phase5-preview.pid)" || true
+          fi
+
+      - name: Upload Phase 5 diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase5-release-diagnostics
+          path: |
+            phase5-typecheck.log
+            phase5-lint.log
+            phase5-build.log
+            phase5-preview.log
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Enforce code-quality and Preview build results
+        if: always()
+        run: |
+          test "${{ steps.typecheck.outcome }}" = "success"
+          test "${{ steps.lint.outcome }}" = "success"
+          test "${{ steps.build.outcome }}" = "success"
