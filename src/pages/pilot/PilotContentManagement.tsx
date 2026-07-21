@@ -71,7 +71,7 @@ const newGuideStep = (userId: string | null): PilotGuideStep => ({
 
 const newCategory = (userId: string | null): PilotReviewCategoryOption => ({
   key: '', label: '', description: '', display_order: 100, is_active: true,
-  created_by: userId, updated_by: userId, created_at: now(), updated_at: now(),
+  created_by: userId, updated_by: userId, created_at: '', updated_at: '',
 });
 
 const newQuickCard = (userId: string | null): PilotReviewQuickCard => ({
@@ -157,7 +157,7 @@ export default function PilotContentManagement() {
   );
 
   const saveCategory = () => category && execute(
-    () => savePilotReviewCategory({ ...category, key: category.key.trim().toLowerCase().replace(/[^a-z0-9_]/g, '_'), label: category.label.trim(), description: category.description.trim(), updated_by: user?.id ?? null }),
+    () => savePilotReviewCategory({ ...category, key: category.key.trim().toLowerCase().replace(/[^a-z0-9_]/g, '_'), label: category.label.trim(), description: category.description.trim(), created_at: category.created_at || now(), updated_at: now(), updated_by: user?.id ?? null }),
     'Review category saved',
     () => setCategory(null),
   );
@@ -275,7 +275,7 @@ function GuideDialog({ value, onChange, saving, onSave }: { value: PilotGuideSte
 
 function CategoryDialog({ value, onChange, saving, onSave }: { value: PilotReviewCategoryOption | null; onChange: (value: PilotReviewCategoryOption | null) => void; saving: boolean; onSave: () => void }) {
   if (!value) return null;
-  return <Dialog open onOpenChange={(open) => { if (!open) onChange(null); }}><DialogContent><DialogHeader><DialogTitle>Review category</DialogTitle><DialogDescription>Deactivate instead of deleting categories that already contain reviews.</DialogDescription></DialogHeader><div className="space-y-4"><Field label="Category key"><Input value={value.key} disabled={Boolean(value.created_by || value.created_at !== newCategory(null).created_at)} onChange={(e) => onChange({ ...value, key: e.target.value })} /></Field><Field label="Label"><Input value={value.label} onChange={(e) => onChange({ ...value, label: e.target.value })} /></Field><Field label="Description"><Textarea value={value.description} onChange={(e) => onChange({ ...value, description: e.target.value })} /></Field><Field label="Order"><Input type="number" min={0} value={value.display_order} onChange={(e) => onChange({ ...value, display_order: Number(e.target.value) })} /></Field><label className="flex items-center gap-3"><Switch checked={value.is_active} onCheckedChange={(is_active) => onChange({ ...value, is_active })} />Active category</label></div><DialogFooter><Button variant="outline" onClick={() => onChange(null)}>Cancel</Button><Button onClick={onSave} disabled={saving || !value.key.trim() || !value.label.trim()}><Save className="mr-2 h-4 w-4" />Save category</Button></DialogFooter></DialogContent></Dialog>;
+  return <Dialog open onOpenChange={(open) => { if (!open) onChange(null); }}><DialogContent><DialogHeader><DialogTitle>Review category</DialogTitle><DialogDescription>Deactivate instead of deleting categories that already contain reviews.</DialogDescription></DialogHeader><div className="space-y-4"><Field label="Category key"><Input value={value.key} disabled={Boolean(value.created_at)} onChange={(e) => onChange({ ...value, key: e.target.value })} /></Field><Field label="Label"><Input value={value.label} onChange={(e) => onChange({ ...value, label: e.target.value })} /></Field><Field label="Description"><Textarea value={value.description} onChange={(e) => onChange({ ...value, description: e.target.value })} /></Field><Field label="Order"><Input type="number" min={0} value={value.display_order} onChange={(e) => onChange({ ...value, display_order: Number(e.target.value) })} /></Field><label className="flex items-center gap-3"><Switch checked={value.is_active} onCheckedChange={(is_active) => onChange({ ...value, is_active })} />Active category</label></div><DialogFooter><Button variant="outline" onClick={() => onChange(null)}>Cancel</Button><Button onClick={onSave} disabled={saving || !value.key.trim() || !value.label.trim()}><Save className="mr-2 h-4 w-4" />Save category</Button></DialogFooter></DialogContent></Dialog>;
 }
 
 function QuickCardDialog({ value, categories, onChange, saving, onSave }: { value: PilotReviewQuickCard | null; categories: PilotReviewCategoryOption[]; onChange: (value: PilotReviewQuickCard | null) => void; saving: boolean; onSave: () => void }) {
