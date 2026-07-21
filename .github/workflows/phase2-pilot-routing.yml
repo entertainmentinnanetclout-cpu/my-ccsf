@@ -22,18 +22,16 @@ jobs:
           ref: feature/maptive-live-admin-visuals
           fetch-depth: 0
 
-      - name: Capture complete cleanup sequence
+      - name: Commit verified visual release cleanup
         if: ${{ github.event_name == 'pull_request' }}
         run: |
-          set +e
-          {
-            git fetch origin main
-            git checkout origin/main -- \
-              .github/workflows/ci.yml \
-              .github/workflows/phase2-pilot-routing.yml \
-              .github/workflows/phase4-brand-assets.yml \
-              scripts/generate-brand-assets.py
-            python - <<'PY'
+          git fetch origin main
+          git checkout origin/main -- \
+            .github/workflows/ci.yml \
+            .github/workflows/phase2-pilot-routing.yml \
+            .github/workflows/phase4-brand-assets.yml \
+            scripts/generate-brand-assets.py
+          python - <<'PY'
           from pathlib import Path
 
           generator = Path('scripts/generate-brand-assets.py')
@@ -48,21 +46,26 @@ jobs:
                   raise SystemExit('CI insertion anchor was not found.')
               ci_source = ci_source.replace(anchor, addition, 1)
           ci.write_text(ci_source)
+
+          for value in [
+              '.github/workflows/repair-pwa-icon-canvases.yml',
+              '.github/workflows/capture-admin-visual-typecheck.yml',
+              'docs/debug/branding-verifier-output.txt',
+              'docs/debug/visual-release-cleanup.txt',
+              'docs/debug/visual-cleanup-sequence.txt',
+              'docs/debug/admin-visual-typecheck.txt',
+          ]:
+              path = Path(value)
+              if path.exists():
+                  path.unlink()
           PY
-            python -m pip install --disable-pip-version-check pillow==11.3.0
-            python scripts/generate-brand-assets.py
-            node scripts/verify-branding.mjs
-            git status --short
-          } > /tmp/visual-cleanup-sequence.txt 2>&1
-          status=$?
-          echo "exit_status=$status" >> /tmp/visual-cleanup-sequence.txt
-          git reset --hard HEAD
-          mkdir -p docs/debug
-          cp /tmp/visual-cleanup-sequence.txt docs/debug/visual-cleanup-sequence.txt
+          python -m pip install --disable-pip-version-check pillow==11.3.0
+          python scripts/generate-brand-assets.py
+          node scripts/verify-branding.mjs
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/debug/visual-cleanup-sequence.txt
-          git commit -m "ci: capture complete visual cleanup sequence [visual-cleanup-sequence]"
+          git add -A
+          git commit -m "chore: finalize visual release assets and cleanup [visual-release-cleanup]"
           git push origin HEAD:feature/maptive-live-admin-visuals
 
       - name: Set up Node.js
