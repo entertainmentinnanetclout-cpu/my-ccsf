@@ -1,0 +1,12 @@
+Defaulting to user installation because normal site-packages is not writeable
+Collecting pillow==11.3.0
+  Downloading pillow-11.3.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (9.0 kB)
+Downloading pillow-11.3.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (6.6 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 6.6/6.6 MB 68.3 MB/s eta 0:00:00
+Installing collected packages: pillow
+Successfully installed pillow-11.3.0
+Traceback (most recent call last):
+  File "/home/runner/work/my-ccsf/my-ccsf/scripts/generate-brand-assets.py", line 237, in <module>
+    raise RuntimeError(f"Master app icon optical footprint {footprint:.3f} is outside 0.74–0.82")
+RuntimeError: Master app icon optical footprint 0.739 is outside 0.74–0.82
+exit_status=1
