@@ -1,0 +1,35 @@
+name: Capture Branding Verifier Diagnostic
+
+on:
+  push:
+    branches:
+      - feature/maptive-live-admin-visuals
+
+permissions:
+  contents: write
+
+jobs:
+  capture:
+    if: ${{ !contains(github.event.head_commit.message, '[branding-diagnostic]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/maptive-live-admin-visuals
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund --loglevel=error
+      - name: Capture verifier result
+        run: |
+          mkdir -p docs/debug
+          npm run test:branding > docs/debug/branding-verifier-output.txt 2>&1 || true
+          rm .github/workflows/capture-branding-verifier.yml
+      - name: Commit diagnostic
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/debug/branding-verifier-output.txt .github/workflows/capture-branding-verifier.yml
+          git commit -m "ci: capture branding verifier output [branding-diagnostic]"
+          git push origin HEAD:feature/maptive-live-admin-visuals
