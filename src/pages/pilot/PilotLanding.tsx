@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 
+// Production release marker: Pilot report session continuity hotfix.
 export default function PilotLanding() {
   const { toast } = useToast();
   const { user } = useAuth();
