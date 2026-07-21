@@ -1,0 +1,35 @@
+name: Capture Admin Visual TypeScript Diagnostics
+
+on:
+  push:
+    branches:
+      - feature/maptive-live-admin-visuals
+
+permissions:
+  contents: write
+
+jobs:
+  capture:
+    if: ${{ !contains(github.event.head_commit.message, '[visual-typecheck-diagnostic]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/maptive-live-admin-visuals
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund --loglevel=error
+      - name: Capture compiler output
+        run: |
+          mkdir -p docs/debug
+          npm run typecheck > docs/debug/admin-visual-typecheck.txt 2>&1 || true
+          rm .github/workflows/capture-admin-visual-typecheck.yml
+      - name: Commit diagnostic
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/debug/admin-visual-typecheck.txt .github/workflows/capture-admin-visual-typecheck.yml
+          git commit -m "ci: capture admin visual TypeScript output [visual-typecheck-diagnostic]"
+          git push origin HEAD:feature/maptive-live-admin-visuals
