@@ -1,0 +1,85 @@
+name: Apply Maptive Pilot Visuals
+
+on:
+  push:
+    branches:
+      - feature/maptive-live-admin-visuals
+
+permissions:
+  contents: write
+
+jobs:
+  patch-pilot-dashboards:
+    if: ${{ !contains(github.event.head_commit.message, '[maptive-pilot-applied]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/maptive-live-admin-visuals
+          fetch-depth: 0
+
+      - name: Apply Pilot dashboard visual intelligence
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          super_path = Path('src/components/pilot/PilotSuperAdminDashboard.tsx')
+          super_source = super_path.read_text()
+          super_import_anchor = "import { PilotCsvExportPanel } from '@/components/pilot/PilotCsvExportPanel';\n"
+          super_import = super_import_anchor + "import { LiveOperationsVisuals, type LiveVisualRecord } from '@/components/admin/visualizations/LiveOperationsVisuals';\n"
+          if "LiveOperationsVisuals" not in super_source:
+              if super_import_anchor not in super_source:
+                  raise SystemExit('Super-admin import anchor missing')
+              super_source = super_source.replace(super_import_anchor, super_import, 1)
+
+          super_metrics_anchor = "  const metrics = useMemo(() => calculatePilotMetrics(data), [data]);\n"
+          super_metrics = super_metrics_anchor + "  const visualRecords = useMemo<LiveVisualRecord[]>(() => data.reports.map((report) => ({\n    id: report.id,\n    campus: report.campus,\n    status: report.status,\n    category: report.category,\n    title: report.title,\n    createdAt: report.submitted_at,\n    resolvedAt: report.resolved_at,\n    isCritical: report.simulated_severity === 'high' || report.simulated_severity === 'critical',\n  })), [data.reports]);\n"
+          if "const visualRecords = useMemo<LiveVisualRecord[]>" not in super_source:
+              if super_metrics_anchor not in super_source:
+                  raise SystemExit('Super-admin metrics anchor missing')
+              super_source = super_source.replace(super_metrics_anchor, super_metrics, 1)
+
+          super_overview_anchor = "        <div className=\"space-y-6\">\n          <div className=\"grid gap-4 sm:grid-cols-2 xl:grid-cols-4\">"
+          super_visual = "        <div className=\"space-y-6\">\n          <LiveOperationsVisuals\n            records={visualRecords}\n            title=\"Pilot Institution Visual Intelligence\"\n            description=\"Cross-campus simulated case patterns, response flow, heat concentration and direct operational drill-down. Every action remains isolated inside Pilot Mode.\"\n            locationLabels={{ ...CAMPUS_LABELS }}\n            statusOrder={['received', 'assessing', 'assigned', 'in_progress', 'simulation_completed']}\n            statusLabels={{ ...PILOT_STATUS_LABELS }}\n            resolvedStatuses={['simulation_completed', 'cancelled', 'withdrawn', 'expired']}\n            onRefresh={() => refresh(true)}\n            refreshing={refreshing}\n            onOpenQueue={() => setActiveView('operations')}\n            onOpenAnalytics={() => setActiveView('analytics')}\n            onOpenRecord={(recordId) => navigate(PILOT_ROUTES.report(recordId))}\n          />\n          <div className=\"grid gap-4 sm:grid-cols-2 xl:grid-cols-4\">"
+          if "Pilot Institution Visual Intelligence" not in super_source:
+              if super_overview_anchor not in super_source:
+                  raise SystemExit('Super-admin overview anchor missing')
+              super_source = super_source.replace(super_overview_anchor, super_visual, 1)
+          super_path.write_text(super_source)
+
+          campus_path = Path('src/components/pilot/PilotCampusSecurityDashboard.tsx')
+          campus_source = campus_path.read_text()
+          campus_import_anchor = "import { PilotBanner } from '@/components/pilot/PilotBanner';\n"
+          campus_import = campus_import_anchor + "import { LiveOperationsVisuals, type LiveVisualRecord } from '@/components/admin/visualizations/LiveOperationsVisuals';\n"
+          if "LiveOperationsVisuals" not in campus_source:
+              if campus_import_anchor not in campus_source:
+                  raise SystemExit('Campus Pilot import anchor missing')
+              campus_source = campus_source.replace(campus_import_anchor, campus_import, 1)
+
+          campus_metrics_anchor = "  const metrics = useMemo(() => calculatePilotMetrics(data), [data]);\n"
+          campus_metrics = campus_metrics_anchor + "  const visualRecords = useMemo<LiveVisualRecord[]>(() => data.reports.map((report) => ({\n    id: report.id,\n    campus: report.campus,\n    status: report.status,\n    category: report.category,\n    title: report.title,\n    createdAt: report.submitted_at,\n    resolvedAt: report.resolved_at,\n    isCritical: report.simulated_severity === 'high' || report.simulated_severity === 'critical',\n  })), [data.reports]);\n"
+          if "const visualRecords = useMemo<LiveVisualRecord[]>" not in campus_source:
+              if campus_metrics_anchor not in campus_source:
+                  raise SystemExit('Campus Pilot metrics anchor missing')
+              campus_source = campus_source.replace(campus_metrics_anchor, campus_metrics, 1)
+
+          campus_overview_anchor = "      {activeView === 'overview' && <div className=\"space-y-6\">\n        <div className=\"grid gap-4 sm:grid-cols-2 xl:grid-cols-4\">"
+          campus_visual = "      {activeView === 'overview' && <div className=\"space-y-6\">\n        <LiveOperationsVisuals\n          records={visualRecords}\n          title={`${CAMPUS_LABELS[campus]} Pilot Visual Intelligence`}\n          description=\"Campus-scoped simulated case concentration, response flow and direct queue actions. No production case or external dispatch is used.\"\n          locationLabels={{ ...CAMPUS_LABELS }}\n          defaultCampus={campus}\n          lockCampus\n          statusOrder={['received', 'assessing', 'assigned', 'in_progress', 'simulation_completed']}\n          statusLabels={{ ...PILOT_STATUS_LABELS }}\n          resolvedStatuses={['simulation_completed', 'cancelled', 'withdrawn', 'expired']}\n          onRefresh={() => refresh(true)}\n          refreshing={refreshing}\n          onOpenQueue={() => setActiveView('incidents')}\n          onOpenAnalytics={() => setActiveView('analytics')}\n          onOpenRecord={(recordId) => navigate(PILOT_ROUTES.report(recordId))}\n        />\n        <div className=\"grid gap-4 sm:grid-cols-2 xl:grid-cols-4\">"
+          if "Pilot Visual Intelligence" not in campus_source:
+              if campus_overview_anchor not in campus_source:
+                  raise SystemExit('Campus Pilot overview anchor missing')
+              campus_source = campus_source.replace(campus_overview_anchor, campus_visual, 1)
+          campus_path.write_text(campus_source)
+
+          workflow = Path('.github/workflows/apply-maptive-pilot-visuals.yml')
+          if workflow.exists():
+              workflow.unlink()
+          PY
+
+      - name: Commit Pilot visual upgrade
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/components/pilot/PilotSuperAdminDashboard.tsx src/components/pilot/PilotCampusSecurityDashboard.tsx .github/workflows/apply-maptive-pilot-visuals.yml
+          git commit -m "feat: upgrade Pilot admin dashboards with live visual intelligence [maptive-pilot-applied]"
+          git push origin HEAD:feature/maptive-live-admin-visuals
