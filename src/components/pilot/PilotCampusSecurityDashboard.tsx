@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { PilotBanner } from '@/components/pilot/PilotBanner';
+import { LiveOperationsVisuals, type LiveVisualRecord } from '@/components/admin/visualizations/LiveOperationsVisuals';
 import { MobileBottomNav } from '@/components/shared/MobileBottomNav';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -128,6 +129,15 @@ export function PilotCampusSecurityDashboard({ campus }: { campus: CampusLocatio
     [studentIdentities],
   );
   const metrics = useMemo(() => calculatePilotMetrics(data), [data]);
+  const visualRecords = useMemo<LiveVisualRecord[]>(() => data.reports.map((report) => ({
+    id: report.id,
+    campus: report.campus,
+    status: report.status,
+    category: report.category,
+    title: report.title,
+    createdAt: report.submitted_at,
+    isCritical: report.simulated_severity === 'high' || report.simulated_severity === 'critical',
+  })), [data.reports]);
   const filteredReports = useMemo(() => data.reports.filter((report) => {
     const query = search.trim().toLowerCase();
     const identity = identityByUserId.get(report.submitted_by);
@@ -254,6 +264,22 @@ export function PilotCampusSecurityDashboard({ campus }: { campus: CampusLocatio
       </Card>
 
       {activeView === 'overview' && <div className="space-y-6">
+        <LiveOperationsVisuals
+          records={visualRecords}
+          title={`${CAMPUS_LABELS[campus]} Pilot Visual Intelligence`}
+          description="Campus-scoped simulated case concentration, response flow and direct queue actions. No production case or external dispatch is used."
+          locationLabels={{ ...CAMPUS_LABELS }}
+          defaultCampus={campus}
+          lockCampus
+          statusOrder={['received', 'assessing', 'assigned', 'in_progress', 'simulation_completed']}
+          statusLabels={{ ...PILOT_STATUS_LABELS }}
+          resolvedStatuses={['simulation_completed', 'cancelled', 'withdrawn', 'expired']}
+          onRefresh={() => refresh(true)}
+          refreshing={refreshing}
+          onOpenQueue={() => setActiveView('incidents')}
+          onOpenAnalytics={() => setActiveView('analytics')}
+          onOpenRecord={(recordId) => navigate(PILOT_ROUTES.report(recordId))}
+        />
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <Metric icon={AlertCircle} label="Active simulated cases" value={activeReports.length} />
           <Metric icon={UserCheck} label="Awaiting assignment" value={unassignedReports.length} />

@@ -63,6 +63,9 @@ jobs:
       - name: Verify production and Pilot student-home parity
         run: npm run test:student-home
 
+      - name: Verify admin visual intelligence
+        run: npm run test:admin-visuals
+
       - name: Type-check application
         run: npm run typecheck
 
