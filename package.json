@@ -22,7 +22,8 @@
     "test:phase8-release": "node scripts/verify-phase-8-release-gate.mjs",
     "test:branding": "node scripts/verify-branding.mjs",
     "test:student-home": "node scripts/verify-student-home-parity.mjs",
-    "qa:pilot": "npm run test:phase1-auth && npm run test:phase2-routing && npm run test:phase3-reviews && npm run test:phase4-experience && npm run test:phase5-release && npm run test:pilot-isolation && npm run test:phase3-routing && npm run test:phase4-product && npm run test:phase4-5-parity && npm run test:phase6-parity && npm run test:phase7-consistency && npm run test:phase8-release && npm run test:branding && npm run test:student-home && npm run typecheck && npm run lint && npm run build",
+    "test:admin-visuals": "node scripts/verify-admin-visual-intelligence.mjs",
+    "qa:pilot": "npm run test:phase1-auth && npm run test:phase2-routing && npm run test:phase3-reviews && npm run test:phase4-experience && npm run test:phase5-release && npm run test:pilot-isolation && npm run test:phase3-routing && npm run test:phase4-product && npm run test:phase4-5-parity && npm run test:phase6-parity && npm run test:phase7-consistency && npm run test:phase8-release && npm run test:branding && npm run test:student-home && npm run test:admin-visuals && npm run typecheck && npm run lint && npm run build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
