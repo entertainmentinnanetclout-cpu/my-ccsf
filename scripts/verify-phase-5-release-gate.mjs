@@ -53,7 +53,7 @@ for (const scope of ['pilot_review_categories', 'pilot_review_quick_cards', 'pil
 }
 check(migration.includes('private.pilot_is_super_admin') && migration.includes('pilot_carousel_admin_update'), 'Phase 5 content writes are super-admin restricted.');
 check(migration.includes('pilot-content-assets') && migration.includes('pilot-resource-documents'), 'Managed images and PDFs use dedicated Pilot storage buckets.');
-check(migration.includes('pilot_review_category_fk') && migration.includes('Unsupported or inactive quick feedback selection'), 'Review categories and quick cards are server validated.');
+check(migration.includes('pilot_reviews_category_fk') && migration.includes('Unsupported or inactive review category') && migration.includes('Unsupported or inactive quick feedback selection'), 'Review categories and quick cards are server validated.');
 check(contentAdmin.includes('Dashboard carousel') && contentAdmin.includes('First-login user guide') && contentAdmin.includes('Review categories') && contentAdmin.includes('Versioned CCSF Safety PDF'), 'Content workspace covers every required admin content area.');
 check(contentAdmin.includes('Campus targeting') && contentAdmin.includes('Display order') && contentAdmin.includes('Starts at') && contentAdmin.includes('Expires at'), 'Carousel and PDF controls expose targeting, order and scheduling.');
 check(contentService.includes('uploadPilotContentImage') && contentService.includes('uploadPilotSafetyPdf'), 'Content management uploads approved image and PDF file types.');
@@ -65,7 +65,7 @@ check(experienceService.includes('resolvePilotSafetyDocumentUrl') && experienceS
 check(exists('public/downloads/CCSF-Pilot-Safety-Guide-v1.0.pdf'), 'Approved static Safety PDF fallback exists.');
 
 check(campusDashboard.includes('loadPilotAdminData({ programId, campus })'), 'Campus reports remain explicitly campus scoped.');
-check(reportForm.includes('emergency') && reportForm.includes('Emergency Test'), 'Emergency form retains its dedicated minimal workflow.');
+check(reportForm.includes("const EMERGENCY_TITLE = 'Emergency assistance request'") && reportForm.includes('if (emergency)') && reportForm.includes('emergencyConsent') && reportForm.includes('!emergency && files.length'), 'Emergency form retains its dedicated minimal workflow.');
 check(studentDashboard.includes('PILOT_ROUTES.report(report.id)') || studentDashboard.includes('to={PILOT_ROUTES.report(report.id)}'), 'Student case cards are openable.');
 check(campusDashboard.includes('onAdvance={moveReport}') || campusDashboard.includes('navigate(PILOT_ROUTES.report'), 'Campus case actions have live handlers.');
 
