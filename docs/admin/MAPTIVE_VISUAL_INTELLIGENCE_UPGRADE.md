@@ -46,6 +46,10 @@ Visual selections are functional controls. Selecting a campus bubble, workflow s
 - Make charts mobile responsive and keyboard-accessible where actions are present.
 - Keep critical records directly reachable from the visual layer.
 
+## Brand and install assets
+
+The canonical CCSF artwork remains unchanged. PWA and Apple install icons retain the same artwork, dimensions and optical footprint on the opaque white canvas required by the repository branding contract.
+
 ## Release verification
 
 Run:
