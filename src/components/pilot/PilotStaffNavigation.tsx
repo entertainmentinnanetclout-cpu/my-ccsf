@@ -1,4 +1,4 @@
-import { LayoutDashboard, MessageSquareText } from 'lucide-react';
+import { LayoutDashboard, MessageSquareText, Settings2 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { PILOT_ROUTES } from '@/config/pilot';
@@ -13,6 +13,7 @@ export function PilotStaffNavigation() {
   const items = [
     { href: dashboard, label: 'Pilot Operations', icon: LayoutDashboard },
     { href: reviews, label: 'Reviews', icon: MessageSquareText },
+    ...(userRole === 'admin' ? [{ href: PILOT_ROUTES.adminContent, label: 'Content', icon: Settings2 }] : []),
   ];
 
   return (
