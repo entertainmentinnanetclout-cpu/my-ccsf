@@ -1,5 +1,9 @@
 # Pilot Report Session Continuity Hotfix
 
+## Release status
+
+Merged into `main` through PR #33 at merge commit `784e2882c06088cd09e5de81af29abeb877e83a8` after the reporting, review-regression, TypeScript, ESLint and production/Pilot build gates passed.
+
 ## Defect
 
 Expired Pilot sessions could remain marked `in_progress`. The student portal selected the newest row without checking `expires_at`, so the report form appeared usable but the secure submission service rejected the stale session.
