@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Bell,
   ChevronLeft,
@@ -23,7 +23,11 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { DEFAULT_PILOT_GUIDE_STEPS } from '@/services/pilot/pilotExperienceService';
+import {
+  DEFAULT_PILOT_GUIDE_STEPS,
+  loadPilotGuideSteps,
+  subscribeToPilotExperienceConfiguration,
+} from '@/services/pilot/pilotExperienceService';
 import type { PilotGuideIcon, PilotGuideStep } from '@/types/pilotExperience';
 
 const GUIDE_ICONS: Record<PilotGuideIcon, typeof Shield> = {
@@ -41,7 +45,7 @@ const GUIDE_ICONS: Record<PilotGuideIcon, typeof Shield> = {
 export function PilotUserGuideDialog({
   open,
   step,
-  steps = DEFAULT_PILOT_GUIDE_STEPS,
+  steps,
   saving,
   onStepChange,
   onClose,
@@ -58,7 +62,27 @@ export function PilotUserGuideDialog({
   onComplete: () => Promise<void> | void;
 }) {
   const [doNotShowAgain, setDoNotShowAgain] = useState(false);
-  const availableSteps = steps.length ? steps : DEFAULT_PILOT_GUIDE_STEPS;
+  const [managedSteps, setManagedSteps] = useState<PilotGuideStep[]>(DEFAULT_PILOT_GUIDE_STEPS);
+
+  useEffect(() => {
+    if (steps?.length) return;
+    let current = true;
+    const refresh = async () => {
+      const next = await loadPilotGuideSteps();
+      if (current) setManagedSteps(next);
+    };
+    void refresh();
+    const unsubscribe = subscribeToPilotExperienceConfiguration(() => void refresh());
+    return () => {
+      current = false;
+      unsubscribe();
+    };
+  }, [steps]);
+
+  const availableSteps = useMemo(
+    () => (steps?.length ? steps : managedSteps.length ? managedSteps : DEFAULT_PILOT_GUIDE_STEPS),
+    [managedSteps, steps],
+  );
   const currentIndex = Math.min(Math.max(step, 0), availableSteps.length - 1);
   const current = availableSteps[currentIndex];
   const Icon = GUIDE_ICONS[current.icon_key] ?? Shield;
