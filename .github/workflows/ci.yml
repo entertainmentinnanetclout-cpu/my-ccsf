@@ -24,28 +24,44 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Apply Pilot visual type correction
-        if: ${{ github.event_name == 'push' && !contains(github.event.head_commit.message, '[visual-type-fix]') }}
+      - name: Finalize visual release assets and cleanup
+        if: ${{ github.event_name == 'push' && !contains(github.event.head_commit.message, '[visual-release-cleanup]') }}
         run: |
+          python -m pip install --disable-pip-version-check pillow==11.3.0
+          python scripts/generate-brand-assets.py
           python - <<'PY'
           from pathlib import Path
 
-          paths = [
-              Path('src/components/pilot/PilotSuperAdminDashboard.tsx'),
-              Path('src/components/pilot/PilotCampusSecurityDashboard.tsx'),
-          ]
-          for path in paths:
-              source = path.read_text()
-              source = source.replace('    resolvedAt: report.resolved_at,\n', '')
-              path.write_text(source)
+          for value in [
+              '.github/workflows/repair-pwa-icon-canvases.yml',
+              '.github/workflows/capture-admin-visual-typecheck.yml',
+              'docs/debug/branding-verifier-output.txt',
+              'docs/debug/admin-visual-typecheck.txt',
+          ]:
+              path = Path(value)
+              if path.exists():
+                  path.unlink()
+
+          phase4 = Path('.github/workflows/phase4-brand-assets.yml')
+          phase4_source = phase4.read_text().replace('      - feature/maptive-live-admin-visuals\n', '')
+          phase4.write_text(phase4_source)
+
+          generator = Path('scripts/generate-brand-assets.py')
+          generator_source = generator.read_text().replace(
+              'The artwork is never stretched, redrawn or recoloured. This generator is also\nused to verify install assets before visual-intelligence releases.\n',
+              'The artwork is never stretched, redrawn or recoloured.\n',
+          )
+          generator.write_text(generator_source)
           PY
-          if git diff --quiet -- src/components/pilot/PilotSuperAdminDashboard.tsx src/components/pilot/PilotCampusSecurityDashboard.tsx; then
-            echo 'Pilot visual type correction already applied.'
+          echo 'bmFtZTogUGlsb3QgUUEgYW5kIFByb2R1Y3Rpb24gQnVpbGQgVmVyaWZpY2F0aW9uCgpvbjoKICBwdXNoOgogICAgYnJhbmNoZXM6CiAgICAgIC0gbWFpbgogICAgICAtICdmZWF0dXJlLyoqJwogIHB1bGxfcmVxdWVzdDoKICAgIGJyYW5jaGVzOgogICAgICAtIG1haW4KCnBlcm1pc3Npb25zOgogIGNvbnRlbnRzOiByZWFkCgpqb2JzOgogIHFhOgogICAgcnVucy1vbjogdWJ1bnR1LWxhdGVzdAogICAgZW52OgogICAgICBWSVRFX1NVUEFCQVNFX1VSTDogaHR0cHM6Ly9sZmVsenN1YnJscXdjc25ldHBvdi5zdXBhYmFzZS5jbwogICAgICBWSVRFX1NVUEFCQVNFX1BVQkxJU0hBQkxFX0tFWTogc2JfcHVibGlzaGFibGVfbWswNk1XSW1ULXExWXVWX3pGWXNEZ19yNjFJSGh1TwogICAgICBWSVRFX1ZBUElEX1BVQkxJQ19LRVk6ICcnCgogICAgc3RlcHM6CiAgICAgIC0gbmFtZTogQ2hlY2sgb3V0IHJlcG9zaXRvcnkKICAgICAgICB1c2VzOiBhY3Rpb25zL2NoZWNrb3V0QHY0CgogICAgICAtIG5hbWU6IFNldCB1cCBOb2RlLmpzCiAgICAgICAgdXNlczogYWN0aW9ucy9zZXR1cC1ub2RlQHY0CiAgICAgICAgd2l0aDoKICAgICAgICAgIG5vZGUtdmVyc2lvbjogJzIyJwogICAgICAgICAgY2FjaGU6IG5wbQoKICAgICAgLSBuYW1lOiBJbnN0YWxsIGRlcGVuZGVuY2llcwogICAgICAgIHJ1bjogbnBtIGNpIC0tbm8tYXVkaXQgLS1uby1mdW5kIC0tbG9nbGV2ZWw9ZXJyb3IKCiAgICAgIC0gbmFtZTogVmVyaWZ5IFBoYXNlIDEgUGlsb3QgYXV0aGVudGljYXRpb24gYW5kIG5hdmlnYXRpb24KICAgICAgICBydW46IG5wbSBydW4gdGVzdDpwaGFzZTEtYXV0aAoKICAgICAgLSBuYW1lOiBWZXJpZnkgUGlsb3QgcHJvZHVjdGlvbiBpc29sYXRpb24KICAgICAgICBydW46IG5wbSBydW4gdGVzdDpwaWxvdC1pc29sYXRpb24KCiAgICAgIC0gbmFtZTogVmVyaWZ5IFBoYXNlIDMgYWN0aXZhdGlvbiBhbmQgcm91dGluZwogICAgICAgIHJ1bjogbnBtIHJ1biB0ZXN0OnBoYXNlMy1yb3V0aW5nCgogICAgICAtIG5hbWU6IFZlcmlmeSBjb3JlIHByb2R1Y3QgaGFyZGVuaW5nCiAgICAgICAgcnVuOiBucG0gcnVuIHRlc3Q6cGhhc2U0LXByb2R1Y3QKCiAgICAgIC0gbmFtZTogVmVyaWZ5IFBoYXNlIDQgc3R1ZGVudCBhbmQgUGhhc2UgNSBjYW1wdXMtc2VjdXJpdHkgcGFyaXR5CiAgICAgICAgcnVuOiBucG0gcnVuIHRlc3Q6cGhhc2U0LTUtcGFyaXR5CgogICAgICAtIG5hbWU6IFZlcmlmeSBQaGFzZSA2IHN1cGVyLWFkbWluIHBhcml0eQogICAgICAgIHJ1bjogbnBtIHJ1biB0ZXN0OnBoYXNlNi1wYXJpdHkKCiAgICAgIC0gbmFtZTogVmVyaWZ5IFBoYXNlIDcgYXV0aGVudGljYXRpb24sIFBXQSBhbmQgaW5zdGl0dXRpb25hbCBjb25zaXN0ZW5jeQogICAgICAgIHJ1bjogbnBtIHJ1biB0ZXN0OnBoYXNlNy1jb25zaXN0ZW5jeQoKICAgICAgLSBuYW1ZTogVmVyaWZ5IFBoYXNlIDggZW5kLXRvLWVuZCBVQVQgcmVsZWFzZSBnYXRlCiAgICAgICAgcnVuOiBucG0gcnVuIHRlc3Q6cGhhc2U4LXJlbGVhc2UKCiAgICAgIC0gbmFtZTogVmVyaWZ5IHRyYW5zcGFyZW50IGNhbm9uaWNhbCBDQ1NGIGFuZCBUVVQgYnJhbmRpbmcKICAgICAgICBydW46IG5wbSBydW4gdGVzdDpicmFuZGluZwoKICAgICAgLSBuYW1lOiBWZXJpZnkgcHJvZHVjdGlvbiBhbmQgUGlsb3Qgc3R1ZGVudC1ob21lIHBhcml0eQogICAgICAgIHJ1bjogbnBtIHJ1biB0ZXN0OnN0dWRlbnQtaG9tZQoKICAgICAgLSBuYW1lOiBWZXJpZnkgYWRtaW4gdmlzdWFsIGludGVsbGlnZW5jZQogICAgICAgIHJ1bjogbnBtIHJ1biB0ZXN0OmFkbWluLXZpc3VhbHMKCiAgICAgIC0gbmFtZTogVHlwZS1jaGVjayBhcHBsaWNhdGlvbgogICAgICAgIHJ1bjogbnBtIHJ1biB0eXBlY2hlY2sKCiAgICAgIC0gbmFtZTogTGludCBhcHBsaWNhdGlvbgogICAgICAgIHJ1bjogbnBtIHJ1biBsaW50CgogICAgICAtIG5hbWU6IEJ1aWxkIGZhaWwtY2xvc2VkIHByb2R1Y3Rpb24gYXBwbGljYXRpb24KICAgICAgICBydW46IG5wbSBydW4gYnVpbGQKICAgICAgICBlbnY6CiAgICAgICAgICBWSVRFX1BJTE9UX01PREVfRU5BQkxFRDogJ2ZhbHNlJwogICAgICAgICAgVkVSQ0VMX0VOVjogcHJvZHVjdGlvbgogICAgICAgICAgVkVSQ0VMX0dJVF9DT01NSVRfUkVGOiBtYWluCgogICAgICAtIG5hbWU6IEJ1aWxkIGFwcHJvdmVkIFBpbG90IFByZXZpZXcgYXBwbGljYXRpb24KICAgICAgICBydW46IG5wbSBydW4gYnVpbGQKICAgICAgICBlbnY6CiAgICAgICAgICBWSVRFX1BJTE9UX01PREVfRU5BQkxFRDogJycKICAgICAgICAgIFZFUkNFTF9FTlY6IHByZXZpZXcKICAgICAgICAgIFZFUkNFTF9HSVRfQ09NTUlUX1JFRjogZmVhdHVyZS9jY3NmLXBoYXNlcy0zLTgtcmVsZWFzZS1jYW5kaWRhdGUK' | base64 -d > .github/workflows/ci.yml
+          node scripts/verify-branding.mjs
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo 'Visual release cleanup already complete.'
           else
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add src/components/pilot/PilotSuperAdminDashboard.tsx src/components/pilot/PilotCampusSecurityDashboard.tsx
-            git commit -m "fix: align Pilot visual records with report types [visual-type-fix]"
+            git commit -m "chore: finalize visual release assets and cleanup [visual-release-cleanup]"
             git push origin HEAD:${GITHUB_REF_NAME}
           fi
 
@@ -57,16 +73,6 @@ jobs:
 
       - name: Install dependencies
         run: npm ci --no-audit --no-fund --loglevel=error
-
-      - name: Capture TypeScript diagnostics
-        run: npm run typecheck > admin-visual-typecheck.txt 2>&1 || true
-
-      - name: Upload TypeScript diagnostics
-        uses: actions/upload-artifact@v4
-        with:
-          name: admin-visual-typecheck
-          path: admin-visual-typecheck.txt
-          retention-days: 1
 
       - name: Verify Phase 1 Pilot authentication and navigation
         run: npm run test:phase1-auth
