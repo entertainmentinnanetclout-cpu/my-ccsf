@@ -2,7 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { isApprovedPilotPath, PILOT_ENABLED } from '@/config/pilot';
-import { loadStudentPilotContext } from '@/services/pilot/pilotCoreService';
+import { ensureActivePilotSession, loadStudentPilotContext } from '@/services/pilot/pilotCoreService';
 import { invokePilotFunction } from '@/services/pilot/pilotEdgeService';
 import { supabase } from '@/integrations/supabase/client';
 import type { PilotParticipant, PilotProgram, PilotSession } from '@/types/pilot';
@@ -50,9 +50,15 @@ export function PilotModeProvider({ children }: { children: React.ReactNode }) {
       if (userRole === 'student') {
         await invokePilotFunction('pilot-enrol-student', {});
         const context = await loadStudentPilotContext(user.id);
+        let nextSession = context.session;
+
+        if (context.participant && ['consented', 'active'].includes(context.participant.status)) {
+          nextSession = await ensureActivePilotSession(context.participant, nextSession);
+        }
+
         setProgram(context.program);
         setParticipant(context.participant);
-        setSession(context.session);
+        setSession(nextSession);
       } else {
         const { data, error: programError } = await supabase
           .from('pilot_programs')
