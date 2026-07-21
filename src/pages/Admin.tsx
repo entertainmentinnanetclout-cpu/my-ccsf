@@ -70,7 +70,6 @@ const Admin = () => {
   return <CasesProvider>
     <MasterSyncProvider>
       <div className="min-h-screen bg-background" data-testid="ready-admin">
-        {/* Header */}
         <motion.header initial={{
         y: -100,
         opacity: 0
@@ -128,14 +127,11 @@ const Admin = () => {
           </div>
         </motion.header>
 
-        {/* Real-Time Incidents */}
         <div className="container mx-auto px-4 py-6">
           <RealTimeIncidents />
         </div>
 
-        {/* Main Content */}
         <main className="container mx-auto px-4 py-6 pb-20 md:pb-6">
-          {/* Navigation - Desktop Tabs + Mobile Menu */}
           <motion.div initial={{
           opacity: 0,
           y: 25
@@ -146,8 +142,6 @@ const Admin = () => {
           delay: 0.2,
           duration: 0.4
         }} className="mb-6">
-
-            {/* Desktop Navigation Tabs */}
             <Card className="hidden md:block p-3 shadow-large">
               <div className="flex flex-wrap justify-center gap-2">
                 {navItems.map(({
@@ -168,7 +162,6 @@ const Admin = () => {
             </Card>
           </motion.div>
 
-          {/* Content Views */}
           <motion.div key={activeView} initial={{
           opacity: 0,
           x: 20,
@@ -186,7 +179,7 @@ const Admin = () => {
           stiffness: 300,
           damping: 30
         }}>
-            {activeView === 'overview' && <AdminOverview />}
+            {activeView === 'overview' && <AdminOverview onOpenIncidents={() => setActiveView('incidents')} onOpenAnalytics={() => setActiveView('analytics')} />}
             {activeView === 'incidents' && <AdminIncidents />}
             {activeView === 'escalation' && <CaseEscalation />}
             {activeView === 'analytics' && <IncidentAnalytics />}
@@ -198,7 +191,6 @@ const Admin = () => {
             {activeView === 'office' && <OfficeView />}
           </motion.div>
 
-          {/* Footer */}
           <footer className="mt-12 pb-6 text-center text-sm text-muted-foreground">
             <p className="font-bold text-primary">Powered By Campus Protection Service</p>
           </footer>
