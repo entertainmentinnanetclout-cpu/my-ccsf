@@ -47,6 +47,12 @@ export function collectPilotDeviceInfo(): PilotDeviceInfo {
   };
 }
 
+export function isPilotSessionActive(session: PilotSession | null | undefined): session is PilotSession {
+  if (!session || session.status !== 'in_progress') return false;
+  const expiry = new Date(session.expires_at).getTime();
+  return Number.isFinite(expiry) && expiry > Date.now() + 15_000;
+}
+
 export async function loadStudentPilotContext(userId: string): Promise<{
   participant: PilotParticipant | null;
   program: PilotProgram | null;
@@ -63,9 +69,17 @@ export async function loadStudentPilotContext(userId: string): Promise<{
   const participant = (participants?.[0] ?? null) as PilotParticipant | null;
   if (!participant) return { participant: null, program: null, session: null };
 
+  const nowIso = new Date().toISOString();
   const [{ data: program, error: programError }, { data: sessions, error: sessionError }] = await Promise.all([
     supabase.from('pilot_programs').select('*').eq('id', participant.program_id).maybeSingle(),
-    supabase.from('pilot_sessions').select('*').eq('participant_id', participant.id).in('status', ['in_progress', 'completed']).order('started_at', { ascending: false }).limit(1),
+    supabase
+      .from('pilot_sessions')
+      .select('*')
+      .eq('participant_id', participant.id)
+      .eq('status', 'in_progress')
+      .gt('expires_at', nowIso)
+      .order('started_at', { ascending: false })
+      .limit(1),
   ]);
   if (programError) fail('Unable to load Pilot programme.', programError);
   if (sessionError) fail('Unable to load Pilot session.', sessionError);
@@ -91,6 +105,14 @@ export async function createPilotSession(participant: PilotParticipant): Promise
     device: collectPilotDeviceInfo(),
   });
   return data.session;
+}
+
+export async function ensureActivePilotSession(
+  participant: PilotParticipant,
+  session?: PilotSession | null,
+): Promise<PilotSession> {
+  if (isPilotSessionActive(session)) return session;
+  return createPilotSession(participant);
 }
 
 export async function loadPilotSession(sessionId: string): Promise<PilotSession | null> {
