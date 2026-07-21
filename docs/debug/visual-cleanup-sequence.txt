@@ -1,0 +1,28 @@
+From https://github.com/entertainmentinnanetclout-cpu/my-ccsf
+ * branch            main       -> FETCH_HEAD
+Defaulting to user installation because normal site-packages is not writeable
+Collecting pillow==11.3.0
+  Downloading pillow-11.3.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (9.0 kB)
+Downloading pillow-11.3.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (6.6 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 6.6/6.6 MB 71.5 MB/s eta 0:00:00
+Installing collected packages: pillow
+Successfully installed pillow-11.3.0
+Generated CCSF assets: source=(846, 1076) canonical=(846, 1077) app_background=white master_footprint=0.741
+Brand verification passed: transparent canonical CCSF artwork, solid-white installed app icons, transparent browser favicons, platform-correct dimensions, 16 CCSF + TUT lockups, and no prohibited legacy production references.
+MM .github/workflows/ci.yml
+M  .github/workflows/phase2-pilot-routing.yml
+M  .github/workflows/phase4-brand-assets.yml
+ M public/app-icon-1024.png
+ M public/app-icon-192.png
+ M public/app-icon-512.png
+ M public/apple-touch-icon.png
+ M public/ccsf-logo.png
+ M public/favicon-16x16.png
+ M public/favicon-32x32.png
+ M public/favicon.ico
+ M public/favicon.png
+ M public/maskable-icon-512.png
+MM scripts/generate-brand-assets.py
+ M "src/assets/Campus safety forum logo design(1).png"
+ M src/assets/ccsf-logo.png
+exit_status=0
