@@ -34,6 +34,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { PilotBanner } from '@/components/pilot/PilotBanner';
 import { PilotConfigurationPanel } from '@/components/pilot/PilotConfigurationPanel';
 import { PilotCsvExportPanel } from '@/components/pilot/PilotCsvExportPanel';
+import { LiveOperationsVisuals, type LiveVisualRecord } from '@/components/admin/visualizations/LiveOperationsVisuals';
 import { MobileBottomNav } from '@/components/shared/MobileBottomNav';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -173,6 +174,16 @@ export function PilotSuperAdminDashboard() {
     [data.programs, selectedProgramId],
   );
   const metrics = useMemo(() => calculatePilotMetrics(data), [data]);
+  const visualRecords = useMemo<LiveVisualRecord[]>(() => data.reports.map((report) => ({
+    id: report.id,
+    campus: report.campus,
+    status: report.status,
+    category: report.category,
+    title: report.title,
+    createdAt: report.submitted_at,
+    resolvedAt: report.resolved_at,
+    isCritical: report.simulated_severity === 'high' || report.simulated_severity === 'critical',
+  })), [data.reports]);
   const activeReports = useMemo(() => data.reports.filter((report) => !FINAL_STATUSES.has(report.status)), [data.reports]);
   const unassignedReports = useMemo(() => data.reports.filter((report) => ['received', 'assessing'].includes(report.status)), [data.reports]);
   const filteredReports = useMemo(() => data.reports.filter((report) => {
@@ -442,6 +453,20 @@ export function PilotSuperAdminDashboard() {
 
       {activeView === 'overview' && (
         <div className="space-y-6">
+          <LiveOperationsVisuals
+            records={visualRecords}
+            title="Pilot Institution Visual Intelligence"
+            description="Cross-campus simulated case patterns, response flow, heat concentration and direct operational drill-down. Every action remains isolated inside Pilot Mode."
+            locationLabels={{ ...CAMPUS_LABELS }}
+            statusOrder={['received', 'assessing', 'assigned', 'in_progress', 'simulation_completed']}
+            statusLabels={{ ...PILOT_STATUS_LABELS }}
+            resolvedStatuses={['simulation_completed', 'cancelled', 'withdrawn', 'expired']}
+            onRefresh={() => refresh(true)}
+            refreshing={refreshing}
+            onOpenQueue={() => setActiveView('operations')}
+            onOpenAnalytics={() => setActiveView('analytics')}
+            onOpenRecord={(recordId) => navigate(PILOT_ROUTES.report(recordId))}
+          />
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <Metric icon={Settings2} label="Pilot programmes" value={data.programs.length} />
             <Metric icon={Users} label="Students" value={data.participants.length} />
