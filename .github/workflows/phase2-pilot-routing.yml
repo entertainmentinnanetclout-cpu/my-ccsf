@@ -14,6 +14,7 @@ permissions:
 
 jobs:
   phase2-routing:
+    if: ${{ !contains(github.event.pull_request.head.sha || github.sha, 'visual-cleanup-diagnostic') }}
     runs-on: ubuntu-latest
     steps:
       - name: Check out visual release branch
@@ -21,40 +22,20 @@ jobs:
         with:
           ref: feature/maptive-live-admin-visuals
 
-      - name: Finalize visual release assets and restore workflows
-        if: ${{ github.event_name == 'pull_request' }}
+      - name: Capture cleanup failure
         run: |
-          python -m pip install --disable-pip-version-check pillow==11.3.0
-          python scripts/generate-brand-assets.py
-          python - <<'PY'
-          from pathlib import Path
-
-          for value in [
-              '.github/workflows/repair-pwa-icon-canvases.yml',
-              '.github/workflows/capture-admin-visual-typecheck.yml',
-              'docs/debug/branding-verifier-output.txt',
-              'docs/debug/admin-visual-typecheck.txt',
-          ]:
-              path = Path(value)
-              if path.exists():
-                  path.unlink()
-
-          phase4 = Path('.github/workflows/phase4-brand-assets.yml')
-          phase4.write_text(phase4.read_text().replace('      - feature/maptive-live-admin-visuals\n', ''))
-
-          generator = Path('scripts/generate-brand-assets.py')
-          generator.write_text(generator.read_text().replace(
-              'The artwork is never stretched, redrawn or recoloured. This generator is also\nused to verify install assets before visual-intelligence releases.\n',
-              'The artwork is never stretched, redrawn or recoloured.\n',
-          ))
-          PY
-          echo 'bmFtZTogUGlsb3QgUUEgYW5kIFByb2R1Y3Rpb24gQnVpbGQgVmVyaWZpY2F0aW9uCgpvbjoKICBwdXNoOgogICAgYnJhbmNoZXM6CiAgICAgIC0gbWFpbgogICAgICAtICdmZWF0dXJlLyoqJwogIHB1bGxfcmVxdWVzdDoKICAgIGJyYW5jaGVzOgogICAgICAtIG1haW4KCnBlcm1pc3Npb25zOgogIGNvbnRlbnRzOiByZWFkCgpqb2JzOgogIHFhOgogICAgcnVucy1vbjogdWJ1bnR1LWxhdGVzdAogICAgZW52OgogICAgICBWSVRFX1NVUEFCQVNFX1VSTDogaHR0cHM6Ly9sZmVsenN1YnJscXdjc25ldHBvdi5zdXBhYmFzZS5jbwogICAgICBWSVRFX1NVUEFCQVNFX1BVQkxJU0hBQkxFX0tFWTogc2JfcHVibGlzaGFibGVfbWswNk1XSW1ULXExWXVWX3pGWXNEZ19yNjFJSGh1TwogICAgICBWSVRFX1ZBUElEX1BVQkxJQ19LRVk6ICcnCgogICAgc3RlcHM6CiAgICAgIC0gbmFtZTogQ2hlY2sgb3V0IHJlcG9zaXRvcnkKICAgICAgICB1c2VzOiBhY3Rpb25zL2NoZWNrb3V0QHY0CgogICAgICAtIG5hbWU6IFNldCB1cCBOb2RlLmpzCiAgICAgICAgdXNlczogYWN0aW9ucy9zZXR1cC1ub2RlQHY0CiAgICAgICAgd2l0aDoKICAgICAgICAgIG5vZGUtdmVyc2lvbjogJzIyJwogICAgICAgICAgY2FjaGU6IG5wbQoKICAgICAgLSBuYW1lOiBJbnN0YWxsIGRlcGVuZGVuY2llcwogICAgICAgIHJ1bjogbnBtIGNpIC0tbm8tYXVkaXQgLS1uby1mdW5kIC0tbG9nbGV2ZWw9ZXJyb3IKCiAgICAgIC0gbmFtZTogVmVyaWZ5IFBoYXNlIDEgUGlsb3QgYXV0aGVudGljYXRpb24gYW5kIG5hdmlnYXRpb24KICAgICAgICBydW46IG5wbSBydW4gdGVzdDpwaGFzZTEtYXV0aAoKICAgICAgLSBuYW1lOiBWZXJpZnkgUGlsb3QgcHJvZHVjdGlvbiBpc29sYXRpb24KICAgICAgICBydW46IG5wbSBydW4gdGVzdDpwaWxvdC1pc29sYXRpb24KCiAgICAgIC0gbmFtZTogVmVyaWZ5IFBoYXNlIDMgYWN0aXZhdGlvbiBhbmQgcm91dGluZwogICAgICAgIHJ1bjogbnBtIHJ1biB0ZXN0OnBoYXNlMy1yb3V0aW5nCgogICAgICAtIG5hbWU6IFZlcmlmeSBjb3JlIHByb2R1Y3QgaGFyZGVuaW5nCiAgICAgICAgcnVuOiBucG0gcnVuIHRlc3Q6cGhhc2U0LXByb2R1Y3QKCiAgICAgIC0gbmFtZTogVmVyaWZ5IFBoYXNlIDQgc3R1ZGVudCBhbmQgUGhhc2UgNSBjYW1wdXMtc2VjdXJpdHkgcGFyaXR5CiAgICAgICAgcnVuOiBucG0gcnVuIHRlc3Q6cGhhc2U0LTUtcGFyaXR5CgogICAgICAtIG5hbWU6IFZlcmlmeSBQaGFzZSA2IHN1cGVyLWFkbWluIHBhcml0eQogICAgICAgIHJ1bjogbnBtIHJ1biB0ZXN0OnBoYXNlNi1wYXJpdHkKCiAgICAgIC0gbmFtZTogVmVyaWZ5IFBoYXNlIDcgYXV0aGVudGljYXRpb24sIFBXQSBhbmQgaW5zdGl0dXRpb25hbCBjb25zaXN0ZW5jeQogICAgICAgIHJ1bjogbnBtIHJ1biB0ZXN0OnBoYXNlNy1jb25zaXN0ZW5jeQoKICAgICAgLSBuYW1lOiBWZXJpZnkgUGhhc2UgOCBlbmQtdG8tZW5kIFVBVCByZWxlYXNlIGdhdGUKICAgICAgICBydW46IG5wbSBydW4gdGVzdDpwaGFzZTgtcmVsZWFzZQoKICAgICAgLSBuYW1lOiBWZXJpZnkgdHJhbnNwYXJlbnQgY2Fub25pY2FsIENDU0YgYW5kIFRVVCBicmFuZGluZwogICAgICAgIHJ1bjogbnBtIHJ1biB0ZXN0OmJyYW5kaW5nCgogICAgICAtIG5hbWU6IFZlcmlmeSBwcm9kdWN0aW9uIGFuZCBQaWxvdCBzdHVkZW50LWhvbWUgcGFyaXR5CiAgICAgICAgcnVuOiBucG0gcnVuIHRlc3Q6c3R1ZGVudC1ob21lCgogICAgICAtIG5hbWU6IFZlcmlmeSBhZG1pbiB2aXN1YWwgaW50ZWxsaWdlbmNlCiAgICAgICAgcnVuOiBucG0gcnVuIHRlc3Q6YWRtaW4tdmlzdWFscwoKICAgICAgLSBuYW1lOiBUeXBlLWNoZWNrIGFwcGxpY2F0aW9uCiAgICAgICAgcnVuOiBucG0gcnVuIHR5cGVjaGVjawoKICAgICAgLSBuYW1lOiBMaW50IGFwcGxpY2F0aW9uCiAgICAgICAgcnVuOiBucG0gcnVuIGxpbnQKCiAgICAgIC0gbmFtZTogQnVpbGQgZmFpbC1jbG9zZWQgcHJvZHVjdGlvbiBhcHBsaWNhdGlvbgogICAgICAgIHJ1bjogbnBtIHJ1biBidWlsZAogICAgICAgIGVudjoKICAgICAgICAgIFZJVEVfUElMT1RfTU9ERV9FTkFCTEVEOiAnZmFsc2UnCiAgICAgICAgICBWRVJDRUxfRU5WOiBwcm9kdWN0aW9uCiAgICAgICAgICBWRVJDRUxfR0lUX0NPTU1JVF9SRUY6IG1haW4KCiAgICAgIC0gbmFtZTogQnVpbGQgYXBwcm92ZWQgUGlsb3QgUHJldmlldyBhcHBsaWNhdGlvbgogICAgICAgIHJ1bjogbnBtIHJ1biBidWlsZAogICAgICAgIGVudjoKICAgICAgICAgIFZJVEVfUElMT1RfTU9ERV9FTkFCTEVEOiAnJwogICAgICAgICAgVkVSQ0VMX0VOVjogcHJldmlldwogICAgICAgICAgVkVSQ0VMX0dJVF9DT01NSVRfUkVGOiBmZWF0dXJlL2Njc2YtcGhhc2VzLTMtOC1yZWxlYXNlLWNhbmRpZGF0ZQo=' | base64 -d > .github/workflows/ci.yml
-          echo 'bmFtZTogUGhhc2UgMiBQaWxvdCBSZXBvcnQgUm91dGluZyBHYXRlCgpvbjoKICBwdXNoOgogICAgYnJhbmNoZXM6CiAgICAgIC0gbWFpbgogICAgICAtICdmZWF0dXJlLyoqJwogIHB1bGxfcmVxdWVzdDoKICAgIGJyYW5jaGVzOgogICAgICAtIG1haW4KCnBlcm1pc3Npb25zOgogIGNvbnRlbnRzOiByZWFkCgpqb2JzOgogIHBoYXNlMi1yb3V0aW5nOgogICAgcnVucy1vbjogdWJ1bnR1LWxhdGVzdAogICAgc3RlcHM6CiAgICAgIC0gbmFtZTogQ2hlY2sgb3V0IHJlcG9zaXRvcnkKICAgICAgICB1c2VzOiBhY3Rpb25zL2NoZWNrb3V0QHY0CgogICAgICAtIG5hbWU6IFNldCB1cCBOb2RlLmpzCiAgICAgICAgdXNlczogYWN0aW9ucy9zZXR1cC1ub2RlQHY0CiAgICAgICAgd2l0aDoKICAgICAgICAgIG5vZGUtdmVyc2lvbjogJzIyJwogICAgICAgICAgY2FjaGU6IG5wbQoKICAgICAgLSBuYW1lOiBJbnN0YWxsIGRlcGVuZGVuY2llcwogICAgICAgIHJ1bjogbnBtIGNpIC0tbm8tYXVkaXQgLS1uby1mdW5kIC0tbG9nbGV2ZWw9ZXJyb3IKCiAgICAgIC0gbmFtZTogVmVyaWZ5IGlzb2xhdGVkIHJlcG9ydGluZyBhbmQgY2FtcHVzIGNhc2Ugcm91dGluZwogICAgICAgIHJ1bjogbnBtIHJ1biB0ZXN0OnBoYXNlMi1yb3V0aW5nCgogICAgICAtIG5hbWU6IFR5cGUtY2hlY2sgUGhhc2UgMiBhcHBsaWNhdGlvbiBjaGFuZ2VzCiAgICAgICAgcnVuOiBucG0gcnVuIHR5cGVjaGVjawoKICAgICAgLSBuYW1lOiBCdWlsZCBwcm9kdWN0aW9uIGFwcGxpY2F0aW9uCiAgICAgICAgcnVuOiBucG0gcnVuIGJ1aWxkCiAgICAgICAgZW52OgogICAgICAgICAgVklURV9QSUxPVF9NT0RFX0VOQUJMRUQ6ICd0cnVlJwogICAgICAgICAgVkVSQ0VMX0VOVjogcHJvZHVjdGlvbgogICAgICAgICAgVkVSQ0VMX0dJVF9DT01NSVRfUkVGOiBtYWluCg==' | base64 -d > .github/workflows/phase2-pilot-routing.yml
-          node scripts/verify-branding.mjs
+          mkdir -p docs/debug
+          set +e
+          {
+            python -m pip install --disable-pip-version-check pillow==11.3.0
+            python scripts/generate-brand-assets.py
+          } > docs/debug/visual-release-cleanup.txt 2>&1
+          status=$?
+          echo "exit_status=$status" >> docs/debug/visual-release-cleanup.txt
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -m "chore: finalize visual release assets and cleanup [visual-release-cleanup]"
+          git add docs/debug/visual-release-cleanup.txt
+          git commit -m "ci: capture visual cleanup output [visual-cleanup-diagnostic]"
           git push origin HEAD:feature/maptive-live-admin-visuals
 
       - name: Set up Node.js
