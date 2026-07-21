@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { PilotAuthInstitutionalView } from '@/components/pilot/PilotAuthInstitutionalView';
 import { InstitutionalAccessError, InstitutionalLoadingState } from '@/components/auth/InstitutionalAccessState';
-import { invokePilotFunction } from '@/services/pilot/pilotEdgeService';
+import { invokePublicPilotFunction } from '@/services/pilot/pilotEdgeService';
 import type { CampusLocation } from '@/types/pilot';
 
 const PILOT_ACCESS_REQUIREMENT = 'Students may self-register for the active Pilot programme. Staff access remains administratively controlled.';
@@ -131,7 +131,7 @@ export default function PilotAuth() {
       }
 
       if (view === 'signup') {
-        await invokePilotFunction<{ created: boolean }>('pilot-student-signup', {
+        await invokePublicPilotFunction<{ created: boolean }>('pilot-student-signup', {
           email: normalizedEmail,
           password,
           full_name: fullName.trim(),
