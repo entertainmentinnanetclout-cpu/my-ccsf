@@ -11,7 +11,9 @@ const forbidText = (source, forbidden, label) => {
 };
 
 const migration = read('supabase/migrations/20260720213000_phase_3_pilot_reviews.sql');
+const phase5Migration = read('supabase/migrations/20260721100000_phase_5_admin_management_release_gate.sql');
 const service = read('src/services/pilot/pilotReviewService.ts');
+const reviewTypes = read('src/types/pilotReviews.ts');
 const studentPage = read('src/pages/pilot/PilotReviews.tsx');
 const staffPage = read('src/pages/pilot/PilotReviewManagement.tsx');
 const studentNav = read('src/components/pilot/PilotStudentNavigation.tsx');
@@ -31,10 +33,13 @@ requireText(migration, "'pilot-review-attachments'", 'Review screenshots must us
 requireText(migration, 'private.pilot_review_program_is_open', 'Campus review access must require an active eligible Pilot programme.');
 requireText(migration, 'revoke insert, update, delete on public.pilot_reviews from anon, authenticated', 'Direct client review writes must be blocked.');
 requireText(migration, 'alter publication supabase_realtime add table public.pilot_reviews', 'Review changes must support realtime delivery.');
+requireText(phase5Migration, 'pilot_review_categories', 'Phase 5 must retain data-driven review categories.');
+requireText(phase5Migration, 'pilot_review_quick_cards', 'Phase 5 must retain managed quick-review cards.');
 
 requireText(service, "rpc('pilot_submit_review'", 'Student reviews must use the server submission RPC.');
 requireText(service, "rpc('pilot_moderate_review'", 'Staff moderation must use the server moderation RPC.');
-requireText(service, "storage.from(PILOT_REVIEW_ATTACHMENT_BUCKET)", 'Screenshots must use private Supabase Storage.');
+requireText(service, 'storage.from(PILOT_REVIEW_ATTACHMENT_BUCKET)', 'Screenshots must use private Supabase Storage.');
+requireText(service, 'loadPilotReviewOptions', 'Review options must load from the controlled Pilot configuration.');
 forbidText(service, ".from('feedback')", 'Pilot reviews must not use production feedback tables.');
 forbidText(service, ".from('incidents')", 'Pilot reviews must not read production incidents.');
 
@@ -48,7 +53,8 @@ for (const label of [
   'App was slow',
   'I found a broken feature',
   'Other feedback',
-]) requireText(studentPage, label, `Quick review card missing: ${label}`);
+]) requireText(reviewTypes, label, `Controlled quick review default missing: ${label}`);
+requireText(studentPage, 'options.quickCards', 'Students must receive managed quick-review cards.');
 requireText(studentPage, 'Overall rating', 'Students must be able to submit a 1–5 star rating.');
 requireText(studentPage, 'Related case (optional)', 'Students must be able to relate a review to a Pilot case.');
 requireText(studentPage, 'Permission to contact me', 'Contact permission must be explicit.');
@@ -57,7 +63,7 @@ requireText(studentPage, 'Authorised staff response', 'Students must be able to 
 requireText(studentPage, 'EDITABLE_PILOT_REVIEW_STATUSES', 'Unresolved reviews must remain editable.');
 
 requireText(staffPage, 'Pilot Review Management', 'Campus and super-admin review management must exist.');
-requireText(staffPage, "moderatePilotReview(review.id, status)", 'Moderation controls must call the authorised service.');
+requireText(staffPage, 'moderatePilotReview(', 'Moderation controls must call the authorised service.');
 requireText(staffPage, 'Campus-scoped review moderation', 'Campus scope must be clear to campus staff.');
 requireText(staffPage, 'Cross-campus review oversight', 'Super-admin oversight must be explicit.');
 requireText(staffPage, 'Respond', 'Staff must be able to reply to reviews.');
@@ -73,4 +79,4 @@ requireText(routes, "adminReviews: '/admin/pilot/reviews'", 'The super-admin rev
 requireText(app, '<PilotReviews />', 'The student review page must be routed.');
 requireText(app, '<PilotReviewManagement />', 'The staff review workspace must be routed.');
 
-console.log('Phase 3 Pilot reviews verification passed.');
+console.log('Phase 3 Pilot reviews verification passed with Phase 5 managed options.');
