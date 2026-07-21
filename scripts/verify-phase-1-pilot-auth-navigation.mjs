@@ -29,7 +29,8 @@ requireText(postProfile, 'hasPilotIntent()', 'Dashboard fallback must recover pe
 requireText(layout, '<PilotStudentNavigation />', 'Every student Pilot page must expose Pilot navigation.');
 requireText(layout, 'navigate(PILOT_ROUTES.auth, { replace: true })', 'Pilot logout must return to Pilot sign in.');
 requireText(navigation, "label: 'Pilot Dashboard'", 'Student navigation must include the Pilot dashboard.');
-requireText(navigation, "label: 'Safety Resources'", 'Student navigation must include safety resources.');
+requireText(navigation, "label: 'Safety Guide'", 'Student navigation must include safety resources.');
+requireText(navigation, "label: 'Reviews'", 'Student navigation must include Pilot reviews.');
 requireText(guard, 'Retry Pilot enrolment', 'Pilot enrolment failures must remain recoverable inside Pilot.');
 forbidText(guard, "navigate('/dashboard')", 'Pilot guard must not send students into the official dashboard.');
 requireText(pilotAuth, 'resolvePilotDestination(userRole, requestedFrom)', 'Pilot auth must resolve role-specific Pilot destinations.');
