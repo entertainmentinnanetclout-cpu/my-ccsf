@@ -1,0 +1,46 @@
+name: Phase 5 Admin Runtime Debug
+
+on:
+  push:
+    branches:
+      - feature/phase-5-admin-release-gate
+
+permissions:
+  contents: read
+
+jobs:
+  debug-admin-runtime:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund --loglevel=error
+      - name: Inspect Supabase client and Pilot admin call sites
+        run: |
+          set -euo pipefail
+          {
+            echo '## Supabase version'
+            npm ls @supabase/supabase-js
+            echo
+            echo '## Direct and detached from call sites'
+            grep -RInE "(const|let|var).*(from|rpc|channel).*supabase|supabase\.(from|rpc|channel)|\.from\.call|\.from\.bind" src || true
+            echo
+            echo '## Pilot administration source'
+            sed -n '1,330p' src/services/pilot/pilotAdminService.ts
+            echo
+            echo '## Compiled SupabaseClient.from implementation'
+            grep -RIn "return this.rest.from" node_modules/@supabase/supabase-js/dist node_modules/@supabase/supabase-js/src || true
+          } | tee phase5-admin-runtime-debug.log
+      - name: Archive source and diagnostics
+        run: |
+          tar --exclude=.git --exclude=node_modules -czf phase5-admin-source.tar.gz .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: phase5-admin-runtime-debug
+          path: |
+            phase5-admin-runtime-debug.log
+            phase5-admin-source.tar.gz
+          retention-days: 7
