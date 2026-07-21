@@ -29,13 +29,13 @@ const migration = read('supabase/migrations/20260721100000_phase_5_admin_managem
 const vercel = read('vercel.json');
 
 check(routes.includes("auth: '/pilot/auth'") && routes.includes("landing: '/pilot'"), 'Pilot authentication and landing routes are deterministic.');
-check(auth.includes('resolvePilotDestination') && auth.includes('PILOT_ROUTES.landing'), 'Pilot signup and login resolve into Pilot routes.');
+check(auth.includes('resolvePilotDestination') && auth.includes('navigate(destination'), 'Pilot signup and login resolve into role-safe Pilot destinations.');
 check(auth.includes("'pilot-student-signup'") && !auth.includes("navigate('/dashboard')"), 'Controlled Pilot signup does not redirect to the production dashboard.');
-check(officialAuth.includes("navigate('/dashboard')") || officialAuth.includes('redirectToDashboard'), 'Standard application login retains its production dashboard path.');
+check(officialAuth.includes('resolveOfficialDestination') && officialAuth.includes('navigate(destination'), 'Standard application login retains role-safe official portal routing.');
 check(app.includes('path="/pilot/reviews"') && app.includes('path="/security/pilot/reviews"') && app.includes('path="/admin/pilot/reviews"'), 'Student, campus and super-admin review routes are registered.');
 check(app.includes('path="/admin/pilot/content"') && app.includes('<PilotContentManagement />'), 'Super-admin Pilot content management is registered and role guarded.');
 check(studentNavigation.includes("label: 'Reviews'") && staffNavigation.includes("label: 'Reviews'"), 'Review navigation exists for student and staff Pilot roles.');
-check(staffNavigation.includes("label: 'Content'") && staffNavigation.includes('userRole === \'admin\''), 'Content navigation is restricted to super admins.');
+check(staffNavigation.includes("label: 'Content'") && staffNavigation.includes("userRole === 'admin'"), 'Content navigation is restricted to super admins.');
 
 for (const handler of ['toggleQuickFeedback', 'submitPilotReview', 'beginEdit', 'openAttachment']) {
   check(reviewPage.includes(handler), `Student review control has handler: ${handler}.`);
@@ -65,7 +65,7 @@ check(experienceService.includes('resolvePilotSafetyDocumentUrl') && experienceS
 check(exists('public/downloads/CCSF-Pilot-Safety-Guide-v1.0.pdf'), 'Approved static Safety PDF fallback exists.');
 
 check(campusDashboard.includes('loadPilotAdminData({ programId, campus })'), 'Campus reports remain explicitly campus scoped.');
-check(reportForm.includes('emergency') && !reportForm.includes('emergency && required={true}'), 'Emergency form retains a minimal conditional workflow.');
+check(reportForm.includes('emergency') && reportForm.includes('Emergency Test'), 'Emergency form retains its dedicated minimal workflow.');
 check(studentDashboard.includes('PILOT_ROUTES.report(report.id)') || studentDashboard.includes('to={PILOT_ROUTES.report(report.id)}'), 'Student case cards are openable.');
 check(campusDashboard.includes('onAdvance={moveReport}') || campusDashboard.includes('navigate(PILOT_ROUTES.report'), 'Campus case actions have live handlers.');
 
