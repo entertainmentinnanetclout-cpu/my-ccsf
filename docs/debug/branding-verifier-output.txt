@@ -1,0 +1,15 @@
+
+> vite_react_shadcn_ts@0.0.0 test:branding
+> node scripts/verify-branding.mjs
+
+Brand verification failed:
+- public/app-icon-1024.png: installed app icon must be fully opaque; alpha range is 0-255
+- public/app-icon-1024.png: all app icon corners must be solid white RGBA(255,255,255,255)
+- public/app-icon-512.png: installed app icon must be fully opaque; alpha range is 0-255
+- public/app-icon-512.png: all app icon corners must be solid white RGBA(255,255,255,255)
+- public/app-icon-192.png: installed app icon must be fully opaque; alpha range is 0-255
+- public/app-icon-192.png: all app icon corners must be solid white RGBA(255,255,255,255)
+- public/maskable-icon-512.png: installed app icon must be fully opaque; alpha range is 0-255
+- public/maskable-icon-512.png: all app icon corners must be solid white RGBA(255,255,255,255)
+- public/apple-touch-icon.png: installed app icon must be fully opaque; alpha range is 0-255
+- public/apple-touch-icon.png: all app icon corners must be solid white RGBA(255,255,255,255)
