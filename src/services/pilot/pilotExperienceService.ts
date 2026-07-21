@@ -96,6 +96,13 @@ export async function loadPilotGuideSteps(): Promise<PilotGuideStep[]> {
   return active.length ? active : DEFAULT_PILOT_GUIDE_STEPS;
 }
 
+export async function resolvePilotSafetyDocumentUrl(document: PilotSafetyDocument, expiresIn = 600): Promise<string> {
+  if (!document.storage_path) return document.download_url;
+  const { data, error } = await supabase.storage.from(PILOT_RESOURCE_BUCKET).createSignedUrl(document.storage_path, expiresIn);
+  if (error || !data?.signedUrl) fail('Unable to create a secure Safety Guide download link.', error);
+  return data.signedUrl;
+}
+
 export async function loadPilotSafetyDocument(programId: string): Promise<PilotSafetyDocument> {
   const { data, error } = await pilotExperienceClient
     .from<PilotSafetyDocument>('pilot_resource_documents')
@@ -105,18 +112,16 @@ export async function loadPilotSafetyDocument(programId: string): Promise<PilotS
     .order('publication_date', { ascending: false })
     .limit(1)
     .maybeSingle();
-  if (error) {
-    console.error('Unable to load the versioned Pilot safety document. Using the approved static fallback.', error);
+  if (error || !data) {
+    if (error) console.error('Unable to load the versioned Pilot safety document. Using the approved static fallback.', error);
     return PILOT_SAFETY_GUIDE_FALLBACK;
   }
-  return data ?? PILOT_SAFETY_GUIDE_FALLBACK;
-}
-
-export async function resolvePilotSafetyDocumentUrl(document: PilotSafetyDocument, expiresIn = 600): Promise<string> {
-  if (!document.storage_path) return document.download_url;
-  const { data, error } = await supabase.storage.from(PILOT_RESOURCE_BUCKET).createSignedUrl(document.storage_path, expiresIn);
-  if (error || !data?.signedUrl) fail('Unable to create a secure Safety Guide download link.', error);
-  return data.signedUrl;
+  try {
+    return { ...data, download_url: await resolvePilotSafetyDocumentUrl(data) };
+  } catch (signedUrlError) {
+    console.error('Managed Safety Guide link could not be signed. Using the approved static fallback.', signedUrlError);
+    return PILOT_SAFETY_GUIDE_FALLBACK;
+  }
 }
 
 export async function loadPilotGuidePreferences(): Promise<PilotGuidePreferences> {
