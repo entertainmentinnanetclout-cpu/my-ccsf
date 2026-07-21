@@ -10,64 +10,14 @@ on:
       - main
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   phase2-routing:
     runs-on: ubuntu-latest
     steps:
-      - name: Check out visual release branch
+      - name: Check out repository
         uses: actions/checkout@v4
-        with:
-          ref: feature/maptive-live-admin-visuals
-          fetch-depth: 0
-
-      - name: Commit verified visual assets
-        if: ${{ github.event_name == 'pull_request' }}
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-
-          generator = Path('scripts/generate-brand-assets.py')
-          source = generator.read_text()
-          source = source.replace('STANDARD_FOOTPRINT = 0.78', 'STANDARD_FOOTPRINT = 0.782')
-          source = source.replace(
-              'The artwork is never stretched, redrawn or recoloured. This generator is also\nused to verify install assets before visual-intelligence releases.\n',
-              'The artwork is never stretched, redrawn or recoloured.\n',
-          )
-          generator.write_text(source)
-
-          for value in [
-              'docs/debug/branding-verifier-output.txt',
-              'docs/debug/visual-release-cleanup.txt',
-              'docs/debug/visual-cleanup-sequence.txt',
-              'docs/debug/admin-visual-typecheck.txt',
-          ]:
-              path = Path(value)
-              if path.exists():
-                  path.unlink()
-          PY
-          python -m pip install --disable-pip-version-check pillow==11.3.0
-          python scripts/generate-brand-assets.py
-          node scripts/verify-branding.mjs
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add scripts/generate-brand-assets.py \
-            'src/assets/Campus safety forum logo design(1).png' \
-            src/assets/ccsf-logo.png \
-            public/ccsf-logo.png \
-            public/app-icon-1024.png \
-            public/app-icon-512.png \
-            public/app-icon-192.png \
-            public/maskable-icon-512.png \
-            public/apple-touch-icon.png \
-            public/favicon.png \
-            public/favicon-32x32.png \
-            public/favicon-16x16.png \
-            public/favicon.ico
-          git add -A docs/debug
-          git commit -m "fix: regenerate verified CCSF visual release assets [visual-assets-ready]"
-          git push origin HEAD:feature/maptive-live-admin-visuals
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
