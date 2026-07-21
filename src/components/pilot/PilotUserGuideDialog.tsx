@@ -7,6 +7,7 @@ import {
   Home,
   MapPin,
   MessageSquareText,
+  Shield,
   ShieldAlert,
   Siren,
   X,
@@ -22,61 +23,25 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { DEFAULT_PILOT_GUIDE_STEPS } from '@/services/pilot/pilotExperienceService';
+import type { PilotGuideIcon, PilotGuideStep } from '@/types/pilotExperience';
 
-const GUIDE_STEPS = [
-  {
-    icon: Home,
-    title: 'Navigate the Pilot dashboard',
-    description: 'Use Home for the carousel and quick actions, My Cases for progress, Report for test submissions, Reviews for feedback, Safety Guide for learning material and Support for staff notifications.',
-    accent: 'Dashboard',
-  },
-  {
-    icon: FileText,
-    title: 'Submit a standard report',
-    description: 'Select an authorised scenario, describe the test incident, confirm the readable location and attach only relevant test evidence when requested.',
-    accent: 'Standard reporting',
-  },
-  {
-    icon: Siren,
-    title: 'Use Emergency Test correctly',
-    description: 'Emergency Test is deliberately short. Share your current location, read the consent statement and submit. Your registered student profile is attached automatically.',
-    accent: 'Emergency reporting',
-  },
-  {
-    icon: MapPin,
-    title: 'Understand location permissions',
-    description: 'The app requests a high-accuracy position first, shows a readable address and stores coordinates and accuracy as supporting technical evidence inside the isolated Pilot.',
-    accent: 'Location',
-  },
-  {
-    icon: FileText,
-    title: 'Track a case from start to finish',
-    description: 'Open any case card to see the reference number, current status, assigned staff member, timeline notes, evidence and authorised campus-security updates.',
-    accent: 'Case tracking',
-  },
-  {
-    icon: Bell,
-    title: 'Read staff notifications',
-    description: 'Authorised Pilot staff can send case-linked updates. Unread messages appear in Support and remain tied to your authenticated student account.',
-    accent: 'Notifications',
-  },
-  {
-    icon: MessageSquareText,
-    title: 'Submit a Pilot review',
-    description: 'Choose quick feedback, add a 1-5 star rating and explain what worked or failed. You can edit unresolved reviews and read authorised responses.',
-    accent: 'Reviews',
-  },
-  {
-    icon: ShieldAlert,
-    title: 'Know the Pilot limitations',
-    description: 'The Pilot tests digital workflows only. It does not replace Campus Protection Services authority, SAPS, ambulance services or established emergency procedures.',
-    accent: 'Important limitation',
-  },
-] as const;
+const GUIDE_ICONS: Record<PilotGuideIcon, typeof Shield> = {
+  home: Home,
+  report: FileText,
+  emergency: Siren,
+  location: MapPin,
+  cases: FileText,
+  notifications: Bell,
+  reviews: MessageSquareText,
+  limitations: ShieldAlert,
+  shield: Shield,
+};
 
 export function PilotUserGuideDialog({
   open,
   step,
+  steps = DEFAULT_PILOT_GUIDE_STEPS,
   saving,
   onStepChange,
   onClose,
@@ -85,6 +50,7 @@ export function PilotUserGuideDialog({
 }: {
   open: boolean;
   step: number;
+  steps?: PilotGuideStep[];
   saving: boolean;
   onStepChange: (step: number) => void;
   onClose: (doNotShowAgain: boolean) => Promise<void> | void;
@@ -92,10 +58,12 @@ export function PilotUserGuideDialog({
   onComplete: () => Promise<void> | void;
 }) {
   const [doNotShowAgain, setDoNotShowAgain] = useState(false);
-  const current = GUIDE_STEPS[step] ?? GUIDE_STEPS[0];
-  const Icon = current.icon;
-  const isFirst = step === 0;
-  const isLast = step === GUIDE_STEPS.length - 1;
+  const availableSteps = steps.length ? steps : DEFAULT_PILOT_GUIDE_STEPS;
+  const currentIndex = Math.min(Math.max(step, 0), availableSteps.length - 1);
+  const current = availableSteps[currentIndex];
+  const Icon = GUIDE_ICONS[current.icon_key] ?? Shield;
+  const isFirst = currentIndex === 0;
+  const isLast = currentIndex === availableSteps.length - 1;
 
   const requestClose = async () => {
     await onClose(doNotShowAgain);
@@ -123,7 +91,7 @@ export function PilotUserGuideDialog({
           <div className="flex items-center gap-3 text-xs font-extrabold uppercase tracking-[0.18em] text-[#F2A900]">
             <span>{current.accent}</span>
             <span aria-hidden="true">•</span>
-            <span>Step {step + 1} of {GUIDE_STEPS.length}</span>
+            <span>Step {currentIndex + 1} of {availableSteps.length}</span>
           </div>
           <div className="mt-5 flex items-start gap-4">
             <div className="rounded-2xl bg-[#F2A900] p-4 text-[#002F6C] shadow-lg">
@@ -137,15 +105,15 @@ export function PilotUserGuideDialog({
         </div>
 
         <div className="space-y-5 px-6 py-6 sm:px-8">
-          <div className="grid grid-cols-8 gap-2" aria-label={`Guide progress: step ${step + 1} of ${GUIDE_STEPS.length}`}>
-            {GUIDE_STEPS.map((item, index) => (
+          <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${availableSteps.length}, minmax(0, 1fr))` }} aria-label={`Guide progress: step ${currentIndex + 1} of ${availableSteps.length}`}>
+            {availableSteps.map((item, index) => (
               <button
-                key={item.title}
+                key={item.id}
                 type="button"
                 onClick={() => onStepChange(index)}
                 aria-label={`Open guide step ${index + 1}: ${item.title}`}
-                aria-current={index === step ? 'step' : undefined}
-                className={`h-2 rounded-full transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${index <= step ? 'bg-[#F2A900]' : 'bg-muted'}`}
+                aria-current={index === currentIndex ? 'step' : undefined}
+                className={`h-2 rounded-full transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${index <= currentIndex ? 'bg-[#F2A900]' : 'bg-muted'}`}
               />
             ))}
           </div>
@@ -167,24 +135,13 @@ export function PilotUserGuideDialog({
         <DialogFooter className="flex-col gap-3 border-t bg-muted/30 px-6 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-8">
           <Button variant="ghost" onClick={() => void onSkip()} disabled={saving}>Skip guide</Button>
           <div className="flex w-full gap-2 sm:w-auto">
-            <Button
-              variant="outline"
-              className="flex-1 sm:flex-none"
-              onClick={() => onStepChange(Math.max(step - 1, 0))}
-              disabled={saving || isFirst}
-            >
+            <Button variant="outline" className="flex-1 sm:flex-none" onClick={() => onStepChange(Math.max(currentIndex - 1, 0))} disabled={saving || isFirst}>
               <ChevronLeft className="mr-2 h-4 w-4" />Previous
             </Button>
             {isLast ? (
-              <Button className="flex-1 sm:flex-none" onClick={() => void onComplete()} disabled={saving}>
-                Finish guide
-              </Button>
+              <Button className="flex-1 sm:flex-none" onClick={() => void onComplete()} disabled={saving}>Finish guide</Button>
             ) : (
-              <Button
-                className="flex-1 sm:flex-none"
-                onClick={() => onStepChange(Math.min(step + 1, GUIDE_STEPS.length - 1))}
-                disabled={saving}
-              >
+              <Button className="flex-1 sm:flex-none" onClick={() => onStepChange(Math.min(currentIndex + 1, availableSteps.length - 1))} disabled={saving}>
                 Next<ChevronRight className="ml-2 h-4 w-4" />
               </Button>
             )}
@@ -195,4 +152,4 @@ export function PilotUserGuideDialog({
   );
 }
 
-export const PILOT_GUIDE_STEP_COUNT = GUIDE_STEPS.length;
+export const PILOT_GUIDE_STEP_COUNT = 8;
