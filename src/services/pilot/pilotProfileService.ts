@@ -28,14 +28,13 @@ export async function loadPilotStudentIdentities(userIds: string[]): Promise<Pil
   const uniqueIds = [...new Set(userIds.filter(Boolean))];
   if (!uniqueIds.length) return [];
 
-  const callIdentityRpc = supabase.rpc as unknown as (
-    functionName: string,
-    args: Record<string, unknown>,
-  ) => Promise<PilotIdentityRpcResult>;
-
-  const { data, error } = await callIdentityRpc('pilot_get_student_identities', {
-    p_user_ids: uniqueIds,
-  });
+  // Keep the RPC invocation attached to the Supabase client. Detaching `supabase.rpc`
+  // loses its `this` context and causes SupabaseClient.rpc to read `this.rest` from undefined.
+  const response = await supabase.rpc(
+    'pilot_get_student_identities' as never,
+    { p_user_ids: uniqueIds } as never,
+  );
+  const { data, error } = response as unknown as PilotIdentityRpcResult;
 
   if (error) {
     console.error('Unable to load Pilot student identities.', error);
