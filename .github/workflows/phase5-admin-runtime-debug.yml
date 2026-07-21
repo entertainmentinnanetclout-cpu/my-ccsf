@@ -1,9 +1,6 @@
 name: Phase 5 Admin Runtime Debug
 
 on:
-  push:
-    branches:
-      - feature/phase-5-admin-release-gate
   pull_request:
     branches:
       - feature/phase-4-student-dashboard-safety
@@ -31,15 +28,12 @@ jobs:
             echo '## Direct and detached from call sites'
             grep -RInE "(const|let|var).*(from|rpc|channel).*supabase|supabase\.(from|rpc|channel)|\.from\.call|\.from\.bind" src || true
             echo
-            echo '## Pilot administration source'
-            sed -n '1,330p' src/services/pilot/pilotAdminService.ts
-            echo
-            echo '## Compiled SupabaseClient.from implementation'
+            echo '## SupabaseClient.from implementation'
             grep -RIn "return this.rest.from" node_modules/@supabase/supabase-js/dist node_modules/@supabase/supabase-js/src || true
           } | tee phase5-admin-runtime-debug.log
       - name: Archive source and diagnostics
         run: |
-          tar --exclude=.git --exclude=node_modules -czf phase5-admin-source.tar.gz .
+          tar --exclude=.git --exclude=node_modules --exclude=phase5-admin-source.tar.gz -czf phase5-admin-source.tar.gz .
       - uses: actions/upload-artifact@v4
         with:
           name: phase5-admin-runtime-debug
