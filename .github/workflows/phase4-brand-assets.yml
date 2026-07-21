@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - feature/ccsf-phases-3-8-release-candidate
+      - feature/maptive-live-admin-visuals
     paths:
       - scripts/generate-brand-assets.py
       - .github/workflows/phase4-brand-assets.yml
