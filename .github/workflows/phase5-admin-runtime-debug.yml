@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - feature/phase-5-admin-release-gate
+  pull_request:
+    branches:
+      - feature/phase-4-student-dashboard-safety
 
 permissions:
   contents: read
