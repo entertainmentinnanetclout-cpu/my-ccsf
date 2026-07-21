@@ -40,6 +40,14 @@ const ensureFreshAuthSession = async (forceRefresh = false): Promise<void> => {
   }
 };
 
+export async function invokePublicPilotFunction<T>(name: string, body: Record<string, unknown>): Promise<T> {
+  const { data, error } = await supabase.functions.invoke(name, { body });
+  if (!error) return data as T;
+
+  const parsed = await readFunctionError(error, name);
+  throw new Error(parsed.message);
+}
+
 export async function invokePilotFunction<T>(name: string, body: Record<string, unknown>): Promise<T> {
   await ensureFreshAuthSession();
 
