@@ -4,8 +4,7 @@
 The canonical CCSF logo remains transparent for application layouts and print.
 Installed application icons use a solid white square background so Android,
 iOS, Windows and browser launchers do not choose an uncontrolled fill colour.
-The artwork is never stretched, redrawn or recoloured. This generator is also
-used to verify install assets before visual-intelligence releases.
+The artwork is never stretched, redrawn or recoloured.
 """
 
 from __future__ import annotations
@@ -23,7 +22,7 @@ CANONICAL_COPIES = [
     ROOT / "public/ccsf-logo.png",
 ]
 
-STANDARD_FOOTPRINT = 0.78
+STANDARD_FOOTPRINT = 0.782
 MASKABLE_FOOTPRINT = 0.66
 BACKGROUND_DISTANCE = 54
 TRANSPARENT = (0, 0, 0, 0)

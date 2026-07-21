@@ -1,6 +1,0 @@
-
-> vite_react_shadcn_ts@0.0.0 typecheck
-> tsc -p tsconfig.app.json --noEmit
-
-src/components/pilot/PilotCampusSecurityDashboard.tsx(139,24): error TS2339: Property 'resolved_at' does not exist on type 'PilotReport'.
-src/components/pilot/PilotSuperAdminDashboard.tsx(184,24): error TS2339: Property 'resolved_at' does not exist on type 'PilotReport'.
