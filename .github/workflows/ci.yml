@@ -33,6 +33,16 @@ jobs:
       - name: Install dependencies
         run: npm ci --no-audit --no-fund --loglevel=error
 
+      - name: Capture TypeScript diagnostics
+        run: npm run typecheck > admin-visual-typecheck.txt 2>&1 || true
+
+      - name: Upload TypeScript diagnostics
+        uses: actions/upload-artifact@v4
+        with:
+          name: admin-visual-typecheck
+          path: admin-visual-typecheck.txt
+          retention-days: 1
+
       - name: Verify Phase 1 Pilot authentication and navigation
         run: npm run test:phase1-auth
 
