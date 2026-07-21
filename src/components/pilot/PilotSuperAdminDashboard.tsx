@@ -181,7 +181,6 @@ export function PilotSuperAdminDashboard() {
     category: report.category,
     title: report.title,
     createdAt: report.submitted_at,
-    resolvedAt: report.resolved_at,
     isCritical: report.simulated_severity === 'high' || report.simulated_severity === 'critical',
   })), [data.reports]);
   const activeReports = useMemo(() => data.reports.filter((report) => !FINAL_STATUSES.has(report.status)), [data.reports]);

@@ -136,7 +136,6 @@ export function PilotCampusSecurityDashboard({ campus }: { campus: CampusLocatio
     category: report.category,
     title: report.title,
     createdAt: report.submitted_at,
-    resolvedAt: report.resolved_at,
     isCritical: report.simulated_severity === 'high' || report.simulated_severity === 'critical',
   })), [data.reports]);
   const filteredReports = useMemo(() => data.reports.filter((report) => {
