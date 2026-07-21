@@ -52,10 +52,11 @@ for (const title of [
   'Read staff notifications',
   'Submit a Pilot review',
   'Know the Pilot limitations',
-]) check(guide.includes(title), `Guide includes: ${title}.`);
+]) check(service.includes(title), `Controlled guide defaults include: ${title}.`);
 for (const control of ['Skip guide', 'Previous', 'Next', 'Finish guide', 'Close Pilot guide', 'Do not show automatically again']) {
   check(guide.includes(control), `Guide includes ${control} control.`);
 }
+check(guide.includes('loadPilotGuideSteps'), 'The guide can load Phase 5 managed content while preserving Phase 4 defaults.');
 check(guideHook.includes('loadPilotGuidePreferences') && guideHook.includes('updatePilotGuidePreferences'), 'Guide controller loads and saves profile-bound state.');
 check(guideHook.includes('resetGuide') && guideHook.includes('autoShow: false'), 'Guide supports reset and permanent automatic dismissal.');
 
@@ -63,7 +64,7 @@ check(resources.includes('Open User Guide') && resources.includes('Reset Guide A
 check(resources.includes('Download Safety PDF') && resources.includes('Open PDF'), 'Safety Guide page exposes PDF download and direct open controls.');
 check(resources.includes('112') && resources.includes('10111') && resources.includes('10177') && resources.includes('086 110 2421'), 'Safety Guide page provides core verified emergency and TUT contact numbers.');
 check(navigation.includes("label: 'Safety Guide'"), 'Student Pilot navigation labels the resource tab Safety Guide.');
-check(service.includes("PILOT_SAFETY_GUIDE_FALLBACK") && service.includes("/downloads/CCSF-Pilot-Safety-Guide-v1.0.pdf"), 'A valid static PDF fallback remains available if resource metadata cannot load.');
+check(service.includes('PILOT_SAFETY_GUIDE_FALLBACK') && service.includes('/downloads/CCSF-Pilot-Safety-Guide-v1.0.pdf'), 'A valid static PDF fallback remains available if resource metadata cannot load.');
 check(!service.includes("from('carousel_images')") && !carousel.includes("from('carousel_images')"), 'Phase 4 carousel does not read the production carousel table.');
 
 if (!fs.existsSync(pdfPath)) {
