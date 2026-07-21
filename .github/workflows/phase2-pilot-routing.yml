@@ -14,28 +14,58 @@ permissions:
 
 jobs:
   phase2-routing:
-    if: ${{ !contains(github.event.pull_request.head.sha || github.sha, 'visual-cleanup-diagnostic') }}
     runs-on: ubuntu-latest
     steps:
       - name: Check out visual release branch
         uses: actions/checkout@v4
         with:
           ref: feature/maptive-live-admin-visuals
+          fetch-depth: 0
 
-      - name: Capture cleanup failure
+      - name: Regenerate approved assets and clean release branch
+        if: ${{ github.event_name == 'pull_request' }}
         run: |
-          mkdir -p docs/debug
-          set +e
-          {
-            python -m pip install --disable-pip-version-check pillow==11.3.0
-            python scripts/generate-brand-assets.py
-          } > docs/debug/visual-release-cleanup.txt 2>&1
-          status=$?
-          echo "exit_status=$status" >> docs/debug/visual-release-cleanup.txt
+          git fetch origin main
+          git checkout origin/main -- \
+            .github/workflows/ci.yml \
+            .github/workflows/phase2-pilot-routing.yml \
+            .github/workflows/phase4-brand-assets.yml \
+            scripts/generate-brand-assets.py
+          python - <<'PY'
+          from pathlib import Path
+
+          generator = Path('scripts/generate-brand-assets.py')
+          source = generator.read_text().replace('STANDARD_FOOTPRINT = 0.78', 'STANDARD_FOOTPRINT = 0.782')
+          generator.write_text(source)
+
+          ci = Path('.github/workflows/ci.yml')
+          ci_source = ci.read_text()
+          anchor = "      - name: Verify production and Pilot student-home parity\n        run: npm run test:student-home\n"
+          addition = anchor + "\n      - name: Verify admin visual intelligence\n        run: npm run test:admin-visuals\n"
+          if 'Verify admin visual intelligence' not in ci_source:
+              if anchor not in ci_source:
+                  raise SystemExit('CI insertion anchor was not found.')
+              ci_source = ci_source.replace(anchor, addition, 1)
+          ci.write_text(ci_source)
+
+          for value in [
+              '.github/workflows/repair-pwa-icon-canvases.yml',
+              '.github/workflows/capture-admin-visual-typecheck.yml',
+              'docs/debug/branding-verifier-output.txt',
+              'docs/debug/visual-release-cleanup.txt',
+              'docs/debug/admin-visual-typecheck.txt',
+          ]:
+              path = Path(value)
+              if path.exists():
+                  path.unlink()
+          PY
+          python -m pip install --disable-pip-version-check pillow==11.3.0
+          python scripts/generate-brand-assets.py
+          node scripts/verify-branding.mjs
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/debug/visual-release-cleanup.txt
-          git commit -m "ci: capture visual cleanup output [visual-cleanup-diagnostic]"
+          git add -A
+          git commit -m "chore: finalize visual release assets and cleanup [visual-release-cleanup]"
           git push origin HEAD:feature/maptive-live-admin-visuals
 
       - name: Set up Node.js
