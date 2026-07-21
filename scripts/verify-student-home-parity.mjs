@@ -22,7 +22,10 @@ const [productionDashboard, pilotDashboard, sharedHome, carousel, migration] = a
 
 requireText(productionDashboard, '<StudentDashboardHome campus={campus || undefined} />', 'Production student dashboard does not use the shared home with the verified AuthContext campus.');
 requireText(productionDashboard, 'const { userProfile, signOut } = useAuth();', 'Production student dashboard does not consume the verified authentication profile.');
-requireText(pilotDashboard, '<StudentDashboardHome campus={participant.campus} />', 'Pilot student dashboard does not use the shared home.');
+requireText(pilotDashboard, '<StudentDashboardHome campus={participant.campus} showCarousel={false} />', 'Pilot student dashboard does not retain the shared welcome and news home content.');
+requireText(pilotDashboard, '<PilotDashboardCarousel', 'Pilot student dashboard is missing its isolated Phase 4 carousel.');
+requireText(sharedHome, 'showCarousel = true', 'Shared student home does not default to the production carousel.');
+requireText(sharedHome, '{showCarousel && (', 'Shared student home cannot disable the production carousel for Pilot isolation.');
 requireText(sharedHome, '<CampusCarousel campus={campus} />', 'Shared student home is missing the campus carousel.');
 requireText(sharedHome, '<NewsFeed />', 'Shared student home is missing the news feed.');
 requireText(sharedHome, "eq('key', 'welcome_banner_text')", 'Shared student home is missing the configurable welcome banner.');
@@ -34,6 +37,10 @@ if (productionDashboard.includes("from('profiles')")) {
   failures.push('Production student dashboard duplicates the verified authentication-profile query.');
 }
 
+if (pilotDashboard.includes("from('carousel_images')")) {
+  failures.push('Pilot student dashboard reads the production carousel table.');
+}
+
 if (carousel.includes('placehold.co')) {
   failures.push('Campus carousel still depends on an external placeholder image.');
 }
@@ -43,4 +50,4 @@ if (failures.length > 0) {
   process.exit(1);
 }
 
-console.log('Student home parity verification passed for production and Pilot dashboards.');
+console.log('Student home parity verification passed for production and isolated Pilot dashboards.');

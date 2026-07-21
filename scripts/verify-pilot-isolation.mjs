@@ -66,6 +66,7 @@ for (const file of sourceFiles) {
     if (pattern.regex.test(content)) failures.push(`${file} references ${pattern.name}.`);
   }
 }
+
 assert(!failures.some((failure) => failure.includes('references')), 'Pilot browser and Edge source contain no production incident, location, media, case, escalation, push, or reporting references.');
 
 const browserSource = browserPilotPaths.flatMap(walk).filter((file) => /\.(?:ts|tsx)$/.test(file)).map(read).join('\n');
@@ -83,7 +84,16 @@ for (const status of ['received', 'assessing', 'assigned', 'in_progress', 'simul
 }
 
 const routeConfig = read('src/config/pilotRoutes.ts');
-for (const route of ['/pilot/auth', '/pilot', '/pilot/resources', '/security/pilot', '/admin/pilot']) {
+for (const route of [
+  '/pilot/auth',
+  '/pilot',
+  '/pilot/reviews',
+  '/pilot/resources',
+  '/security/pilot',
+  '/security/pilot/reviews',
+  '/admin/pilot',
+  '/admin/pilot/reviews',
+]) {
   assert(routeConfig.includes(`'${route}'`), `Pilot route contract contains ${route}.`);
 }
 assert(routeConfig.includes("pathname.startsWith('/pilot/session/')"), 'Pilot session deep links are explicitly recognised.');
@@ -95,10 +105,21 @@ assert(viteConfig.includes('feature/ccsf-phases-3-8-release-candidate'), 'Only t
 assert(viteConfig.includes('vercelEnvironment === "preview"'), 'Automatic Pilot enablement requires a Vercel Preview deployment.');
 
 const app = read('src/App.tsx');
-for (const route of ['/pilot/auth', '/pilot', '/pilot/session/:sessionId', '/pilot/report/:reportId', '/pilot/resources', '/security/pilot', '/admin/pilot']) {
+for (const route of [
+  '/pilot/auth',
+  '/pilot',
+  '/pilot/session/:sessionId',
+  '/pilot/report/:reportId',
+  '/pilot/reviews',
+  '/pilot/resources',
+  '/security/pilot',
+  '/security/pilot/reviews',
+  '/admin/pilot',
+  '/admin/pilot/reviews',
+]) {
   assert(app.includes(`path="${route}"`), `Approved route ${route} is registered.`);
 }
-assert(app.includes('<Route path="/pilot/auth" element={<PilotAuth />} />'), 'Pilot authentication is rendered outside the official application layout.');
+assert(app.includes('<PilotEntryIntentBoundary><PilotAuth /></PilotEntryIntentBoundary>'), 'Pilot authentication is rendered inside the dedicated Pilot intent boundary and outside the official application layout.');
 assert(app.includes("allowedRoles={['student']}"), 'Student Pilot routes are role guarded.');
 assert(app.includes("allowedRoles={['security', 'admin']}"), 'Campus Pilot route is staff guarded.');
 assert(app.includes("allowedRoles={['admin']}"), 'Super-admin Pilot route is admin guarded.');
@@ -106,8 +127,9 @@ assert(app.includes("allowedRoles={['admin']}"), 'Super-admin Pilot route is adm
 const pilotAuth = read('src/pages/pilot/PilotAuth.tsx');
 assert(pilotAuth.includes('signInWithPassword'), 'Pilot authentication reuses existing Supabase accounts.');
 assert(pilotAuth.includes('resolvePilotDestination'), 'Pilot authentication redirects by role while preserving approved deep links.');
-assert(!pilotAuth.includes('signUp('), 'Pilot authentication does not create uninvited accounts.');
-assert(pilotAuth.includes('Student accounts must be invited'), 'Pilot authentication explains the student allowlist requirement.');
+assert(!pilotAuth.includes('signUp('), 'Pilot authentication does not use an uncontrolled browser sign-up path.');
+assert(pilotAuth.includes("'pilot-student-signup'"), 'Pilot student registration uses the controlled server-side signup function.');
+assert(pilotAuth.includes('Students may self-register for the active Pilot programme'), 'Pilot authentication explains the controlled student self-registration requirement.');
 
 const protectedRoute = read('src/components/ProtectedRoute.tsx');
 assert(protectedRoute.includes("? '/pilot/auth' : '/auth'"), 'Unauthenticated Pilot routes redirect to the dedicated Pilot login.');
@@ -120,6 +142,19 @@ for (const functionSlug of ['pilot-create-session', 'pilot-submit-report']) {
 assert(coreService.includes("from('pilot_location_events')"), 'Location writes target pilot_location_events.');
 assert(coreService.includes("from('pilot_attachments')"), 'Attachment metadata targets pilot_attachments.');
 assert(coreService.includes('createSignedUrl'), 'Private attachments use signed URLs.');
+
+const reviewService = read('src/services/pilot/pilotReviewService.ts');
+assert(reviewService.includes("'pilot-review-attachments'"), 'Pilot review screenshots use the private review bucket.');
+assert(reviewService.includes("rpc('pilot_submit_review'"), 'Student reviews use the server-derived Pilot submission RPC.');
+assert(reviewService.includes("rpc('pilot_moderate_review'"), 'Review moderation uses the authorised Pilot RPC.');
+assert(!reviewService.includes("from('feedback')"), 'Pilot reviews do not use a production feedback table.');
+assert(!reviewService.includes("from('incidents')"), 'Pilot reviews do not use production incidents.');
+
+const experienceService = read('src/services/pilot/pilotExperienceService.ts');
+assert(experienceService.includes("'pilot_carousel_slides'") && experienceService.includes("'pilot_resource_documents'"), 'Phase 4 content reads only isolated Pilot carousel and resource tables.');
+assert(experienceService.includes("rpc('pilot_get_guide_preferences'") && experienceService.includes("rpc('pilot_update_guide_preferences'"), 'Cross-device guide state uses authenticated Pilot RPCs.');
+assert(!experienceService.includes("from('carousel_images')"), 'The Pilot dashboard carousel does not read the production carousel table.');
+assert(!experienceService.includes("from('app_settings')"), 'The Pilot experience service does not read production application settings.');
 
 const adminService = read('src/services/pilot/pilotAdminService.ts');
 for (const functionSlug of ['pilot-transition-status', 'pilot-create-notification', 'pilot-delete-report']) {
@@ -142,10 +177,11 @@ assert(locationHook.includes('clearWatch'), 'Pilot location tracking clears brow
 assert(locationHook.includes('localStorage.removeItem(PILOT_LOCATION_STORAGE_KEY)'), 'Stopping Pilot tracking clears persisted tracking state.');
 
 const resources = read('src/pages/pilot/PilotResources.tsx');
-assert(resources.includes("recordDownload('safety_resource_print_pdf')"), 'Print / Save as PDF activity is recorded as a Pilot feature test.');
-assert(resources.includes("recordDownload('safety_resource_download')"), 'Safety-resource download activity is recorded as a Pilot feature test.');
+assert(resources.includes("recordDownload('safety_resource_print_pdf')"), 'Printing the interactive Safety Guide is recorded as a Pilot feature test.');
+assert(resources.includes("recordDownload('safety_guide_pdf_download')"), 'Downloading the versioned Safety Guide PDF is recorded as a Pilot feature test.');
 assert(resources.includes('window.print()'), 'Printable Pilot resources use the browser print/PDF workflow.');
 assert(resources.includes('sm:flex-row') && resources.includes('flex-wrap'), 'Pilot resources expose responsive mobile and desktop controls.');
+assert(resources.includes('Reset Guide Across Devices'), 'Students can reset their profile-bound guide preference from Safety Guide.');
 
 const indexHtml = read('index.html');
 assert(indexHtml.includes('width=device-width, initial-scale=1.0'), 'Application viewport metadata supports mobile rendering.');

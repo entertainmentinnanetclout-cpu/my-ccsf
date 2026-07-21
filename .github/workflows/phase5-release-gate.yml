@@ -1,0 +1,198 @@
+name: Phase 5 Release Gate
+
+on:
+  push:
+    branches:
+      - feature/phase-5-admin-release-gate
+  pull_request:
+    branches:
+      - feature/phase-4-student-dashboard-safety
+
+permissions:
+  contents: read
+
+jobs:
+  phase5-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund --loglevel=error
+
+      - name: Verify Phase 5 release contract
+        id: phase5
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          npm run test:phase5-release 2>&1 | tee phase5-contract.log
+
+      - name: Verify Pilot authentication
+        id: phase1
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          npm run test:phase1-auth 2>&1 | tee phase5-auth.log
+
+      - name: Verify Phase 2 reporting and campus routing
+        id: phase2
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          npm run test:phase2-routing 2>&1 | tee phase5-routing.log
+
+      - name: Verify Phase 3 review workflow
+        id: phase3
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          npm run test:phase3-reviews 2>&1 | tee phase5-reviews.log
+
+      - name: Verify Phase 4 student experience
+        id: phase4
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          npm run test:phase4-experience 2>&1 | tee phase5-experience.log
+
+      - name: Verify production isolation
+        id: isolation
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          npm run test:pilot-isolation 2>&1 | tee phase5-isolation.log
+
+      - name: Verify student and campus-security parity
+        id: parity
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          npm run test:phase4-5-parity 2>&1 | tee phase5-parity.log
+
+      - name: Verify student-home separation
+        id: home
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          npm run test:student-home 2>&1 | tee phase5-student-home.log
+
+      - name: Type-check application
+        id: typecheck
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          npm run typecheck 2>&1 | tee phase5-typecheck.log
+
+      - name: Lint application
+        id: lint
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          npm run lint 2>&1 | tee phase5-lint.log
+
+      - name: Build Vercel Preview bundle
+        id: build
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          npm run build 2>&1 | tee phase5-build.log
+        env:
+          VITE_PILOT_MODE_ENABLED: 'true'
+          VERCEL_ENV: preview
+          VERCEL_GIT_COMMIT_REF: feature/phase-5-admin-release-gate
+
+      - name: Start local production preview
+        id: preview
+        continue-on-error: true
+        if: steps.build.outcome == 'success'
+        run: |
+          npm run preview -- --host 127.0.0.1 --port 4173 > phase5-preview.log 2>&1 &
+          echo $! > phase5-preview.pid
+          for attempt in {1..30}; do
+            if curl --silent --fail http://127.0.0.1:4173/ > /dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat phase5-preview.log
+          exit 1
+
+      - name: Smoke-test Preview routes and assets
+        id: smoke
+        continue-on-error: true
+        if: steps.build.outcome == 'success' && steps.preview.outcome == 'success'
+        run: |
+          set -euo pipefail
+          for route in \
+            / \
+            /pilot/auth \
+            /pilot \
+            /pilot/reviews \
+            /pilot/resources \
+            /security/pilot \
+            /security/pilot/reviews \
+            /admin/pilot \
+            /admin/pilot/reviews \
+            /admin/pilot/content; do
+            status=$(curl --silent --output /tmp/phase5-route.html --write-out '%{http_code}' "http://127.0.0.1:4173${route}")
+            test "$status" = "200"
+            grep -qi '<div id="root"></div>' /tmp/phase5-route.html
+            echo "$route -> $status"
+          done
+          pdf_status=$(curl --silent --output /tmp/phase5-safety.pdf --write-out '%{http_code}' http://127.0.0.1:4173/downloads/CCSF-Pilot-Safety-Guide-v1.0.pdf)
+          test "$pdf_status" = "200"
+          head -c 5 /tmp/phase5-safety.pdf | grep -q '%PDF-'
+          test "$(wc -c < /tmp/phase5-safety.pdf)" -gt 250000
+          echo "/downloads/CCSF-Pilot-Safety-Guide-v1.0.pdf -> $pdf_status"
+
+      - name: Stop local production preview
+        if: always()
+        run: |
+          if test -f phase5-preview.pid; then
+            kill "$(cat phase5-preview.pid)" || true
+          fi
+
+      - name: Upload Phase 5 diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase5-release-diagnostics
+          path: |
+            phase5-contract.log
+            phase5-auth.log
+            phase5-routing.log
+            phase5-reviews.log
+            phase5-experience.log
+            phase5-isolation.log
+            phase5-parity.log
+            phase5-student-home.log
+            phase5-typecheck.log
+            phase5-lint.log
+            phase5-build.log
+            phase5-preview.log
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Enforce complete Phase 5 release gate
+        if: always()
+        run: |
+          test "${{ steps.phase5.outcome }}" = "success"
+          test "${{ steps.phase1.outcome }}" = "success"
+          test "${{ steps.phase2.outcome }}" = "success"
+          test "${{ steps.phase3.outcome }}" = "success"
+          test "${{ steps.phase4.outcome }}" = "success"
+          test "${{ steps.isolation.outcome }}" = "success"
+          test "${{ steps.parity.outcome }}" = "success"
+          test "${{ steps.home.outcome }}" = "success"
+          test "${{ steps.typecheck.outcome }}" = "success"
+          test "${{ steps.lint.outcome }}" = "success"
+          test "${{ steps.build.outcome }}" = "success"
+          test "${{ steps.preview.outcome }}" = "success"
+          test "${{ steps.smoke.outcome }}" = "success"

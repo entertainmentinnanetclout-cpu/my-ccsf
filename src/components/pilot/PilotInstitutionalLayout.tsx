@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/shared/ThemeToggle';
 import { InstitutionBrand } from '@/components/shared/InstitutionBrand';
 import { PilotStudentNavigation } from '@/components/pilot/PilotStudentNavigation';
+import { PilotStaffNavigation } from '@/components/pilot/PilotStaffNavigation';
 import { BRAND } from '@/brand';
 import { CAMPUS_LABELS, isPilotStudentPath, PILOT_ROUTES } from '@/config/pilot';
 import { clearPilotIntent, markPilotIntent } from '@/lib/pilotIntent';
@@ -142,7 +143,7 @@ export default function PilotInstitutionalLayout() {
         </div>
       </section>
 
-      {studentPilotRoute && <PilotStudentNavigation />}
+      {studentPilotRoute ? <PilotStudentNavigation /> : <PilotStaffNavigation />}
 
       <main className="pilot-premium-surface w-full pb-8"><Outlet /></main>
 

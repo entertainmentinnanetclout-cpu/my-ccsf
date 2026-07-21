@@ -14,7 +14,7 @@ const app = read('src/App.tsx');
 assert(page.includes('<PilotSuperAdminDashboard />'), 'Super-admin route uses the dedicated Phase 6 dashboard.');
 assert(!page.includes('PilotLiveAdminWorkspace') && !page.includes('PilotAdminWorkspace'), 'Super-admin route no longer uses the generic administration workspace.');
 
-for (const label of ['Overview', 'Operations', 'Campuses', 'Programmes', 'Participants', 'Analytics', 'Governance', 'Audit']) {
+for (const label of ['Overview', 'Operations', 'Campuses', 'Programmes', 'Students', 'Analytics', 'Governance', 'Audit']) {
   assert(dashboard.includes(`label: '${label}'`), `Super-admin Pilot includes ${label} navigation.`);
 }
 
@@ -29,7 +29,7 @@ assert(dashboard.includes("transitionPilotReport(report.id, 'assigned'") && dash
 assert(dashboard.includes('addPilotReportNote') && dashboard.includes('createPilotNotification'), 'Super-admin Pilot supports timeline notes and student updates.');
 
 assert(dashboard.includes('<PilotConfigurationPanel') && dashboard.includes("setProgramStatus('active')") && dashboard.includes("setProgramStatus('paused')") && dashboard.includes("setProgramStatus('completed')") && dashboard.includes("setProgramStatus('archived')"), 'Programme configuration and lifecycle controls are present.');
-assert(dashboard.includes('searchPilotStudentProfiles') && dashboard.includes('invitePilotParticipant') && dashboard.includes('updatePilotParticipant'), 'Participant search, invitation and controlled removal are present.');
+assert(dashboard.includes('searchPilotStudentProfiles') && dashboard.includes('invitePilotParticipant') && dashboard.includes('updatePilotParticipant'), 'Student search, invitation and controlled removal are present.');
 assert(dashboard.includes('requestPilotExport') && dashboard.includes('PilotCsvExportPanel'), 'De-identified, identified and CSV export workflows are present.');
 assert(dashboard.includes('requestPilotRetentionPlan') && dashboard.includes('requestPilotProgramPurge'), 'Retention and programme-exit governance controls are present.');
 assert(dashboard.includes('CLEAN EXPIRED') && dashboard.includes("['completed', 'archived'].includes(selectedProgram.status)"), 'Destructive governance actions require explicit confirmation and completed/archived programme state.');

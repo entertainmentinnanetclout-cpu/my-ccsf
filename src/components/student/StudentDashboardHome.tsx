@@ -6,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 const DEFAULT_WELCOME_MESSAGE = 'Welcome | Re a le amogela | Nemukelekile';
 
-export function StudentDashboardHome({ campus }: { campus?: string }) {
+export function StudentDashboardHome({ campus, showCarousel = true }: { campus?: string; showCarousel?: boolean }) {
   const [welcomeMessage, setWelcomeMessage] = useState(DEFAULT_WELCOME_MESSAGE);
 
   useEffect(() => {
@@ -33,9 +33,11 @@ export function StudentDashboardHome({ campus }: { campus?: string }) {
 
   return (
     <div className="space-y-4 sm:space-y-6" data-testid="student-dashboard-home">
-      <div className="px-4">
-        <CampusCarousel campus={campus} />
-      </div>
+      {showCarousel && (
+        <div className="px-4">
+          <CampusCarousel campus={campus} />
+        </div>
+      )}
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}

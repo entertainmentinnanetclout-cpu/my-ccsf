@@ -3,15 +3,20 @@ export const PILOT_ROUTES = {
   landing: '/pilot',
   session: (sessionId: string) => `/pilot/session/${sessionId}`,
   report: (reportId: string) => `/pilot/report/${reportId}`,
+  reviews: '/pilot/reviews',
   resources: '/pilot/resources',
   campus: '/security/pilot',
+  campusReviews: '/security/pilot/reviews',
   admin: '/admin/pilot',
+  adminReviews: '/admin/pilot/reviews',
+  adminContent: '/admin/pilot/content',
 } as const;
 
 export type PilotRole = 'student' | 'security' | 'admin';
 
 export function isPilotStudentPath(pathname: string): boolean {
   return pathname === PILOT_ROUTES.landing
+    || pathname === PILOT_ROUTES.reviews
     || pathname === PILOT_ROUTES.resources
     || pathname.startsWith('/pilot/session/')
     || pathname.startsWith('/pilot/report/');
@@ -43,11 +48,7 @@ export function isPilotPathAllowedForRole(pathname: string, role: PilotRole): bo
 
 type RequestedLocation =
   | string
-  | {
-      pathname?: unknown;
-      search?: unknown;
-      hash?: unknown;
-    }
+  | { pathname?: unknown; search?: unknown; hash?: unknown }
   | null
   | undefined;
 
@@ -58,9 +59,7 @@ export function normalizeRequestedPilotPath(from: RequestedLocation): string | n
       ? `${from.pathname}${typeof from.search === 'string' ? from.search : ''}${typeof from.hash === 'string' ? from.hash : ''}`
       : '';
 
-  if (!candidate.startsWith('/') || candidate.startsWith('//') || candidate.includes('\\')) {
-    return null;
-  }
+  if (!candidate.startsWith('/') || candidate.startsWith('//') || candidate.includes('\\')) return null;
 
   try {
     const base = new URL('https://ccsf.invalid');
@@ -75,9 +74,6 @@ export function normalizeRequestedPilotPath(from: RequestedLocation): string | n
 export function resolvePilotDestination(role: PilotRole, from?: RequestedLocation): string {
   const requestedPath = normalizeRequestedPilotPath(from);
   if (!requestedPath) return pilotDefaultDestination(role);
-
   const pathname = new URL(requestedPath, 'https://ccsf.invalid').pathname;
-  return isPilotPathAllowedForRole(pathname, role)
-    ? requestedPath
-    : pilotDefaultDestination(role);
+  return isPilotPathAllowedForRole(pathname, role) ? requestedPath : pilotDefaultDestination(role);
 }

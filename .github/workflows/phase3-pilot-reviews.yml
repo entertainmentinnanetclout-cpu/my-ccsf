@@ -1,0 +1,78 @@
+name: Phase 3 Pilot Reviews Gate
+
+on:
+  push:
+    branches:
+      - main
+      - 'feature/**'
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  phase3-reviews:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund --loglevel=error
+
+      - name: Verify Phase 3 Pilot reviews
+        run: npm run test:phase3-reviews
+
+      - name: Verify Phase 2 reporting remains intact
+        run: npm run test:phase2-routing
+
+      - name: Verify Pilot production isolation
+        run: |
+          set -o pipefail
+          npm run test:pilot-isolation 2>&1 | tee phase3-isolation.log
+
+      - name: Verify existing student and campus parity
+        run: |
+          set -o pipefail
+          npm run test:phase4-5-parity 2>&1 | tee phase4-5-parity.log
+
+      - name: Verify inherited release assertions
+        run: |
+          set -o pipefail
+          npm run test:phase8-release 2>&1 | tee phase8-release.log
+
+      - name: Type-check review application changes
+        run: npm run typecheck
+
+      - name: Lint review application changes
+        run: |
+          set -o pipefail
+          npm run lint 2>&1 | tee phase3-lint.log
+
+      - name: Upload Phase 3 diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase3-review-gate-diagnostics
+          path: |
+            phase3-isolation.log
+            phase4-5-parity.log
+            phase8-release.log
+            phase3-lint.log
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Build Pilot application
+        run: npm run build
+        env:
+          VITE_PILOT_MODE_ENABLED: 'true'
+          VERCEL_ENV: preview
+          VERCEL_GIT_COMMIT_REF: feature/phase-3-pilot-reviews
