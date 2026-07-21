@@ -22,34 +22,22 @@ jobs:
           ref: feature/maptive-live-admin-visuals
           fetch-depth: 0
 
-      - name: Commit verified visual release cleanup
+      - name: Commit verified visual assets
         if: ${{ github.event_name == 'pull_request' }}
         run: |
-          git fetch origin main
-          git checkout origin/main -- \
-            .github/workflows/ci.yml \
-            .github/workflows/phase2-pilot-routing.yml \
-            .github/workflows/phase4-brand-assets.yml \
-            scripts/generate-brand-assets.py
           python - <<'PY'
           from pathlib import Path
 
           generator = Path('scripts/generate-brand-assets.py')
-          generator.write_text(generator.read_text().replace('STANDARD_FOOTPRINT = 0.78', 'STANDARD_FOOTPRINT = 0.782'))
-
-          ci = Path('.github/workflows/ci.yml')
-          ci_source = ci.read_text()
-          anchor = "      - name: Verify production and Pilot student-home parity\n        run: npm run test:student-home\n"
-          addition = anchor + "\n      - name: Verify admin visual intelligence\n        run: npm run test:admin-visuals\n"
-          if 'Verify admin visual intelligence' not in ci_source:
-              if anchor not in ci_source:
-                  raise SystemExit('CI insertion anchor was not found.')
-              ci_source = ci_source.replace(anchor, addition, 1)
-          ci.write_text(ci_source)
+          source = generator.read_text()
+          source = source.replace('STANDARD_FOOTPRINT = 0.78', 'STANDARD_FOOTPRINT = 0.782')
+          source = source.replace(
+              'The artwork is never stretched, redrawn or recoloured. This generator is also\nused to verify install assets before visual-intelligence releases.\n',
+              'The artwork is never stretched, redrawn or recoloured.\n',
+          )
+          generator.write_text(source)
 
           for value in [
-              '.github/workflows/repair-pwa-icon-canvases.yml',
-              '.github/workflows/capture-admin-visual-typecheck.yml',
               'docs/debug/branding-verifier-output.txt',
               'docs/debug/visual-release-cleanup.txt',
               'docs/debug/visual-cleanup-sequence.txt',
@@ -64,8 +52,21 @@ jobs:
           node scripts/verify-branding.mjs
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -m "chore: finalize visual release assets and cleanup [visual-release-cleanup]"
+          git add scripts/generate-brand-assets.py \
+            'src/assets/Campus safety forum logo design(1).png' \
+            src/assets/ccsf-logo.png \
+            public/ccsf-logo.png \
+            public/app-icon-1024.png \
+            public/app-icon-512.png \
+            public/app-icon-192.png \
+            public/maskable-icon-512.png \
+            public/apple-touch-icon.png \
+            public/favicon.png \
+            public/favicon-32x32.png \
+            public/favicon-16x16.png \
+            public/favicon.ico
+          git add -A docs/debug
+          git commit -m "fix: regenerate verified CCSF visual release assets [visual-assets-ready]"
           git push origin HEAD:feature/maptive-live-admin-visuals
 
       - name: Set up Node.js
