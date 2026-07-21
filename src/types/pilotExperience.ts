@@ -2,6 +2,7 @@ import type { CampusLocation } from '@/types/pilot';
 
 export type PilotCarouselAction = 'none' | 'report' | 'emergency' | 'cases' | 'reviews' | 'resources' | 'support';
 export type PilotCarouselIcon = 'shield' | 'report' | 'emergency' | 'location' | 'cases' | 'reviews' | 'guide' | 'limitations';
+export type PilotGuideIcon = 'home' | 'report' | 'emergency' | 'location' | 'cases' | 'notifications' | 'reviews' | 'limitations' | 'shield';
 
 export interface PilotCarouselSlide {
   id: string;
@@ -20,6 +21,23 @@ export interface PilotCarouselSlide {
   is_active: boolean;
   starts_at: string | null;
   expires_at: string | null;
+  created_by?: string | null;
+  updated_by?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PilotGuideStep {
+  id: string;
+  step_key: string;
+  title: string;
+  description: string;
+  accent: string;
+  icon_key: PilotGuideIcon;
+  display_order: number;
+  is_active: boolean;
+  created_by: string | null;
+  updated_by: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -45,10 +63,15 @@ export interface PilotSafetyDocument {
   version: string;
   publication_date: string;
   download_url: string;
+  storage_path: string | null;
+  file_name: string | null;
+  file_size_bytes: number | null;
   campus_targets: CampusLocation[];
   is_active: boolean;
   starts_at: string | null;
   expires_at: string | null;
+  created_by?: string | null;
+  updated_by?: string | null;
   created_at: string;
   updated_at: string;
 }
