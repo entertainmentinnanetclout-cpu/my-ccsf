@@ -34,16 +34,12 @@ import PilotReportTracking from './pages/pilot/PilotReportTracking';
 import PilotReviews from './pages/pilot/PilotReviews';
 import PilotReviewManagement from './pages/pilot/PilotReviewManagement';
 import PilotResources from './pages/pilot/PilotResources';
+import PilotContentManagement from './pages/pilot/PilotContentManagement';
 import CampusPilotPage from './pages/pilot/CampusPilotPage';
 import SuperAdminPilotPage from './pages/pilot/SuperAdminPilotPage';
 
 const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 1,
-      refetchOnWindowFocus: false,
-    },
-  },
+  defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
 });
 
 const App = () => (
@@ -106,36 +102,23 @@ const App = () => (
                         <PilotRouteGuard allowedRoles={['admin']}><PilotReviewManagement /></PilotRouteGuard>
                       </ProtectedRoute>
                     } />
+                    <Route path="/admin/pilot/content" element={
+                      <ProtectedRoute allowedRoles={['admin']}>
+                        <PilotRouteGuard allowedRoles={['admin']}><PilotContentManagement /></PilotRouteGuard>
+                      </ProtectedRoute>
+                    } />
                   </Route>
 
                   <Route element={<Layout />}>
                     <Route path="/" element={<Index />} />
                     <Route path="/auth" element={<OfficialEntryIntentBoundary><Auth /></OfficialEntryIntentBoundary>} />
-
-                    <Route path="/dashboard" element={
-                      <ProtectedRoute allowedRoles={['student']}>
-                        <PilotPostProfileRedirect><Dashboard /></PilotPostProfileRedirect>
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/security/*" element={
-                      <ProtectedRoute allowedRoles={['security', 'admin']}><Security /></ProtectedRoute>
-                    } />
-                    <Route path="/admin/*" element={
-                      <ProtectedRoute allowedRoles={['admin']}><Admin /></ProtectedRoute>
-                    } />
-                    <Route path="/office" element={
-                      <ProtectedRoute allowedRoles={['security', 'admin']}><Office /></ProtectedRoute>
-                    } />
-                    <Route path="/profile" element={
-                      <ProtectedRoute allowedRoles={['student', 'security', 'admin']}><Profile /></ProtectedRoute>
-                    } />
-                    <Route path="/profile-completion" element={
-                      <ProtectedRoute allowedRoles={['student', 'security', 'admin']}><PilotPostProfileRedirect><ProfileCompletion /></PilotPostProfileRedirect></ProtectedRoute>
-                    } />
-                    <Route path="/judiciary" element={
-                      <ProtectedRoute allowedRoles={['security', 'admin']}><Judiciary /></ProtectedRoute>
-                    } />
-
+                    <Route path="/dashboard" element={<ProtectedRoute allowedRoles={['student']}><PilotPostProfileRedirect><Dashboard /></PilotPostProfileRedirect></ProtectedRoute>} />
+                    <Route path="/security/*" element={<ProtectedRoute allowedRoles={['security', 'admin']}><Security /></ProtectedRoute>} />
+                    <Route path="/admin/*" element={<ProtectedRoute allowedRoles={['admin']}><Admin /></ProtectedRoute>} />
+                    <Route path="/office" element={<ProtectedRoute allowedRoles={['security', 'admin']}><Office /></ProtectedRoute>} />
+                    <Route path="/profile" element={<ProtectedRoute allowedRoles={['student', 'security', 'admin']}><Profile /></ProtectedRoute>} />
+                    <Route path="/profile-completion" element={<ProtectedRoute allowedRoles={['student', 'security', 'admin']}><PilotPostProfileRedirect><ProfileCompletion /></PilotPostProfileRedirect></ProtectedRoute>} />
+                    <Route path="/judiciary" element={<ProtectedRoute allowedRoles={['security', 'admin']}><Judiciary /></ProtectedRoute>} />
                     <Route path="*" element={<NotFound />} />
                   </Route>
                 </Routes>
