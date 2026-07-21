@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { CheckCircle2, FileCheck2, Loader2, MapPin, ShieldCheck } from 'lucide-react';
 import { usePilotMode } from '@/contexts/PilotModeContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { consentToPilot, createPilotSession } from '@/services/pilot/pilotCoreService';
+import { consentToPilot, createPilotSession, isPilotSessionActive } from '@/services/pilot/pilotCoreService';
 import { CAMPUS_LABELS, PILOT_CONSENT_VERSION } from '@/config/pilot';
 import { PilotBanner } from '@/components/pilot/PilotBanner';
 import { PilotStudentDashboard } from '@/components/pilot/PilotStudentDashboard';
@@ -23,7 +23,7 @@ export default function PilotLanding() {
   if (!program || !participant || !user) return null;
 
   const hasConsent = ['consented', 'active', 'completed'].includes(participant.status) && Boolean(participant.consented_at);
-  const currentSession = session?.status === 'in_progress' ? session : null;
+  const currentSession = isPilotSessionActive(session) ? session : null;
 
   const enterDashboard = async () => {
     setLoading(true);
@@ -35,7 +35,7 @@ export default function PilotLanding() {
       const next = currentSession ?? await createPilotSession({ ...participant, status: hasConsent ? participant.status : 'consented' });
       setSession(next);
       await refresh();
-      toast({ title: 'Pilot dashboard activated', description: 'The isolated full-workflow environment is ready.' });
+      toast({ title: 'Pilot dashboard ready', description: 'Your testing session is active and synced.' });
     } catch (caught) {
       toast({ title: 'Unable to enter Pilot dashboard', description: caught instanceof Error ? caught.message : 'Try again.', variant: 'destructive' });
     } finally {

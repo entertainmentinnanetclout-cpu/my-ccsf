@@ -10,6 +10,7 @@ import {
   Navigation,
   ShieldCheck,
   Siren,
+  Sparkles,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,12 +20,12 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { PilotBanner } from '@/components/pilot/PilotBanner';
 import { CAMPUS_LABELS, PILOT_MAX_ATTACHMENTS, PILOT_ROUTES } from '@/config/pilot';
 import { captureBrowserPosition, normalizeGeolocationError } from '@/lib/browserGeolocation';
-import { formatCoordinatePair, reverseGeocodeCoordinates } from '@/lib/reverseGeocode';
+import { reverseGeocodeCoordinates } from '@/lib/reverseGeocode';
 import {
   createPilotReport,
+  ensureActivePilotSession,
   insertPilotLocationEvent,
   recordPilotFeatureTest,
   uploadPilotAttachments,
@@ -66,6 +67,11 @@ interface CapturedLocation {
   accuracy: number | null;
 }
 
+const isSessionFailure = (error: unknown) => {
+  const message = error instanceof Error ? error.message : '';
+  return /pilot session|session_(expired|not_found)|timed out|active owned pilot session/i.test(message);
+};
+
 export function PilotReportForm({
   scenario,
   participant,
@@ -80,7 +86,7 @@ export function PilotReportForm({
   const navigate = useNavigate();
   const { toast } = useToast();
   const emergencyLocationAttempted = useRef(false);
-  const [title, setTitle] = useState(emergency ? EMERGENCY_TITLE : scenario.title);
+  const [workingSession, setWorkingSession] = useState(session);
   const [description, setDescription] = useState(emergency ? EMERGENCY_DESCRIPTION : '');
   const [category, setCategory] = useState<IncidentCategory | ''>(
     emergency ? scenario.expected_category ?? EMERGENCY_FALLBACK_CATEGORY : scenario.expected_category ?? '',
@@ -94,33 +100,19 @@ export function PilotReportForm({
   const [loading, setLoading] = useState(false);
   const [locationLoading, setLocationLoading] = useState(false);
 
-  const requiresLocation = true;
+  useEffect(() => setWorkingSession(session), [session]);
+
   const requiresAttachment = !emergency && scenario.requires_attachment;
 
   const canSubmit = useMemo(() => {
     if (emergency) {
-      return emergencyConsent
-        && Boolean(location)
-        && Boolean(locationDescription.trim())
-        && !locationLoading;
+      return emergencyConsent && Boolean(location) && Boolean(locationDescription.trim()) && !locationLoading;
     }
-    if (!title.trim() || description.trim().length < 5 || !category) return false;
-    if (requiresLocation && (!location || !locationDescription.trim() || locationLoading)) return false;
+    if (description.trim().length < 5 || !category) return false;
+    if (!location || !locationDescription.trim() || locationLoading) return false;
     if (requiresAttachment && files.length === 0) return false;
     return true;
-  }, [
-    emergency,
-    emergencyConsent,
-    location,
-    locationDescription,
-    locationLoading,
-    title,
-    description,
-    category,
-    requiresLocation,
-    requiresAttachment,
-    files.length,
-  ]);
+  }, [category, description, emergency, emergencyConsent, files.length, location, locationDescription, locationLoading, requiresAttachment]);
 
   const captureLocation = useCallback(async () => {
     setLocationLoading(true);
@@ -141,15 +133,13 @@ export function PilotReportForm({
       setLocation(nextLocation);
       setLocationDescription(readableAddress);
       toast({
-        title: acquisition === 'network_fallback'
-          ? 'Location captured using network fallback'
-          : 'Location captured',
+        title: 'Location ready',
         description: readableAddress,
       });
 
       await recordPilotFeatureTest({
         programId: participant.program_id,
-        sessionId: session.id,
+        sessionId: workingSession.id,
         featureKey: 'location_permission_capture',
         outcome: 'passed',
         durationMs: Math.round(performance.now() - started),
@@ -168,7 +158,7 @@ export function PilotReportForm({
       setLocationError(failure.message);
       await recordPilotFeatureTest({
         programId: participant.program_id,
-        sessionId: session.id,
+        sessionId: workingSession.id,
         featureKey: 'location_permission_capture',
         outcome: failure.denied ? 'denied' : 'failed',
         durationMs: Math.round(performance.now() - started),
@@ -182,7 +172,7 @@ export function PilotReportForm({
     } finally {
       setLocationLoading(false);
     }
-  }, [participant.campus, participant.program_id, session.id, toast]);
+  }, [participant.campus, participant.program_id, toast, workingSession.id]);
 
   useEffect(() => {
     if (!emergency || emergencyLocationAttempted.current) return;
@@ -212,23 +202,38 @@ export function PilotReportForm({
 
     setLoading(true);
     const started = performance.now();
+    let activeSession = workingSession;
+
+    const submitWithSession = (sessionToUse: PilotSession) => createPilotReport({
+      program_id: participant.program_id,
+      session_id: sessionToUse.id,
+      participant_id: participant.id,
+      scenario_id: scenario.id,
+      campus: participant.campus,
+      title: emergency ? EMERGENCY_TITLE : scenario.title,
+      description: emergency ? EMERGENCY_DESCRIPTION : description.trim(),
+      category: selectedCategory,
+      is_anonymous: emergency ? false : anonymous,
+      emergency_consent: emergency ? emergencyConsent : false,
+      location_lat: location?.latitude ?? null,
+      location_lng: location?.longitude ?? null,
+      location_accuracy: location?.accuracy ?? null,
+      location_description: locationDescription.trim() || null,
+    });
+
     try {
-      const report = await createPilotReport({
-        program_id: participant.program_id,
-        session_id: session.id,
-        participant_id: participant.id,
-        scenario_id: scenario.id,
-        campus: participant.campus,
-        title: emergency ? EMERGENCY_TITLE : title.trim(),
-        description: emergency ? EMERGENCY_DESCRIPTION : description.trim(),
-        category: selectedCategory,
-        is_anonymous: emergency ? false : anonymous,
-        emergency_consent: emergency ? emergencyConsent : false,
-        location_lat: location?.latitude ?? null,
-        location_lng: location?.longitude ?? null,
-        location_accuracy: location?.accuracy ?? null,
-        location_description: locationDescription.trim() || null,
-      });
+      activeSession = await ensureActivePilotSession(participant, workingSession);
+      if (activeSession.id !== workingSession.id) setWorkingSession(activeSession);
+
+      let report;
+      try {
+        report = await submitWithSession(activeSession);
+      } catch (caught) {
+        if (!isSessionFailure(caught)) throw caught;
+        activeSession = await ensureActivePilotSession(participant, null);
+        setWorkingSession(activeSession);
+        report = await submitWithSession(activeSession);
+      }
 
       const followUpWarnings: string[] = [];
 
@@ -246,7 +251,7 @@ export function PilotReportForm({
           });
         } catch (locationEventError) {
           console.error('Pilot report was created but location telemetry could not be recorded.', locationEventError);
-          followUpWarnings.push('The case location is saved, but location-test telemetry could not be recorded.');
+          followUpWarnings.push('Location telemetry could not be added, but the case location is saved.');
         }
       }
 
@@ -297,20 +302,15 @@ export function PilotReportForm({
       }).catch(() => undefined);
 
       toast({
-        title: emergency ? 'Emergency report created' : 'Report created',
-        description: [
-          emergency
-            ? `${report.reference_number}. Your identity and location are visible to authorised campus-security Pilot staff.`
-            : `${report.reference_number}. The case is now visible in the authorised campus-security Pilot queue.`,
-          ...followUpWarnings,
-        ].join(' '),
+        title: emergency ? 'Emergency test submitted' : 'Pilot report submitted',
+        description: [`${report.reference_number}. The case is now visible in the authorised Pilot queue.`, ...followUpWarnings].join(' '),
         variant: followUpWarnings.length ? 'destructive' : 'default',
       });
       navigate(PILOT_ROUTES.report(report.id));
     } catch (caught) {
       await recordPilotFeatureTest({
         programId: participant.program_id,
-        sessionId: session.id,
+        sessionId: activeSession.id,
         featureKey: emergency ? 'emergency_simulation_submission' : 'standard_report_submission',
         outcome: 'failed',
         durationMs: Math.round(performance.now() - started),
@@ -318,7 +318,7 @@ export function PilotReportForm({
       }).catch(() => undefined);
       toast({
         title: 'Pilot submission failed',
-        description: caught instanceof Error ? caught.message : 'Try again.',
+        description: caught instanceof Error ? caught.message : 'Please try again.',
         variant: 'destructive',
       });
     } finally {
@@ -327,153 +327,134 @@ export function PilotReportForm({
   };
 
   return (
-    <Card className={emergency ? 'border-destructive/50 shadow-large' : 'shadow-large'}>
-      <CardHeader>
+    <Card className={emergency ? 'overflow-hidden border-destructive/40 shadow-large' : 'overflow-hidden border-border/60 shadow-large'}>
+      <CardHeader className={emergency ? 'border-b bg-destructive/5' : 'border-b bg-gradient-to-r from-primary/5 to-background'}>
         <div className="flex items-start gap-3">
-          <div className={emergency ? 'rounded-full bg-destructive/10 p-3 text-destructive' : 'rounded-full bg-primary/10 p-3 text-primary'}>
+          <div className={emergency ? 'rounded-xl bg-destructive/10 p-3 text-destructive' : 'rounded-xl bg-primary/10 p-3 text-primary'}>
             {emergency ? <Siren className="h-6 w-6" /> : <FileText className="h-6 w-6" />}
           </div>
-          <div>
-            <CardTitle>{emergency ? 'Emergency Report' : scenario.title}</CardTitle>
-            <CardDescription>
+          <div className="min-w-0">
+            <div className="mb-2 inline-flex items-center gap-2 rounded-full border bg-background px-3 py-1 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+              <Sparkles className="h-3.5 w-3.5 text-[#F2A900]" /> Pilot feature test
+            </div>
+            <CardTitle>{emergency ? 'Emergency Test' : 'Test Report Incident'}</CardTitle>
+            <CardDescription className="mt-1">
               {emergency
-                ? 'No incident explanation is required. Share your location, give consent and submit.'
-                : scenario.instructions}
+                ? 'Share your location, confirm consent and submit the simulation.'
+                : 'Add the essential details, capture your location and submit. No external emergency service is contacted.'}
             </CardDescription>
           </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-5">
-        <PilotBanner compact />
+
+      <CardContent className="space-y-5 p-5 sm:p-6">
+        <div className="grid grid-cols-3 gap-2" aria-label="Reporting steps">
+          {['1. Details', '2. Location', '3. Submit'].map((step) => (
+            <div key={step} className="rounded-lg border bg-muted/30 px-2 py-2 text-center text-xs font-semibold text-muted-foreground">{step}</div>
+          ))}
+        </div>
 
         {emergency ? (
-          <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4">
+          <div className="rounded-xl border border-destructive/25 bg-destructive/5 p-4">
             <div className="flex items-start gap-3">
               <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
               <div>
                 <p className="font-semibold">Your student profile is attached automatically</p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Authorised campus-security Pilot staff will receive your registered name, student details and captured location. You do not need to type an explanation.
-                </p>
+                <p className="mt-1 text-sm text-muted-foreground">No incident explanation is required for this emergency simulation.</p>
               </div>
             </div>
           </div>
         ) : (
-          <>
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor={`pilot-title-${scenario.id}`}>Report title</Label>
-                <Input
-                  id={`pilot-title-${scenario.id}`}
-                  value={title}
-                  onChange={(event) => setTitle(event.target.value)}
-                  maxLength={160}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Incident category</Label>
-                <Select value={category} onValueChange={(value) => setCategory(value as IncidentCategory)}>
-                  <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
-                  <SelectContent>
-                    {categories.map((item) => <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>What type of incident are you testing?</Label>
+              <Select value={category} onValueChange={(value) => setCategory(value as IncidentCategory)}>
+                <SelectTrigger className="h-12"><SelectValue placeholder="Select incident type" /></SelectTrigger>
+                <SelectContent>
+                  {categories.map((item) => <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor={`pilot-description-${scenario.id}`}>Incident description</Label>
+              <Label htmlFor={`pilot-description-${scenario.id}`}>What happened?</Label>
               <Textarea
                 id={`pilot-description-${scenario.id}`}
                 value={description}
                 onChange={(event) => setDescription(event.target.value)}
-                placeholder="Describe what happened and any information campus security should know."
-                rows={5}
+                placeholder="Briefly describe the test incident."
+                rows={4}
                 maxLength={5000}
+                className="resize-none"
               />
+              <p className="text-xs text-muted-foreground">A short, clear description is enough.</p>
             </div>
-          </>
+          </div>
         )}
 
-        <div className={emergency ? 'rounded-xl border border-destructive/30 p-4' : 'rounded-lg border p-4'}>
+        <div className={emergency ? 'rounded-xl border border-destructive/25 p-4' : 'rounded-xl border p-4'}>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="font-semibold">Current location <span className="text-destructive">required</span></p>
-              <p className="text-sm text-muted-foreground">The system stores a readable street or campus-area description, with coordinates retained as supporting technical data.</p>
+              <p className="font-semibold">Current location</p>
+              <p className="text-sm text-muted-foreground">Required to test campus routing.</p>
             </div>
-            <Button type="button" variant="outline" onClick={() => void captureLocation()} disabled={locationLoading}>
+            <Button type="button" variant={location ? 'outline' : 'default'} onClick={() => void captureLocation()} disabled={locationLoading}>
               {locationLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Navigation className="mr-2 h-4 w-4" />}
-              {locationLoading ? 'Finding address…' : location ? 'Capture again' : 'Share my location'}
+              {locationLoading ? 'Finding location…' : location ? 'Update location' : 'Use my location'}
             </Button>
           </div>
 
           {location && locationDescription && (
-            <div className="mt-3 rounded-md bg-muted p-3 text-sm">
-              <div className="flex items-start gap-2">
-                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-green-600" />
-                <div>
-                  <p className="font-medium">{locationDescription}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {formatCoordinatePair(location.latitude, location.longitude)} · accuracy {Math.round(location.accuracy ?? 0)} m
-                  </p>
-                </div>
-              </div>
+            <div className="mt-3 flex items-start gap-2 rounded-lg bg-emerald-500/10 p-3 text-sm">
+              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+              <div><p className="font-medium">Location ready</p><p className="mt-0.5 text-muted-foreground">{locationDescription}</p></div>
             </div>
           )}
 
           {locationError && (
-            <div className="mt-3 flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive" role="alert">
+            <div className="mt-3 flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive" role="alert">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
               <span>{locationError}</span>
-            </div>
-          )}
-
-          {!emergency && (
-            <div className="mt-3 space-y-2">
-              <Label htmlFor={`pilot-location-${scenario.id}`}>Location description</Label>
-              <Input
-                id={`pilot-location-${scenario.id}`}
-                value={locationDescription}
-                onChange={(event) => setLocationDescription(event.target.value)}
-                placeholder="Building, gate, residence or street address"
-              />
             </div>
           )}
         </div>
 
         {!emergency && (
-          <>
-            <div className="rounded-lg border p-4">
-              <div className="flex items-center gap-2">
-                <Camera className="h-5 w-5 text-primary" />
-                <p className="font-semibold">Attachments {requiresAttachment && <span className="text-destructive">required</span>}</p>
+          <details className="group rounded-xl border bg-muted/20" open={requiresAttachment}>
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4 font-semibold">
+              <span className="flex items-center gap-2"><Camera className="h-5 w-5 text-primary" />Evidence and privacy</span>
+              <span className="text-xs font-normal text-muted-foreground">{requiresAttachment ? 'Evidence required' : 'Optional'}</span>
+            </summary>
+            <div className="space-y-4 border-t p-4">
+              <div className="space-y-2">
+                <Label htmlFor={`pilot-files-${scenario.id}`}>Add photos, video or a document</Label>
+                <Input
+                  id={`pilot-files-${scenario.id}`}
+                  type="file"
+                  multiple
+                  accept="image/jpeg,image/png,image/webp,video/mp4,application/pdf"
+                  onChange={(event) => handleFiles(Array.from(event.target.files ?? []))}
+                />
+                <p className="text-xs text-muted-foreground">Up to {PILOT_MAX_ATTACHMENTS} files, maximum 10 MB each.</p>
+                {files.length > 0 && <p className="text-sm font-medium">{files.length} file{files.length === 1 ? '' : 's'} ready.</p>}
               </div>
-              <p className="mt-1 text-sm text-muted-foreground">Up to {PILOT_MAX_ATTACHMENTS} files. JPEG, PNG, WebP, MP4 or PDF. Maximum 10 MB each.</p>
-              <Input
-                className="mt-3"
-                type="file"
-                multiple
-                accept="image/jpeg,image/png,image/webp,video/mp4,application/pdf"
-                onChange={(event) => handleFiles(Array.from(event.target.files ?? []))}
-              />
-              {files.length > 0 && <p className="mt-2 text-sm">{files.length} attachment{files.length === 1 ? '' : 's'} selected.</p>}
-            </div>
 
-            <div className="flex items-start gap-3">
-              <Checkbox
-                id={`pilot-anonymous-${scenario.id}`}
-                checked={anonymous}
-                onCheckedChange={(checked) => setAnonymous(checked === true)}
-              />
-              <Label htmlFor={`pilot-anonymous-${scenario.id}`} className="leading-relaxed">
-                Display this report as anonymous in participant-facing presentation. Authenticated ownership remains available to authorised staff for case handling and audit.
-              </Label>
+              <div className="flex items-start gap-3 rounded-lg bg-background p-3">
+                <Checkbox
+                  id={`pilot-anonymous-${scenario.id}`}
+                  checked={anonymous}
+                  onCheckedChange={(checked) => setAnonymous(checked === true)}
+                />
+                <Label htmlFor={`pilot-anonymous-${scenario.id}`} className="leading-relaxed">
+                  Hide my name in the participant-facing view. Authorised Pilot staff retain access for testing and audit.
+                </Label>
+              </div>
             </div>
-          </>
+          </details>
         )}
 
         {emergency && (
-          <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4">
+          <div className="rounded-xl border border-destructive/25 bg-destructive/5 p-4">
             <div className="flex items-start gap-3">
               <Checkbox
                 id={`pilot-emergency-consent-${scenario.id}`}
@@ -481,24 +462,18 @@ export function PilotReportForm({
                 onCheckedChange={(checked) => setEmergencyConsent(checked === true)}
               />
               <Label htmlFor={`pilot-emergency-consent-${scenario.id}`} className="leading-relaxed">
-                I consent to share my current location and registered student profile with authorised campus-security Pilot staff. I understand Pilot Mode does not contact CPS, SAPS, an ambulance or another external emergency service.
+                I consent to share my current location and registered student profile with authorised campus-security Pilot staff. I understand this test does not contact CPS, SAPS, an ambulance or another external emergency service.
               </Label>
             </div>
           </div>
         )}
 
-        {!canSubmit && (
-          <div className="flex items-start gap-2 rounded-lg bg-muted p-3 text-sm text-muted-foreground">
-            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-            {emergency
-              ? 'Capture your location and give consent to submit the emergency report.'
-              : 'Complete all required report fields and capture your location before submitting.'}
-          </div>
-        )}
+        <div className="rounded-lg bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
+          Your Pilot session is kept in sync automatically. You will not lose this report because an older testing session expired.
+        </div>
 
         <Button
-          className="w-full"
-          size="lg"
+          className="h-12 w-full text-base font-bold"
           onClick={() => void submit()}
           disabled={!canSubmit || loading}
           variant={emergency ? 'destructive' : 'default'}
@@ -508,8 +483,16 @@ export function PilotReportForm({
             : emergency
               ? <Siren className="mr-2 h-5 w-5" />
               : <MapPin className="mr-2 h-5 w-5" />}
-          {emergency ? 'Submit Emergency Report' : 'Submit Report'}
+          {loading ? 'Submitting securely…' : emergency ? 'Submit Emergency Test' : 'Submit Pilot Report'}
         </Button>
+
+        {!canSubmit && (
+          <p className="text-center text-sm text-muted-foreground">
+            {emergency
+              ? 'Use your location and confirm consent to continue.'
+              : 'Select an incident type, add a short description and use your location.'}
+          </p>
+        )}
       </CardContent>
     </Card>
   );
