@@ -22,6 +22,7 @@ const campusDashboard = read('src/components/pilot/PilotCampusSecurityDashboard.
 const reportForm = read('src/components/pilot/PilotReportForm.tsx');
 const carousel = read('src/components/pilot/PilotDashboardCarousel.tsx');
 const guide = read('src/components/pilot/PilotUserGuideDialog.tsx');
+const profileService = read('src/services/pilot/pilotProfileService.ts');
 const reviewService = read('src/services/pilot/pilotReviewService.ts');
 const experienceService = read('src/services/pilot/pilotExperienceService.ts');
 const contentService = read('src/services/pilot/pilotContentAdminService.ts');
@@ -69,7 +70,24 @@ check(reportForm.includes("const EMERGENCY_TITLE = 'Emergency assistance request
 check(studentDashboard.includes('PILOT_ROUTES.report(report.id)') || studentDashboard.includes('to={PILOT_ROUTES.report(report.id)}'), 'Student case cards are openable.');
 check(campusDashboard.includes('onAdvance={moveReport}') || campusDashboard.includes('navigate(PILOT_ROUTES.report'), 'Campus case actions have live handlers.');
 
-const pilotServices = [reviewService, experienceService, contentService].join('\n');
+check(profileService.includes("supabase.rpc(\n    'pilot_get_student_identities'"), 'Pilot identity loading invokes RPC through the bound Supabase client.');
+check(!profileService.includes('const callIdentityRpc = supabase.rpc'), 'Pilot identity loading never detaches SupabaseClient.rpc from its client context.');
+const detachedSupabaseMethods = [];
+const inspectDirectory = (directory) => {
+  for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+    const absolute = path.join(directory, entry.name);
+    if (entry.isDirectory()) inspectDirectory(absolute);
+    else if (/\.(?:ts|tsx)$/.test(entry.name)) {
+      const source = fs.readFileSync(absolute, 'utf8');
+      const pattern = /\b(?:const|let|var)\s+\w+\s*=\s*supabase\.(?:from|rpc|channel|removeChannel)\b(?!\s*\()/g;
+      for (const match of source.matchAll(pattern)) detachedSupabaseMethods.push(`${path.relative(root, absolute)}:${match.index}`);
+    }
+  }
+};
+inspectDirectory(path.join(root, 'src'));
+check(detachedSupabaseMethods.length === 0, `Supabase client methods retain their required client context${detachedSupabaseMethods.length ? `: ${detachedSupabaseMethods.join(', ')}` : '.'}`);
+
+const pilotServices = [profileService, reviewService, experienceService, contentService].join('\n');
 for (const productionTable of ["from('incidents')", "from('feedback')", "from('carousel_images')", "from('notifications')", "from('case_updates')"]) {
   check(!pilotServices.includes(productionTable), `Pilot Phase 5 services do not access production table: ${productionTable}.`);
 }
