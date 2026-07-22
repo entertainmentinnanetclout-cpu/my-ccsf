@@ -177,11 +177,12 @@ assert(locationHook.includes('clearWatch'), 'Pilot location tracking clears brow
 assert(locationHook.includes('localStorage.removeItem(PILOT_LOCATION_STORAGE_KEY)'), 'Stopping Pilot tracking clears persisted tracking state.');
 
 const resources = read('src/pages/pilot/PilotResources.tsx');
-assert(resources.includes("recordDownload('safety_resource_print_pdf')"), 'Printing the interactive Safety Guide is recorded as a Pilot feature test.');
-assert(resources.includes("recordDownload('safety_guide_pdf_download')"), 'Downloading the versioned Safety Guide PDF is recorded as a Pilot feature test.');
+assert(resources.includes("featureKey: 'campus_guide_document_library_print'"), 'Printing the Campus Guide and Document Library is recorded as a Pilot feature test.');
+assert(resources.includes('featureKey: `resource_${resourceDocument.document_type}_${action}`'), 'Opening and downloading each managed resource is recorded with an isolated Pilot feature key.');
 assert(resources.includes('window.print()'), 'Printable Pilot resources use the browser print/PDF workflow.');
 assert(resources.includes('sm:flex-row') && resources.includes('flex-wrap'), 'Pilot resources expose responsive mobile and desktop controls.');
-assert(resources.includes('Reset Guide Across Devices'), 'Students can reset their profile-bound guide preference from Safety Guide.');
+assert(resources.includes('Reset Guide Across Devices'), 'Students can reset their profile-bound guide preference from the resource centre.');
+assert(resources.includes('loadPilotResourceDocuments') && resources.includes('pilot-document-library'), 'The resource centre reads the isolated managed Pilot document collection.');
 
 const indexHtml = read('index.html');
 assert(indexHtml.includes('width=device-width, initial-scale=1.0'), 'Application viewport metadata supports mobile rendering.');
