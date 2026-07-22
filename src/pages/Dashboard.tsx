@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FileText, Home, LifeBuoy, LogOut, Map, MapPin, Plus, Shield } from 'lucide-react';
+import { FileText, FlaskConical, Home, LifeBuoy, LogOut, Map, MapPin, Plus, Shield } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -9,6 +9,7 @@ import { InstitutionBrand } from '@/components/shared/InstitutionBrand';
 import { NotificationBell } from '@/components/shared/NotificationBell';
 import { ThemeToggle } from '@/components/shared/ThemeToggle';
 import { MobileBottomNav } from '@/components/shared/MobileBottomNav';
+import { AcademicFraudLaunchCard } from '@/components/shared/AcademicFraudLaunchCard';
 import { ReportIncident } from '@/components/student/ReportIncident';
 import { EmergencyReport } from '@/components/student/EmergencyReport';
 import { CampusMap } from '@/components/student/CampusMap';
@@ -79,6 +80,17 @@ const Dashboard = () => {
             </div>
 
             <div className="flex items-center gap-2 sm:gap-3">
+              <Button
+                asChild
+                size="sm"
+                className="border border-[#F2A900]/70 bg-[#D7193F] px-2 font-extrabold text-white shadow-md hover:bg-[#B91435] sm:px-3"
+                data-testid="open-pilot-mode"
+              >
+                <Link to="/pilot">
+                  <FlaskConical className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Open Pilot</span>
+                </Link>
+              </Button>
               <motion.div className="hidden items-center gap-2 rounded-full border border-border bg-muted px-4 py-2 shadow-sm dark:border-white/20 dark:bg-white/10 lg:flex" whileHover={{ scale: 1.02 }}>
                 <MapPin className="h-4 w-4 text-primary dark:text-white" aria-hidden="true" />
                 <span className="text-sm font-semibold text-primary dark:text-white">{campusLabel}</span>
@@ -120,9 +132,14 @@ const Dashboard = () => {
 
         <motion.div key={activeView} initial={{ opacity: 0, x: 20, scale: 0.97 }} animate={{ opacity: 1, x: 0, scale: 1 }} exit={{ opacity: 0, x: -20, scale: 0.97 }} transition={{ type: 'spring', stiffness: 300, damping: 30 }}>
           {activeView === 'home' && <StudentDashboardHome campus={campus || undefined} />}
-          <div className="px-4">
+          <div className="space-y-6 px-4">
             {activeView === 'mycases' && <MyCaseReports />}
-            {activeView === 'report' && <ReportIncident />}
+            {activeView === 'report' && (
+              <>
+                <AcademicFraudLaunchCard pilotHref="/pilot?open=academic-fraud" />
+                <ReportIncident />
+              </>
+            )}
             {activeView === 'map' && <CampusMap />}
             {activeView === 'messages' && <StudentChat onNavigate={changeView} />}
           </div>
