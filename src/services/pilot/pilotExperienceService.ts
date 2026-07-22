@@ -35,25 +35,48 @@ export const DEFAULT_PILOT_GUIDE_STEPS: PilotGuideStep[] = [
   updated_at: '2026-07-21T00:00:00.000Z',
 }));
 
-export const PILOT_SAFETY_GUIDE_FALLBACK: PilotSafetyDocument = {
-  id: 'phase4-static-safety-guide',
-  program_id: null,
-  title: 'CCSF Pilot Safety Guide',
-  description: 'Print-ready A4 handbook covering reporting, location permissions, case tracking, privacy, safety actions and verified support channels.',
-  document_type: 'safety_guide',
-  version: '1.0',
-  publication_date: '2026-07-20',
-  download_url: '/downloads/CCSF-Pilot-Safety-Guide-v1.0.pdf',
-  storage_path: null,
-  file_name: 'CCSF-Pilot-Safety-Guide-v1.0.pdf',
-  file_size_bytes: null,
-  campus_targets: [],
-  is_active: true,
-  starts_at: null,
-  expires_at: null,
-  created_at: '2026-07-20T00:00:00.000Z',
-  updated_at: '2026-07-20T00:00:00.000Z',
-};
+export const PILOT_RESOURCE_DOCUMENT_FALLBACKS: PilotSafetyDocument[] = [
+  {
+    id: '40000000-0000-4000-8000-000000000101',
+    program_id: null,
+    title: 'TUT Pretoria Campus Safety, Security & Navigation Handbook',
+    description: 'A 51-page CCSF and TUT branded handbook covering campus buildings, departments, student-service routes, safety guidance, emergency support and practical navigation.',
+    document_type: 'safety_guide',
+    version: '2.0',
+    publication_date: '2026-07-22',
+    download_url: '/downloads/My-CCSF-TUT-Pretoria-Campus-Safety-Security-Navigation-Handbook-v2.0.pdf',
+    storage_path: null,
+    file_name: 'My-CCSF-TUT-Pretoria-Campus-Safety-Security-Navigation-Handbook-v2.0.pdf',
+    file_size_bytes: 423_051,
+    campus_targets: [],
+    is_active: true,
+    starts_at: null,
+    expires_at: null,
+    created_at: '2026-07-22T00:00:00.000Z',
+    updated_at: '2026-07-22T00:00:00.000Z',
+  },
+  {
+    id: '40000000-0000-4000-8000-000000000102',
+    program_id: null,
+    title: 'CCSF Crime Prevention Unit Operating Structure & Pilot Activation Plan',
+    description: 'The updated corporate operating structure, CPS reporting line, six-person functional model, case-handling workflow, online-scam prevention campaign, campus activation plan and estimated implementation finances.',
+    document_type: 'other',
+    version: '1.0',
+    publication_date: '2026-07-22',
+    download_url: '/downloads/CCSF-Crime-Prevention-Unit-Operating-Structure-Pilot-Activation-Plan.pptx',
+    storage_path: null,
+    file_name: 'CCSF-Crime-Prevention-Unit-Operating-Structure-Pilot-Activation-Plan.pptx',
+    file_size_bytes: 298_678,
+    campus_targets: [],
+    is_active: true,
+    starts_at: null,
+    expires_at: null,
+    created_at: '2026-07-22T00:00:00.000Z',
+    updated_at: '2026-07-22T00:00:00.000Z',
+  },
+];
+
+export const PILOT_SAFETY_GUIDE_FALLBACK = PILOT_RESOURCE_DOCUMENT_FALLBACKS[0];
 
 type QueryResponse<T> = { data: T | null; error: unknown };
 interface QueryBuilder<T> extends PromiseLike<QueryResponse<T>> {
@@ -99,29 +122,51 @@ export async function loadPilotGuideSteps(): Promise<PilotGuideStep[]> {
 export async function resolvePilotSafetyDocumentUrl(document: PilotSafetyDocument, expiresIn = 600): Promise<string> {
   if (!document.storage_path) return document.download_url;
   const { data, error } = await supabase.storage.from(PILOT_RESOURCE_BUCKET).createSignedUrl(document.storage_path, expiresIn);
-  if (error || !data?.signedUrl) fail('Unable to create a secure Safety Guide download link.', error);
+  if (error || !data?.signedUrl) fail('Unable to create a secure resource download link.', error);
   return data.signedUrl;
 }
 
-export async function loadPilotSafetyDocument(programId: string): Promise<PilotSafetyDocument> {
+const newerDocument = (current: PilotSafetyDocument, candidate: PilotSafetyDocument) => {
+  const currentDate = Date.parse(current.publication_date);
+  const candidateDate = Date.parse(candidate.publication_date);
+  return candidateDate >= currentDate ? candidate : current;
+};
+
+export async function loadPilotResourceDocuments(programId: string): Promise<PilotSafetyDocument[]> {
+  const fallbackById = new Map(PILOT_RESOURCE_DOCUMENT_FALLBACKS.map((document) => [document.id, document]));
   const { data, error } = await pilotExperienceClient
-    .from<PilotSafetyDocument>('pilot_resource_documents')
+    .from<PilotSafetyDocument[]>('pilot_resource_documents')
     .select('*')
-    .eq('document_type', 'safety_guide')
     .or(`program_id.is.null,program_id.eq.${programId}`)
-    .order('publication_date', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  if (error || !data) {
-    if (error) console.error('Unable to load the versioned Pilot safety document. Using the approved static fallback.', error);
-    return PILOT_SAFETY_GUIDE_FALLBACK;
+    .order('publication_date', { ascending: false });
+
+  if (error) {
+    console.error('Unable to load managed Pilot documents. Using the approved release library.', error);
+    return PILOT_RESOURCE_DOCUMENT_FALLBACKS;
   }
-  try {
-    return { ...data, download_url: await resolvePilotSafetyDocumentUrl(data) };
-  } catch (signedUrlError) {
-    console.error('Managed Safety Guide link could not be signed. Using the approved static fallback.', signedUrlError);
-    return PILOT_SAFETY_GUIDE_FALLBACK;
+
+  const resolved = await Promise.all((data ?? []).map(async (document) => {
+    try {
+      return { ...document, download_url: await resolvePilotSafetyDocumentUrl(document) };
+    } catch (signedUrlError) {
+      console.error(`Managed document link could not be signed for ${document.title}.`, signedUrlError);
+      return document;
+    }
+  }));
+
+  for (const document of resolved) {
+    const existing = fallbackById.get(document.id);
+    fallbackById.set(document.id, existing ? newerDocument(existing, document) : document);
   }
+
+  return [...fallbackById.values()]
+    .filter((document) => document.is_active)
+    .sort((a, b) => Date.parse(b.publication_date) - Date.parse(a.publication_date));
+}
+
+export async function loadPilotSafetyDocument(programId: string): Promise<PilotSafetyDocument> {
+  const documents = await loadPilotResourceDocuments(programId);
+  return documents.find((document) => document.document_type === 'safety_guide') ?? PILOT_SAFETY_GUIDE_FALLBACK;
 }
 
 export async function loadPilotGuidePreferences(): Promise<PilotGuidePreferences> {
