@@ -1,15 +1,6 @@
 export const BRAND = {
-  navy: '002F6C', blue: '0055A5', red: 'D7193F', gold: 'F2A900', ink: '172033', muted: '5F6B7A', pale: 'EEF4FA', white: 'FFFFFF',
+  navy: '002F6C', blue: '0055A5', cyan: '00A6D6', red: 'D7193F', gold: 'F2A900', ink: '172033', muted: '5F6B7A', pale: 'EEF4FA', white: 'FFFFFF', softGold: 'FFF6DF', softRed: 'FFF1F3',
 };
-
-export const team = [
-  ['Ayanda Dube', 'Unit Coordination & Strategic Integration', 'Coordinates the unit plan, CPS submissions, approvals, performance reporting and campus expansion.'],
-  ['Thipo Mapanga', 'Prevention Operations & Campus Activations', 'Plans awareness drives, campus logistics, event support and field readiness.'],
-  ['Obakeng Junior Msueti', 'Digital Reporting & Case Intake', 'Monitors Pilot reports, validates intake information, maintains reference control and prepares handover packs.'],
-  ['Pascal', 'Administration, Records & Compliance', 'Controls registers, minutes, document filing, consent records and close-out evidence.'],
-  ['Njonvelo Mayule', 'Communications & Student Engagement', 'Produces prevention messages, scam alerts, QR campaigns, student feedback and approved updates.'],
-  ['Hangani (surname to be confirmed)', 'Monitoring, Research & Quality Assurance', 'Tracks trends, tests workflows, checks data quality and prepares improvement recommendations.'],
-];
 
 export const buildingVerified = new Map([
   [2, 'Industrial Engineering | Room 332'],
@@ -38,20 +29,39 @@ export const departmentRoutes = [
   ['Campus Protection Services', 'Verify the campus-specific control point', 'Emergencies, suspicious conduct, access matters and official incident response.'],
 ];
 
+export const academicFraudTypes = [
+  ['Paid mark-change offers', 'A person asks for money to alter marks, results or assessment outcomes.'],
+  ['Courses or enrolment access for sale', 'A person sells unofficial course access, enrolment, registration or admission.'],
+  ['Fake sick letters or medical notes', 'A person offers fraudulent medical documentation for academic use.'],
+  ['Fake WIL placements or placement fees', 'A person sells false workplace placement, internship or WIL opportunities.'],
+  ['Fake academic records or certificates', 'A person produces or sells altered statements, records, certificates or proof of qualification.'],
+  ['Impersonated admin services', 'A person pretends to be university staff or sells unofficial administrative services.'],
+];
+
 export const safetyTopics = [
   ['Prevention first', 'Secure belongings, use familiar well-lit routes, respect access controls and report suspicious behaviour early.'],
-  ['Online academic scams', 'Report people selling courses, offering mark changes, fake academic records, fraudulent registrations or payment-based access to university systems.'],
+  ['Online academic scams', 'Report paid mark changes, fake courses, sick letters, WIL placements, academic records or impersonated admin services.'],
   ['Evidence preservation', 'Keep screenshots, usernames, links, payment requests, dates and reference numbers. Do not confront the suspected offender.'],
-  ['Privacy and dignity', 'Share only relevant information through authorised channels. Do not circulate victim names, private media or unverified allegations.'],
+  ['Privacy and dignity', 'Share only relevant information through authorised channels. Do not circulate private media or unverified allegations.'],
   ['Pilot boundaries', 'The Pilot tests digital reporting and routing. It does not replace CPS authority, SAPS, medical services or disciplinary procedures.'],
   ['Emergency route', 'For immediate danger use 112, SAPS 10111 or ambulance/fire 10177, then follow campus CPS instructions.'],
 ];
 
-export const budgetRows = [
-  ['Pretoria West launch activation', 'R18,000 - R30,000', 'Gazebo, printing, QR signage, safety material, refreshments and local logistics.'],
-  ['Campus activation trip', 'R12,000 - R25,000 per campus', 'Transport, accommodation where required, meals, printing and activation consumables.'],
-  ['Digital awareness campaign', 'R8,000 - R18,000', 'Content production, approved digital media, QR assets and student-facing explainers.'],
-  ['Protective/visibility equipment', 'R15,000 - R35,000', 'Branded bibs, banners, directional signage and reusable activation equipment.'],
-  ['Monitoring and reporting', 'R5,000 - R12,000', 'Registers, evaluation tools, data bundles and reporting production.'],
-  ['Contingency', '10% of approved activity budget', 'Unexpected transport, replacement material and operational variation.'],
+export const appGuideSteps = [
+  ['1', 'SIGN IN AND COMPLETE YOUR PROFILE', 'Use your verified student account and ensure your campus, student number and contact details are accurate.'],
+  ['2', 'SWITCH BETWEEN OFFICIAL AND PILOT', 'Use Open Pilot in the official student header. In Pilot, use Official Student Portal to return.'],
+  ['3', 'EXPLORE CAMPUS AND RESIDENCE IMAGES', 'The Pilot home contains the managed Pilot carousel plus the campus and residence image carousel.'],
+  ['4', 'REPORT ACADEMIC FRAUD', 'Choose Academic Fraud & Fake Admin Services and select the suspicious service type.'],
+  ['5', 'ATTACH PRIVATE EVIDENCE', 'Add screenshots, PDFs, payment proof, images or video. Keep original files and avoid unrelated personal data.'],
+  ['6', 'TRACK THE CASE', 'Save the reference number and use My Cases to view status, evidence and authorised updates.'],
+  ['7', 'USE THE DOCUMENT LIBRARY', 'Download the campus handbook, building guide and this app user guide.'],
+  ['8', 'UNDERSTAND EMERGENCY LIMITS', 'Pilot reports are test records. For immediate danger use verified CPS and emergency channels.'],
+];
+
+export const contacts = [
+  ['112', 'Cellphone emergency'],
+  ['10111', 'SAPS emergency'],
+  ['10177', 'Ambulance / fire'],
+  ['086 110 2421', 'TUT Contact Centre'],
+  ['0800 428 428', 'GBV Command Centre'],
 ];
