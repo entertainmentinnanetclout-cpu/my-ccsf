@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   AlertCircle,
+  ArrowLeftRight,
   Bell,
   BookOpen,
   CheckCircle2,
@@ -22,6 +23,7 @@ import { PilotBanner } from '@/components/pilot/PilotBanner';
 import { PilotDashboardCarousel } from '@/components/pilot/PilotDashboardCarousel';
 import { PilotReportForm } from '@/components/pilot/PilotReportForm';
 import { PilotUserGuideDialog } from '@/components/pilot/PilotUserGuideDialog';
+import { AcademicFraudLaunchCard } from '@/components/shared/AcademicFraudLaunchCard';
 import { StudentDashboardHome } from '@/components/student/StudentDashboardHome';
 import { MobileBottomNav } from '@/components/shared/MobileBottomNav';
 import { Badge } from '@/components/ui/badge';
@@ -51,6 +53,7 @@ import type { PilotNotification, PilotParticipant, PilotProgram, PilotReport, Pi
 
 type View = 'home' | 'mycases' | 'report' | 'map' | 'support';
 const TERMINAL_STATUSES = new Set(['simulation_completed', 'cancelled', 'withdrawn', 'expired']);
+const ACADEMIC_FRAUD_SCENARIO_PATTERN = /academic fraud|fake admin services/i;
 
 export function PilotStudentDashboard({
   program,
@@ -62,6 +65,7 @@ export function PilotStudentDashboard({
   session: PilotSession;
 }) {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const guide = usePilotGuide({ autoOpen: true });
   const [view, setView] = useState<View>('home');
@@ -131,6 +135,7 @@ export function PilotStudentDashboard({
 
   const selectedScenario = scenarios.find((item) => item.id === scenarioId) ?? scenarios[0] ?? null;
   const emergencyScenario = scenarios.find((item) => item.scenario_type === 'emergency_simulation') ?? null;
+  const academicFraudScenario = scenarios.find((item) => ACADEMIC_FRAUD_SCENARIO_PATTERN.test(item.title)) ?? null;
   const unread = notifications.filter((item) => !item.is_read).length;
   const active = reports.filter((item) => !TERMINAL_STATUSES.has(item.status)).length;
   const locationReports = reports.filter((item) => item.location_lat !== null && item.location_lng !== null);
@@ -142,6 +147,15 @@ export function PilotStudentDashboard({
     { view: 'support', icon: LifeBuoy, label: 'Support' },
   ];
 
+  useEffect(() => {
+    if (searchParams.get('open') !== 'academic-fraud' || !academicFraudScenario) return;
+    setScenarioId(academicFraudScenario.id);
+    setView('report');
+    const next = new URLSearchParams(searchParams);
+    next.delete('open');
+    setSearchParams(next, { replace: true });
+  }, [academicFraudScenario, searchParams, setSearchParams]);
+
   const openEmergencySimulation = () => {
     if (!emergencyScenario) {
       toast({
@@ -152,6 +166,19 @@ export function PilotStudentDashboard({
       return;
     }
     setScenarioId(emergencyScenario.id);
+    setView('report');
+  };
+
+  const openAcademicFraudReport = () => {
+    if (!academicFraudScenario) {
+      toast({
+        title: 'Academic fraud reporting is being prepared',
+        description: 'Refresh the Pilot shortly or use the standard Evidence Attachment workflow.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    setScenarioId(academicFraudScenario.id);
     setView('report');
   };
 
@@ -213,7 +240,12 @@ export function PilotStudentDashboard({
 
   return (
     <div className="min-h-[calc(100vh-12rem)] bg-background" data-testid="ready-pilot-student-dashboard">
-      <div className="px-4 pt-5 sm:px-6"><PilotBanner compact /></div>
+      <div className="flex flex-col justify-between gap-3 px-4 pt-5 sm:flex-row sm:items-center sm:px-6">
+        <PilotBanner compact />
+        <Button variant="outline" asChild className="shrink-0 border-[#002F6C]/30 font-bold" data-testid="open-official-student-portal">
+          <Link to="/dashboard"><ArrowLeftRight className="mr-2 h-4 w-4" />Official Student Portal</Link>
+        </Button>
+      </div>
       <div className="px-4 pt-5 sm:px-6">
         <Card className="hidden p-2 shadow-elevated md:block">
           <div className="grid grid-cols-5 gap-2" role="tablist" aria-label="Student Pilot portal sections">
@@ -232,14 +264,14 @@ export function PilotStudentDashboard({
             <div className="px-4 sm:px-6">
               <PilotDashboardCarousel slides={slides} loading={carouselLoading} onAction={handleCarouselAction} />
             </div>
-            <StudentDashboardHome campus={participant.campus} showCarousel={false} />
+            <StudentDashboardHome campus={participant.campus} />
             <div className="space-y-6 px-4 sm:px-6">
               <section className="rounded-2xl bg-gradient-to-br from-[#002F6C] to-[#0055A5] p-6 text-white shadow-large sm:p-8">
                 <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-[#F2A900]">Student Pilot portal</p>
                 <div className="mt-2 flex flex-col justify-between gap-5 lg:flex-row lg:items-center">
                   <div>
                     <h2 className="text-2xl font-extrabold sm:text-3xl">Your complete safety workflow is ready</h2>
-                    <p className="mt-2 max-w-3xl text-white/80">Test reporting, readable location capture, case tracking, staff communication, reviews and safety guidance using isolated Pilot records only.</p>
+                    <p className="mt-2 max-w-3xl text-white/80">Test reporting, readable location capture, private evidence, case tracking, staff communication, campus images, residences and public student guides using isolated Pilot records.</p>
                   </div>
                   <div className="flex flex-col gap-2 sm:flex-row">
                     <Button className="bg-[#F2A900] font-bold text-[#002F6C]" onClick={() => setView('report')}><Plus className="mr-2 h-4 w-4" />Report an Incident</Button>
@@ -248,6 +280,8 @@ export function PilotStudentDashboard({
                 </div>
               </section>
 
+              <AcademicFraudLaunchCard onStart={openAcademicFraudReport} />
+
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 <Metric label="Total reports" value={reports.length} />
                 <Metric label="Active cases" value={active} />
@@ -255,11 +289,12 @@ export function PilotStudentDashboard({
                 <Metric label="Campus" value={CAMPUS_LABELS[participant.campus]} />
               </div>
 
-              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
                 <QuickAction icon={FileText} title="Track your cases" description="Open the full case details and timeline." onClick={() => setView('mycases')} />
                 <QuickAction icon={MapPin} title="Test location" description="Use readable address capture and coordinates." onClick={() => setView('map')} />
+                <QuickAction icon={ShieldCheck} title="Report academic scam" description="Attach proof of fake marks, WIL, records or admin services." onClick={openAcademicFraudReport} />
                 <QuickAction icon={MessageSquareText} title="Submit a review" description="Rate the experience and read staff replies." onClick={() => navigate(PILOT_ROUTES.reviews)} />
-                <QuickAction icon={BookOpen} title="Open Safety Guide" description="Reopen the user guide and safety handbook." onClick={() => navigate(PILOT_ROUTES.resources)} />
+                <QuickAction icon={BookOpen} title="Open document library" description="Campus, building and app user guides." onClick={() => navigate(PILOT_ROUTES.resources)} />
                 <QuickAction icon={LifeBuoy} title="Support centre" description="Read authorised staff notifications." onClick={() => setView('support')} />
               </div>
 
@@ -267,8 +302,8 @@ export function PilotStudentDashboard({
                 <CardContent className="flex flex-col justify-between gap-5 bg-gradient-to-r from-[#F2A900]/20 to-background p-6 sm:flex-row sm:items-center">
                   <div>
                     <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-[#002F6C] dark:text-[#F2A900]">Version {safetyDocument.version} · {safetyDocument.publication_date}</p>
-                    <h3 className="mt-2 text-xl font-extrabold">Download the CCSF Pilot Safety Guide</h3>
-                    <p className="mt-2 max-w-3xl text-sm text-muted-foreground">A4 handbook with reporting instructions, privacy guidance, safety checklists, verified support contacts and the Pilot QR code.</p>
+                    <h3 className="mt-2 text-xl font-extrabold">Download the public CCSF campus handbook</h3>
+                    <p className="mt-2 max-w-3xl text-sm text-muted-foreground">Premium TUT and CCSF branded guidance covering campus navigation, reporting, privacy, safety, student services and verified support routes.</p>
                   </div>
                   <Button onClick={() => void downloadSafetyGuide()}><Download className="mr-2 h-4 w-4" />Download PDF</Button>
                 </CardContent>
@@ -283,12 +318,13 @@ export function PilotStudentDashboard({
 
         {view === 'report' && (
           <div className="space-y-5 px-4 sm:px-6">
+            <AcademicFraudLaunchCard onStart={openAcademicFraudReport} />
             <Card>
               <CardContent className="flex flex-col gap-4 p-4 lg:flex-row lg:items-center lg:justify-between">
                 <div><p className="font-bold">Choose a reporting workflow</p><p className="text-sm text-muted-foreground">Reports appear immediately in the authorised campus-security Pilot queue.</p></div>
                 <div className="flex w-full flex-col gap-2 sm:flex-row lg:w-auto">
                   <Select value={selectedScenario?.id ?? ''} onValueChange={setScenarioId}>
-                    <SelectTrigger className="w-full sm:w-[320px]" aria-label="Select Pilot reporting workflow"><SelectValue placeholder="Select workflow" /></SelectTrigger>
+                    <SelectTrigger className="w-full sm:w-[360px]" aria-label="Select Pilot reporting workflow"><SelectValue placeholder="Select workflow" /></SelectTrigger>
                     <SelectContent>{scenarios.map((item) => <SelectItem key={item.id} value={item.id}>{item.title}</SelectItem>)}</SelectContent>
                   </Select>
                   <Button variant="destructive" onClick={openEmergencySimulation}><Siren className="mr-2 h-4 w-4" />Emergency</Button>
@@ -337,9 +373,11 @@ export function PilotStudentDashboard({
               <CardHeader><CardTitle className="flex items-center gap-2"><LifeBuoy className="h-5 w-5 text-primary" />Pilot Support Centre</CardTitle><CardDescription>This Pilot does not dispatch external emergency services.</CardDescription></CardHeader>
               <CardContent className="space-y-3">
                 <Button className="w-full justify-start" onClick={() => setView('report')}><Plus className="mr-2 h-4 w-4" />Open report workflow</Button>
+                <Button variant="outline" className="w-full justify-start" onClick={openAcademicFraudReport}><ShieldCheck className="mr-2 h-4 w-4" />Report academic fraud</Button>
                 <Button variant="outline" className="w-full justify-start" onClick={() => setView('mycases')}><FileText className="mr-2 h-4 w-4" />Check case status</Button>
                 <Button variant="outline" className="w-full justify-start" onClick={() => setView('map')}><MapPin className="mr-2 h-4 w-4" />Test location workflow</Button>
                 <Button variant="outline" className="w-full justify-start" onClick={guide.openGuide}><BookOpen className="mr-2 h-4 w-4" />Open Pilot user guide</Button>
+                <Button variant="outline" className="w-full justify-start" asChild><Link to="/dashboard"><ArrowLeftRight className="mr-2 h-4 w-4" />Official student portal</Link></Button>
                 <Button variant="destructive" className="w-full justify-start" onClick={openEmergencySimulation}><Siren className="mr-2 h-4 w-4" />Open emergency test</Button>
               </CardContent>
             </Card>
