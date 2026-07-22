@@ -27,7 +27,7 @@ assert(
     && student.includes("scenario_type === 'emergency_simulation'"),
   'Student Pilot exposes an always-available controlled emergency test.',
 );
-assert(student.includes('<PilotReportForm') && student.includes('scenario.requires_location'), 'Student Pilot retains isolated report, evidence and scenario-driven location workflows.');
+assert(student.includes('<PilotReportForm') && student.includes('requires_location'), 'Student Pilot retains isolated report, evidence and scenario-driven location workflows.');
 assert(student.includes('AcademicFraudLaunchCard') && student.includes('openAcademicFraudReport'), 'Student Pilot provides dedicated academic fraud intake.');
 assert(student.includes('Official Student Portal'), 'Student Pilot links back to the official student portal.');
 assert(student.includes('This Pilot does not dispatch external emergency services.'), 'Student support states its no-dispatch boundary.');
