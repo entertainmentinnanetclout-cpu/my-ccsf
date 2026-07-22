@@ -12,6 +12,7 @@ const forbidText = (source, forbidden, label) => {
 
 const migration = read('supabase/migrations/20260720192000_phase_2_pilot_report_routing_contract.sql');
 const hardening = read('supabase/migrations/20260720203000_phase_2_reporting_flow_hardening.sql');
+const optionalLocation = read('supabase/migrations/20260722191000_pilot_optional_location_scenarios.sql');
 const sessionContinuity = read('supabase/migrations/20260721054500_pilot_session_continuity_and_seven_day_window.sql');
 const submit = read('supabase/functions/pilot-submit-report/index.ts');
 const transition = read('supabase/functions/pilot-transition-status/index.ts');
@@ -25,8 +26,6 @@ const tracking = read('src/pages/pilot/PilotReportTracking.tsx');
 requireText(migration, 'pilot_simulated_severity', 'Server-derived severity is required.');
 requireText(migration, 'pilot_routing_destination', 'A Pilot-only route is required.');
 requireText(migration, 'pilot_reports_routing_campus_matches_campus', 'Route campus must match the case campus.');
-requireText(hardening, 'pilot_reports_coordinates_required', 'Coordinates are required.');
-requireText(hardening, 'pilot_reports_readable_location_required', 'A readable location is required.');
 requireText(hardening, 'drop policy if exists pilot_reports_insert', 'Direct inserts must be removed.');
 requireText(hardening, 'revoke insert, update, delete on public.pilot_reports from anon, authenticated', 'Writes must be function-only.');
 requireText(hardening, 'campus_staff_count', 'Campus recipient coverage must be recorded.');
@@ -34,14 +33,20 @@ requireText(hardening, 'fallback_to_super_admin', 'Super-admin fallback must be 
 requireText(hardening, 'report_routed_to_campus_queue', 'Each route must be audited.');
 requireText(hardening, "'external_dispatch', false", 'No-dispatch evidence is required.');
 
+requireText(optionalLocation, 'drop constraint if exists pilot_reports_coordinates_required', 'Legacy all-report coordinate enforcement must be removed.');
+requireText(optionalLocation, 'pilot_reports_coordinate_pair_integrity', 'Optional coordinates must still be supplied as a valid pair.');
+requireText(optionalLocation, 'pilot_reports_location_description_integrity', 'A readable location remains required whenever coordinates are supplied.');
+
 requireText(sessionContinuity, "interval '7 days'", 'Pilot testing sessions must remain usable for a practical testing window.');
 requireText(sessionContinuity, "s.status = 'in_progress'", 'Current authorised sessions must be refreshed safely.');
 
 requireText(submit, ".from('pilot_reports')", 'Submission must use the isolated report table.');
 requireText(submit, 'isProgrammeOpen(program, session.campus)', 'Programme and campus eligibility must be checked.');
 requireText(submit, 'emergency_consent_required', 'Emergency consent must be enforced by the server.');
-requireText(submit, 'Every Pilot report requires a captured location.', 'Every report must contain location.');
-requireText(submit, "requiredText(body.location_description, 'location_description'", 'Readable location must be checked by the server.');
+requireText(submit, 'const locationRequired = emergency || scenario?.requires_location === true || scenario?.requires_live_tracking === true;', 'Location requirements must be derived from the authorised scenario.');
+requireText(submit, "throw new PilotHttpError(400, 'The selected Pilot scenario requires a captured location.'", 'Configured location scenarios must remain fail-closed.');
+requireText(submit, "optionalText(body.location_description, 'location_description'", 'Evidence-only scenarios may omit a location.');
+requireText(submit, 'report_location_pair_invalid', 'Partial coordinate pairs must be rejected.');
 requireText(submit, 'external_dispatch: false', 'Submission must preserve the no-dispatch boundary.');
 forbidText(submit, ".from('incidents')", 'Production reports must not be written.');
 forbidText(submit, 'security_notifications', 'Production notifications must not be written.');
@@ -61,7 +66,8 @@ forbidText(admin, ".from('incidents')", 'Staff services must remain isolated.');
 requireText(types, "export type PilotSimulatedSeverity = 'low' | 'medium' | 'high' | 'critical'", 'Severity types must be available.');
 requireText(types, "export type PilotRoutingDestination = 'campus_security'", 'Routing types must be available.');
 requireText(types, 'emergency_consent?: boolean', 'Consent must be part of the report input.');
-requireText(reportForm, 'if (!location || !locationDescription.trim() || locationLoading) return false;', 'All standard reports must capture a readable location.');
+requireText(reportForm, 'const requiresLocation = emergency || scenario.requires_location || scenario.requires_live_tracking;', 'The form must follow scenario-driven location requirements.');
+requireText(reportForm, 'if (requiresLocation && (!location || !locationDescription.trim() || locationLoading)) return false;', 'Required-location scenarios must block incomplete submission.');
 requireText(reportForm, 'emergency_consent: emergency ? emergencyConsent : false', 'The form must send consent.');
 requireText(reportForm, 'No incident explanation is required for this emergency simulation.', 'Emergency input must remain minimal.');
 requireText(reportForm, 'ensureActivePilotSession(participant, workingSession)', 'Submission must resolve a current session before sending.');
@@ -71,7 +77,7 @@ forbidText(reportForm, 'throw attachmentError', 'A post-create attachment error 
 requireText(campusDashboard, 'Realtime Campus Queue', 'Campus staff need a live queue.');
 requireText(campusDashboard, 'Tap any incident card to open the complete case', 'Cards must open full details.');
 requireText(tracking, 'Student Information', 'Case detail must show student identity.');
-requireText(tracking, 'The readable location is shown first', 'Readable location must be prioritised.');
+requireText(tracking, 'The readable location is shown first', 'Readable location must be prioritised when present.');
 requireText(tracking, 'Full Incident Details', 'The complete case must be visible.');
 
-console.log('Phase 2 Pilot reporting, session continuity and case-routing verification passed.');
+console.log('Phase 2 Pilot reporting, scenario-driven location, session continuity and case-routing verification passed.');
