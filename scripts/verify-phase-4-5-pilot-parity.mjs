@@ -17,8 +17,8 @@ for (const label of ['Home', 'My Cases', 'Report', 'Map', 'Support']) {
 }
 assert(
   student.includes('<PilotDashboardCarousel')
-    && student.includes('<StudentDashboardHome campus={participant.campus} showCarousel={false} />'),
-  'Student Pilot uses the isolated Phase 4 carousel while retaining shared welcome and news content.',
+    && student.includes('<StudentDashboardHome campus={participant.campus} />'),
+  'Student Pilot uses both the isolated managed carousel and shared campus/residence carousel.',
 );
 assert(student.includes('loadOwnPilotReports') && student.includes('loadPilotScenarios') && student.includes('loadPilotNotifications'), 'Student Pilot loads isolated cases, workflows and notifications.');
 assert(
@@ -27,14 +27,16 @@ assert(
     && student.includes("scenario_type === 'emergency_simulation'"),
   'Student Pilot exposes an always-available controlled emergency test.',
 );
-assert(student.includes('<PilotReportForm') && student.includes('requires_location'), 'Student Pilot retains isolated report, evidence and location workflows.');
+assert(student.includes('<PilotReportForm') && student.includes('scenario.requires_location'), 'Student Pilot retains isolated report, evidence and scenario-driven location workflows.');
+assert(student.includes('AcademicFraudLaunchCard') && student.includes('openAcademicFraudReport'), 'Student Pilot provides dedicated academic fraud intake.');
+assert(student.includes('Official Student Portal'), 'Student Pilot links back to the official student portal.');
 assert(student.includes('This Pilot does not dispatch external emergency services.'), 'Student support states its no-dispatch boundary.');
 assert(student.includes('setNotifications(previous)'), 'Student notification updates roll back after backend failure.');
 assert(student.includes('role="tablist"') && student.includes('aria-selected='), 'Student Pilot navigation exposes accessible tab semantics.');
 assert(student.includes('role="log"') && student.includes('aria-live="polite"'), 'Student Pilot notifications are announced accessibly.');
 assert(student.includes('data-testid="ready-pilot-student-dashboard"'), 'Student Pilot has a stable readiness marker.');
-assert(student.includes('usePilotGuide({ autoOpen: true })'), 'Student Pilot includes the Phase 4 first-login guide.');
-assert(student.includes('Download the CCSF Pilot Safety Guide'), 'Student Pilot exposes the Phase 4 safety handbook.');
+assert(student.includes('usePilotGuide({ autoOpen: true })'), 'Student Pilot includes the first-login guide.');
+assert(student.includes('Download the public CCSF campus handbook'), 'Student Pilot exposes the public campus handbook.');
 
 for (const prohibited of ["from('incidents')", "from('notifications')", "from('case_updates')", "from('incident_media')", 'send-push-notification', '<EmergencyReport', '<ReportIncident']) {
   assert(!student.includes(prohibited), `Student Pilot does not reference production workflow: ${prohibited}.`);
