@@ -4,9 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "node scripts/generate-institutional-app-icon.mjs && vite",
-    "build": "node scripts/generate-institutional-app-icon.mjs && node scripts/generate-pilot-document-library.mjs && vite build",
-    "build:dev": "node scripts/generate-institutional-app-icon.mjs && node scripts/generate-pilot-document-library.mjs && vite build --mode development",
+    "dev": "vite",
+    "build": "node scripts/generate-pilot-document-library.mjs && vite build",
+    "build:dev": "node scripts/generate-pilot-document-library.mjs && vite build --mode development",
     "typecheck": "tsc -p tsconfig.app.json --noEmit",
     "test:phase1-auth": "node scripts/verify-phase-1-pilot-auth-navigation.mjs",
     "test:phase2-routing": "node scripts/verify-phase-2-pilot-report-routing.mjs",
