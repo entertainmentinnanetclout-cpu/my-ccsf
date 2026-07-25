@@ -12,7 +12,10 @@ const PRECACHE_ASSETS = [
   '/manifest.json',
   '/favicon.ico',
   '/favicon-32x32.png',
-  '/app-icon.svg',
+  '/app-icon-192.png',
+  '/app-icon-512.png',
+  '/maskable-icon-512.png',
+  '/apple-touch-icon.png',
   '/campus-guides/pretoria-campus-structure-map.svg',
 ];
 
@@ -133,7 +136,7 @@ self.addEventListener('push', (event) => {
 
   const options = {
     body: data.body,
-    icon: '/app-icon.svg',
+    icon: '/app-icon-192.png',
     badge: '/favicon-32x32.png',
     vibrate: [100, 50, 100],
     data: data.data || {},
