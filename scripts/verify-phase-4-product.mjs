@@ -44,7 +44,7 @@ for (const prohibited of ['generateCaseNumber', 'CCSF AI Support', 'Always Avail
 }
 assert(studentSupport.includes("from('campus_emergency_contacts')"), 'Student support uses the official emergency-contact source.');
 assert(studentSupport.includes('It is not a live chat and does not dispatch emergency services.'), 'Student support states its real operating boundary.');
-assert(studentSupport.includes('onNavigate?.(intent)'), 'Student support connects to report, case and map journeys.');
+assert(studentSupport.includes('onNavigate?.(intent)'), 'Student support connects to report, case and safety journeys.');
 assert(studentSupport.includes('role="log"') && studentSupport.includes('aria-live="polite"'), 'Guided support output is announced accessibly.');
 
 const emergencyContact = read('src/components/student/CampusEmergencyContact.tsx');
@@ -155,12 +155,13 @@ for (const file of primaryFiles) {
 }
 
 const indexHtml = read('index.html');
-assert(indexHtml.includes('type="image/svg+xml" href="/app-icon.svg"'), 'Browser chrome uses the generated white-background institutional icon.');
-assert(indexHtml.includes('rel="apple-touch-icon" href="/app-icon.svg"'), 'Apple touch installation uses the same white-background institutional icon source.');
+assert(indexHtml.includes('sizes="180x180" href="/apple-touch-icon.png"'), 'Apple touch icon uses its native 180px opaque white asset.');
+assert(indexHtml.includes('sizes="32x32" href="/favicon-32x32.png"'), '32px favicon is explicitly declared.');
+assert(indexHtml.includes('sizes="16x16" href="/favicon-16x16.png"'), '16px favicon is explicitly declared.');
 
 const manifest = JSON.parse(read('public/manifest.json'));
-assert(manifest.icons.some((icon) => icon.src === '/app-icon.svg' && icon.purpose.includes('maskable')), 'PWA manifest has a white-background maskable institutional icon.');
-assert(manifest.icons.some((icon) => icon.src === '/app-icon.svg' && icon.purpose.includes('any')), 'PWA manifest has a standard institutional icon.');
+assert(manifest.icons.some((icon) => icon.src === '/maskable-icon-512.png' && icon.purpose === 'maskable'), 'PWA manifest has the separately padded opaque white maskable icon.');
+assert(manifest.icons.some((icon) => icon.src === '/app-icon-512.png' && icon.purpose === 'any'), 'PWA manifest has the standard opaque white 512px app icon.');
 assert(manifest.shortcuts.some((shortcut) => shortcut.url === '/dashboard?tab=safety'), 'PWA manifest includes a direct Safety Mobility shortcut.');
 
 if (failures.length) {
