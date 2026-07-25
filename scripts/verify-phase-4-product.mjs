@@ -5,7 +5,6 @@ const root = process.cwd();
 const failures = [];
 const passes = [];
 const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
-const exists = (file) => fs.existsSync(path.join(root, file));
 const check = (condition, message) => condition ? passes.push(message) : failures.push(message);
 
 const app = read('src/App.tsx');
@@ -18,6 +17,9 @@ const studentSupport = read('src/components/student/StudentChat.tsx');
 const splash = read('src/components/shared/SplashScreen.tsx');
 const indexHtml = read('index.html');
 const manifest = JSON.parse(read('public/manifest.json'));
+const packageJson = read('package.json');
+const iconGenerator = read('scripts/generate-institutional-app-icon.mjs');
+const structureMap = read('public/campus-guides/pretoria-campus-structure-map.svg');
 const migration = read('supabase/migrations/20260725103000_student_safety_mobility_and_radar.sql');
 const hardening = read('supabase/migrations/20260725104500_student_safety_mobility_campus_scope_hardening.sql');
 const mobilityGate = read('scripts/verify-safety-mobility-release.mjs');
@@ -67,10 +69,11 @@ check(indexHtml.includes('sizes="32x32" href="/favicon-32x32.png"'), '32px favic
 check(manifest.icons.some((icon) => icon.src === '/maskable-icon-512.png' && icon.purpose === 'maskable'), 'Manifest includes the padded maskable icon.');
 check(manifest.icons.some((icon) => icon.src === '/app-icon-512.png' && icon.purpose === 'any'), 'Manifest includes the opaque standard app icon.');
 check(manifest.shortcuts.some((shortcut) => shortcut.url === '/dashboard?tab=safety'), 'Manifest includes a direct Safety Mobility shortcut.');
-
-for (const asset of ['public/app-icon-192.png', 'public/app-icon-512.png', 'public/maskable-icon-512.png', 'public/apple-touch-icon.png', 'public/campus-guides/pretoria-campus-structure-map.svg']) {
-  check(exists(asset), `Required release asset exists: ${asset}.`);
+check(packageJson.includes('generate-institutional-app-icon.mjs'), 'Every build invokes the institutional app-icon generator.');
+for (const output of ['app-icon-192.png', 'app-icon-512.png', 'maskable-icon-512.png', 'apple-touch-icon.png', 'favicon-32x32.png', 'favicon-16x16.png']) {
+  check(iconGenerator.includes(output), `Icon generator creates ${output}.`);
 }
+check(structureMap.includes('live GPS map remains separate'), 'Static Pretoria structure reference does not replace the connected live GPS map.');
 
 const protectedFiles = [dashboard, mobilityHub, mobilityHook, mobilityService, reportIncident, studentSupport];
 for (const [label, pattern] of [
