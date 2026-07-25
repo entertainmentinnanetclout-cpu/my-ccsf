@@ -15,22 +15,10 @@
   "dir": "ltr",
   "icons": [
     {
-      "src": "/app-icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/app-icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/maskable-icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
+      "src": "/app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
     }
   ],
   "shortcuts": [
@@ -39,21 +27,21 @@
       "short_name": "Dashboard",
       "description": "Open the CCSF student dashboard.",
       "url": "/dashboard",
-      "icons": [{ "src": "/app-icon-192.png", "sizes": "192x192", "type": "image/png" }]
+      "icons": [{ "src": "/app-icon.svg", "sizes": "any", "type": "image/svg+xml" }]
     },
     {
       "name": "Safety Mobility",
       "short_name": "Safety",
       "description": "Open In-Transit, Night Travel, Track This Phone and Campus Radar.",
       "url": "/dashboard?tab=safety",
-      "icons": [{ "src": "/app-icon-192.png", "sizes": "192x192", "type": "image/png" }]
+      "icons": [{ "src": "/app-icon.svg", "sizes": "any", "type": "image/svg+xml" }]
     },
     {
       "name": "Report an Incident",
       "short_name": "Report",
       "description": "Open the official CCSF reporting workflow.",
       "url": "/dashboard?tab=report",
-      "icons": [{ "src": "/app-icon-192.png", "sizes": "192x192", "type": "image/png" }]
+      "icons": [{ "src": "/app-icon.svg", "sizes": "any", "type": "image/svg+xml" }]
     }
   ]
 }
