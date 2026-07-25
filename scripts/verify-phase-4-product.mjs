@@ -41,11 +41,13 @@ check(mobilityHub.includes('slice(0, 24)') && mobilityHub.includes('selectedStud
 check(mobilityHub.includes('https://www.google.com/maps/search/?api=1&query='), 'Existing live GPS mapping remains externally linkable.');
 check(mobilityHub.includes("navigate('/dashboard?tab=report')"), 'Safety alerts and reports route into the official reporting workflow.');
 
-for (const marker of ['watchPosition', 'clearWatch', 'startSafetySession', 'stopSafetySession', 'sendSafetyAlert', 'updateRadarPreference']) {
+for (const marker of ['watchPosition', 'clearWatch', 'startSafetySession', 'endSafetySession', 'triggerSafetyAlert', 'setSafetyPresence']) {
   check(mobilityHook.includes(marker) || mobilityService.includes(marker), `Safety Mobility implementation includes ${marker}.`);
 }
-check(mobilityService.includes("from('safety_mobility_sessions')") && mobilityService.includes("from('safety_location_updates')"), 'Mobility uses dedicated persisted session and location sources.');
-check(mobilityService.includes("from('safety_presence_preferences')"), 'Campus Radar uses a dedicated consent preference source.');
+check(mobilityService.includes("from('safety_mobility_sessions')"), 'Mobility reads persisted official safety sessions.');
+for (const rpc of ['safety_start_mobility_session', 'safety_update_mobility_location', 'safety_end_mobility_session', 'safety_trigger_mobility_alert', 'safety_set_student_presence', 'safety_list_campus_radar']) {
+  check(mobilityService.includes(`'${rpc}'`), `Safety client invokes secured RPC ${rpc}.`);
+}
 check(!mobilityService.includes("from('pilot_reports')"), 'Official Safety Mobility does not write into isolated Pilot report records.');
 
 check(reportIncident.includes('MAX_EVIDENCE_FILES = 3'), 'Incident evidence count remains bounded.');
@@ -53,11 +55,13 @@ check(reportIncident.includes('MAX_EVIDENCE_BYTES = 10 * 1024 * 1024'), 'Inciden
 check(reportIncident.includes("{ value: 'Gbv'"), 'The official reporting form retains a dedicated GBV category.');
 check(studentSupport.includes('It is not a live chat and does not dispatch emergency services.'), 'Student support states its operational boundary.');
 
-check(migration.includes('safety_mobility_sessions') && migration.includes('safety_location_updates') && migration.includes('safety_presence_preferences'), 'Database migration defines isolated mobility, location and Radar records.');
-check(migration.includes('row level security') && hardening.includes('campus'), 'Mobility data is protected by RLS and campus-scope hardening.');
-check(mobilityGate.includes('permanent') || mobilityGate.includes('consent'), 'Dedicated Safety Mobility regression gate validates privacy controls.');
+for (const table of ['safety_mobility_sessions', 'safety_mobility_location_updates', 'safety_mobility_events', 'student_safety_presence']) {
+  check(migration.includes(`public.${table}`), `Database migration defines ${table}.`);
+}
+check(migration.toLowerCase().includes('enable row level security') && hardening.includes('safety_require_student_campus'), 'Mobility data is protected by RLS and verified campus scope.');
+check(mobilityGate.includes('Radar visibility is explicit and opt-in.') && mobilityGate.includes('Exact radar visibility requires explicit consent.'), 'Dedicated Safety Mobility gate validates privacy controls.');
 
-check(splash.includes('InstitutionBrand') || splash.includes('CCSF'), 'Splash screen renders institutional CCSF identity.');
+check(splash.includes('InstitutionBrand') && splash.includes('bg-white') && splash.includes('MY CCSF'), 'Splash screen renders readable institutional CCSF/TUT identity on white.');
 check(indexHtml.includes('sizes="180x180" href="/apple-touch-icon.png"'), 'Apple touch icon uses the opaque institutional asset.');
 check(indexHtml.includes('sizes="32x32" href="/favicon-32x32.png"'), '32px favicon is explicitly declared.');
 check(manifest.icons.some((icon) => icon.src === '/maskable-icon-512.png' && icon.purpose === 'maskable'), 'Manifest includes the padded maskable icon.');
