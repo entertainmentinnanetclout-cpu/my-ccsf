@@ -1,7 +1,7 @@
 // My CCSF service worker — institutional PWA shell and push notifications.
 
 const CACHE_PREFIX = 'my-ccsf';
-const CACHE_VERSION = 'safety-mobility-2026-07-25-v1';
+const CACHE_VERSION = 'safety-mobility-2026-07-25-v2';
 const STATIC_CACHE = `${CACHE_PREFIX}-static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${CACHE_VERSION}`;
 const OFFLINE_SHELL = '/index.html';
@@ -12,11 +12,8 @@ const PRECACHE_ASSETS = [
   '/manifest.json',
   '/favicon.ico',
   '/favicon-32x32.png',
-  '/app-icon-192.png',
-  '/app-icon-512.png',
-  '/maskable-icon-512.png',
-  '/apple-touch-icon.png',
-  '/campus-guides/pretoria-campus-structure-map.webp',
+  '/app-icon.svg',
+  '/campus-guides/pretoria-campus-structure-map.svg',
 ];
 
 function isSameOrigin(url) {
@@ -136,7 +133,7 @@ self.addEventListener('push', (event) => {
 
   const options = {
     body: data.body,
-    icon: '/app-icon-192.png',
+    icon: '/app-icon.svg',
     badge: '/favicon-32x32.png',
     vibrate: [100, 50, 100],
     data: data.data || {},
