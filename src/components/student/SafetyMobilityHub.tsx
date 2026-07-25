@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import type { LucideIcon } from 'lucide-react';
 import {
   AlertTriangle,
   BatteryCharging,
-  Bus,
   Car,
   CheckCircle2,
   Clock3,
@@ -20,7 +20,6 @@ import {
   PhoneCall,
   Radar,
   RefreshCw,
-  Route,
   ShieldAlert,
   ShieldCheck,
   Smartphone,
@@ -44,9 +43,9 @@ import { useToast } from '@/hooks/use-toast';
 import { formatCoordinatePair } from '@/lib/reverseGeocode';
 import { loadCampusRadar } from '@/services/safetyMobilityService';
 import type { CampusLocation } from '@/types/pilot';
-import type { SafetyMobilityMode, SafetyRadarStudent, SafetyShareScope, SafetyPresenceVisibility } from '@/types/safetyMobility';
+import type { SafetyMobilityMode, SafetyPresenceVisibility, SafetyRadarStudent, SafetyShareScope } from '@/types/safetyMobility';
 
-const MODE_CONTENT: Record<SafetyMobilityMode, { title: string; description: string; icon: typeof Car }> = {
+const MODE_CONTENT: Record<SafetyMobilityMode, { title: string; description: string; icon: LucideIcon }> = {
   in_transit: { title: 'In-Transit', description: 'Use while travelling in an Uber, Bolt, taxi, bus or private vehicle.', icon: Car },
   night_travel: { title: 'Night Travel', description: 'Keep an active safety check-in while walking or travelling after dark.', icon: MoonStar },
   find_my_phone: { title: 'Track This Phone', description: 'Keep the latest consented phone location available in your account.', icon: Smartphone },
@@ -59,6 +58,7 @@ const visibilityLabels: Record<SafetyPresenceVisibility, string> = {
 };
 
 const toExpectedEnd = (minutes: number) => new Date(Date.now() + minutes * 60_000).toISOString();
+const initials = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('') || 'TU';
 
 function haversineMeters(lat1: number, lng1: number, lat2: number, lng2: number) {
   const toRad = (value: number) => value * Math.PI / 180;
@@ -77,11 +77,9 @@ function bearingDegrees(lat1: number, lng1: number, lat2: number, lng2: number) 
   return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
 }
 
-const initials = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('') || 'TU';
-
 export function SafetyMobilityHub({ campus }: { campus: CampusLocation }) {
   const navigate = useNavigate();
-  const { user, userProfile } = useAuth();
+  const { user } = useAuth();
   const { toast } = useToast();
   const mobility = useSafetyMobility({ campus, userId: user?.id });
   const [mode, setMode] = useState<SafetyMobilityMode>('in_transit');
@@ -137,7 +135,7 @@ export function SafetyMobilityHub({ campus }: { campus: CampusLocation }) {
         expectedEndAt: toExpectedEnd(Number(durationMinutes)),
         shareScope,
       });
-      toast({ title: `${MODE_CONTENT[mode].title} started`, description: 'Live location is active while the app can access this device location.' });
+      toast({ title: `${MODE_CONTENT[mode].title} started`, description: 'Live location is active while this device grants browser location access.' });
     } catch (caught) {
       toast({ title: 'Safety Mobility did not start', description: caught instanceof Error ? caught.message : 'Try again.', variant: 'destructive' });
     }
@@ -270,7 +268,8 @@ export function SafetyMobilityHub({ campus }: { campus: CampusLocation }) {
                 <CardContent className="space-y-5">
                   <div className="grid gap-3 sm:grid-cols-3">
                     {(Object.keys(MODE_CONTENT) as SafetyMobilityMode[]).map((key) => {
-                      const item = MODE_CONTENT[key]; const Icon = item.icon;
+                      const item = MODE_CONTENT[key];
+                      const Icon = item.icon;
                       return <button key={key} type="button" onClick={() => setMode(key)} className={`rounded-2xl border p-4 text-left transition ${mode === key ? 'border-[#D7193F] bg-[#D7193F]/5 shadow-md' : 'hover:border-primary/50'}`}><Icon className={`h-6 w-6 ${mode === key ? 'text-[#D7193F]' : 'text-primary'}`} /><p className="mt-3 font-extrabold">{item.title}</p><p className="mt-1 text-xs leading-5 text-muted-foreground">{item.description}</p></button>;
                     })}
                   </div>
@@ -289,7 +288,7 @@ export function SafetyMobilityHub({ campus }: { campus: CampusLocation }) {
         <TabsContent value="radar" className="space-y-5">
           <div className="grid gap-5 xl:grid-cols-[1.2fr_0.8fr]">
             <Card className="overflow-hidden border-fuchsia-500/35 bg-black text-white shadow-[0_0_45px_rgba(236,72,153,0.22)]">
-              <CardHeader className="relative z-20 border-b border-fuchsia-400/20 bg-black/45"><div className="flex items-center justify-between gap-3"><div><CardTitle className="flex items-center gap-2"><Radar className="h-5 w-5 text-fuchsia-400" />Campus Safety Radar</CardTitle><CardDescription className="text-white/60">Tap an opted-in profile. Approximate users are deliberately blurred to a campus area.</CardDescription></div><Button size="sm" variant="outline" className="border-fuchsia-400/35 bg-black text-white hover:bg-fuchsia-500/15" onClick={() => void refreshRadar()} disabled={radarLoading}><RefreshCw className={`mr-2 h-4 w-4 ${radarLoading ? 'animate-spin' : ''}`} />Refresh</Button></div></CardHeader>
+              <CardHeader className="relative z-20 border-b border-fuchsia-400/20 bg-black/45"><div className="flex items-center justify-between gap-3"><div><CardTitle className="flex items-center gap-2"><Radar className="h-5 w-5 text-fuchsia-400" />Campus Safety Radar</CardTitle><CardDescription className="text-white/60">Tap a profile icon. Approximate users are deliberately blurred to a campus area.</CardDescription></div><Button size="sm" variant="outline" className="border-fuchsia-400/35 bg-black text-white hover:bg-fuchsia-500/15" onClick={() => void refreshRadar()} disabled={radarLoading}><RefreshCw className={`mr-2 h-4 w-4 ${radarLoading ? 'animate-spin' : ''}`} />Refresh</Button></div></CardHeader>
               <CardContent className="p-0">
                 <div className="relative aspect-square min-h-[360px] w-full overflow-hidden bg-[radial-gradient(circle_at_center,rgba(236,72,153,0.22)_0,rgba(101,18,86,0.18)_20%,rgba(0,0,0,0.96)_70%)] sm:min-h-[520px]">
                   {[18, 34, 50, 66, 82].map((size) => <div key={size} className="absolute left-1/2 top-1/2 rounded-full border border-fuchsia-400/45 shadow-[0_0_20px_rgba(236,72,153,0.35)]" style={{ width: `${size}%`, height: `${size}%`, transform: 'translate(-50%, -50%)' }} />)}
@@ -316,7 +315,7 @@ export function SafetyMobilityHub({ campus }: { campus: CampusLocation }) {
                 <div className="space-y-2"><Label htmlFor="radar-status">Status message</Label><Input id="radar-status" value={radarMessage} onChange={(event) => setRadarMessage(event.target.value)} maxLength={100} placeholder="At the library / walking to residence" /></div>
                 {radarVisibility === 'campus_exact' && <div className="flex items-start gap-3 rounded-xl border border-fuchsia-300 bg-fuchsia-50 p-4 dark:bg-fuchsia-950/20"><Checkbox id="exact-location-consent" checked={exactConsent} onCheckedChange={(checked) => setExactConsent(checked === true)} /><Label htmlFor="exact-location-consent" className="leading-6">I understand that opted-in campus users may see my exact live position until the selected time or until I switch it off.</Label></div>}
                 <Button className="h-11 w-full font-extrabold" onClick={() => void updateRadar()}>{radarVisibility === 'off' ? <EyeOff className="mr-2 h-4 w-4" /> : <Radar className="mr-2 h-4 w-4" />}{radarVisibility === 'off' ? 'Turn off Radar visibility' : 'Activate Radar visibility'}</Button>
-                <div className="rounded-xl bg-muted/50 p-4 text-xs leading-5 text-muted-foreground"><strong className="text-foreground">Privacy blueprint:</strong> approximate mode rounds your coordinates and reports at least a 120m uncertainty. Exact mode requires explicit consent. Stale locations disappear after 15 minutes.</div>
+                <div className="rounded-xl bg-muted/50 p-4 text-xs leading-5 text-muted-foreground"><strong className="text-foreground">Privacy blueprint:</strong> approximate mode rounds coordinates and reports at least a 120m uncertainty. Exact mode requires explicit consent. Stale locations disappear after 15 minutes.</div>
               </CardContent>
             </Card>
           </div>
@@ -324,13 +323,13 @@ export function SafetyMobilityHub({ campus }: { campus: CampusLocation }) {
 
         <TabsContent value="phone" className="space-y-5">
           <div className="grid gap-5 lg:grid-cols-2">
-            <Card className="shadow-large"><CardHeader><CardTitle className="flex items-center gap-2"><Smartphone className="h-5 w-5 text-primary" />Track This Phone</CardTitle><CardDescription>Store and refresh this device's last-known location under your signed-in My CCSF account.</CardDescription></CardHeader><CardContent className="space-y-4"><div className="rounded-2xl border bg-gradient-to-br from-primary/10 to-[#F2A900]/10 p-5"><p className="text-xs font-extrabold uppercase tracking-[0.16em] text-primary">Last known location</p><p className="mt-3 font-bold">{mobility.location?.readableLocation ?? 'No location captured in this session.'}</p>{mobility.location && <p className="mt-2 font-mono text-xs text-muted-foreground">{formatCoordinatePair(mobility.location.latitude, mobility.location.longitude)}</p>}</div><div className="grid gap-3 sm:grid-cols-2"><Button variant="outline" onClick={() => void mobility.captureNow()} disabled={mobility.locating}><LocateFixed className="mr-2 h-4 w-4" />Refresh phone location</Button>{mapsUrl && <Button asChild><a href={mapsUrl} target="_blank" rel="noreferrer"><ExternalLink className="mr-2 h-4 w-4" />Open in Maps</a></Button>}</div>{!mobility.session && <Button className="w-full" onClick={() => { setMode('find_my_phone'); setTravelConsent(true); setDurationMinutes('480'); void mobility.start({ mode: 'find_my_phone', transportType: 'This device', expectedEndAt: toExpectedEnd(480), shareScope: 'private' }).then(() => toast({ title: 'Track This Phone started', description: 'The last-known device position will update while location access remains available.' })).catch((caught) => toast({ title: 'Tracking did not start', description: caught instanceof Error ? caught.message : 'Try again.', variant: 'destructive' })); }}><Smartphone className="mr-2 h-4 w-4" />Start 8-hour phone tracking</Button>}</CardContent></Card>
+            <Card className="shadow-large"><CardHeader><CardTitle className="flex items-center gap-2"><Smartphone className="h-5 w-5 text-primary" />Track This Phone</CardTitle><CardDescription>Store and refresh this device's last-known location under your signed-in My CCSF account.</CardDescription></CardHeader><CardContent className="space-y-4"><div className="rounded-2xl border bg-gradient-to-br from-primary/10 to-[#F2A900]/10 p-5"><p className="text-xs font-extrabold uppercase tracking-[0.16em] text-primary">Last known location</p><p className="mt-3 font-bold">{mobility.location?.readableLocation ?? 'No location captured in this session.'}</p>{mobility.location && <p className="mt-2 font-mono text-xs text-muted-foreground">{formatCoordinatePair(mobility.location.latitude, mobility.location.longitude)}</p>}</div><div className="grid gap-3 sm:grid-cols-2"><Button variant="outline" onClick={() => void mobility.captureNow()} disabled={mobility.locating}><LocateFixed className="mr-2 h-4 w-4" />Refresh phone location</Button>{mapsUrl && <Button asChild><a href={mapsUrl} target="_blank" rel="noreferrer"><ExternalLink className="mr-2 h-4 w-4" />Open in Maps</a></Button>}</div>{!mobility.session && <Button className="w-full" onClick={() => { setMode('find_my_phone'); void mobility.start({ mode: 'find_my_phone', transportType: 'This device', expectedEndAt: toExpectedEnd(480), shareScope: 'private' }).then(() => toast({ title: 'Track This Phone started', description: 'The last-known device position will update while location access remains available.' })).catch((caught) => toast({ title: 'Tracking did not start', description: caught instanceof Error ? caught.message : 'Try again.', variant: 'destructive' })); }}><Smartphone className="mr-2 h-4 w-4" />Start 8-hour phone tracking</Button>}</CardContent></Card>
             <SafetyBoundaryCard phone />
           </div>
         </TabsContent>
 
         <TabsContent value="map" className="space-y-6">
-          <Card className="border-[#F2A900]/50 shadow-large"><CardHeader><CardTitle className="flex items-center gap-2"><MapPinned className="h-5 w-5 text-primary" />Pretoria Campus Structure Reference</CardTitle><CardDescription>This uploaded structure map is an additional reference only. It does not replace the existing live linked GPS campus map below.</CardDescription></CardHeader><CardContent><div className="overflow-hidden rounded-2xl border bg-white p-2"><img src="/campus-guides/pretoria-campus-structure-map.webp" alt="TUT Pretoria Campus structure map showing numbered buildings, roads, transport points, sports areas and the Technikonrand station" className="mx-auto max-h-[760px] w-full object-contain" /></div><p className="mt-3 text-xs leading-5 text-muted-foreground">The source map visibly identifies Buildings 1-13, 20, 21, 30, 31, 44, 50-53, the dam, bus stops, bus parking, Prestige Auditorium, Denlisburg, the Visitors Centre and Technikonrand Station. Some building numbers are absent from the supplied map and remain covered by the separate Building Structure guide.</p></CardContent></Card>
+          <Card className="border-[#F2A900]/50 shadow-large"><CardHeader><CardTitle className="flex items-center gap-2"><MapPinned className="h-5 w-5 text-primary" />Pretoria Campus Structure Reference</CardTitle><CardDescription>This traced version of the uploaded structure map is an additional reference only. It does not replace the existing live linked GPS campus map below.</CardDescription></CardHeader><CardContent><div className="overflow-hidden rounded-2xl border bg-white p-2"><img src="/campus-guides/pretoria-campus-structure-map.svg" alt="TUT Pretoria Campus structure reference showing numbered buildings, roads, transport points, sports areas and Technikonrand Station" className="mx-auto max-h-[760px] w-full object-contain" /></div><p className="mt-3 text-xs leading-5 text-muted-foreground">The source map visibly identifies Buildings 1-13, 20, 21, 30, 31, 44, 50-53, the dam, bus stops, bus parking, Prestige Auditorium, Denisburg, the Visitors Centre and Technikonrand Station. Some building numbers are absent from the supplied map and remain covered by the separate Building Structure guide.</p></CardContent></Card>
           <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 text-sm"><strong>Existing live GPS map retained.</strong> The component below remains the connected campus map with directions, campus coordinates, Wi-Fi tools and existing data sources.</div>
           <CampusMap />
         </TabsContent>
@@ -344,7 +343,7 @@ export function SafetyMobilityHub({ campus }: { campus: CampusLocation }) {
   );
 }
 
-function StatusTile({ icon: Icon, label, value }: { icon: typeof Clock3; label: string; value: string }) {
+function StatusTile({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: string }) {
   return <div className="min-w-0 rounded-xl border bg-muted/35 p-3"><div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-muted-foreground"><Icon className="h-4 w-4 text-primary" />{label}</div><p className="mt-2 line-clamp-2 text-sm font-semibold">{value}</p></div>;
 }
 
@@ -352,6 +351,6 @@ function SafetyBoundaryCard({ phone = false }: { phone?: boolean }) {
   return <Card className="border-[#F2A900]/55 bg-gradient-to-br from-[#F2A900]/12 to-background shadow-large"><CardHeader><CardTitle className="flex items-center gap-2"><ShieldCheck className="h-5 w-5 text-[#D7193F]" />What this feature can and cannot do</CardTitle></CardHeader><CardContent className="space-y-3 text-sm leading-6"><Boundary icon={CheckCircle2} text="Records consented live or last-known location and connects an alert to the official CCSF incident workflow." /><Boundary icon={CheckCircle2} text="Keeps the existing campus GPS map and incident live-location system unchanged." /><Boundary icon={AlertTriangle} text={phone ? 'A web app cannot locate a powered-off phone or bypass Android/iOS location restrictions. It stores the last location received while permission and app execution are available.' : 'It does not guarantee continuous background tracking when the browser is fully closed or the operating system suspends the app.'} /><Boundary icon={PhoneCall} text="For immediate danger, call 112 or SAPS 10111 and follow verified campus CPS instructions." /></CardContent></Card>;
 }
 
-function Boundary({ icon: Icon, text }: { icon: typeof CheckCircle2; text: string }) {
+function Boundary({ icon: Icon, text }: { icon: LucideIcon; text: string }) {
   return <div className="flex items-start gap-3"><Icon className="mt-1 h-4 w-4 shrink-0 text-primary" /><span>{text}</span></div>;
 }
