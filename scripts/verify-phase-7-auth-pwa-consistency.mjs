@@ -45,14 +45,15 @@ assert(authFrame.includes('dark:bg-[#002F6C]/95') && pilotLayout.includes('dark:
 
 assert(manifest.name === 'My CCSF — Campus Community Safety Forum', 'PWA manifest uses the full official application name.');
 assert(manifest.theme_color === '#002F6C' && manifest.background_color === '#FFFFFF', 'PWA uses institutional navy with a permanent white icon/startup background.');
-assert(Array.isArray(manifest.icons) && manifest.icons.some((icon) => icon.src === '/app-icon.svg' && icon.purpose.includes('maskable')), 'PWA manifest includes the generated white-background maskable icon.');
+assert(Array.isArray(manifest.icons) && manifest.icons.some((icon) => icon.src === '/maskable-icon-512.png' && icon.purpose === 'maskable'), 'PWA manifest includes the canonical opaque white maskable icon.');
+assert(Array.isArray(manifest.icons) && manifest.icons.some((icon) => icon.src === '/app-icon-512.png' && icon.purpose === 'any'), 'PWA manifest includes the standard opaque white app icon.');
 assert(Array.isArray(manifest.shortcuts) && manifest.shortcuts.some((shortcut) => shortcut.url === '/dashboard?tab=report'), 'PWA manifest provides the official report shortcut.');
 assert(Array.isArray(manifest.shortcuts) && manifest.shortcuts.some((shortcut) => shortcut.url === '/dashboard?tab=safety'), 'PWA manifest provides the Safety Mobility shortcut.');
 assert(!JSON.stringify(manifest).includes('#dc2626'), 'Legacy red PWA identity is removed.');
 assert(indexHtml.includes('lang="en-ZA"') && indexHtml.includes('viewport-fit=cover'), 'HTML metadata supports South African locale and device safe areas.');
 assert(indexHtml.includes('content="#002F6C"') && !indexHtml.includes('#dc2626'), 'HTML theme metadata uses institutional navy with no legacy red.');
 assert(indexHtml.includes('og:image:alt') && indexHtml.includes('twitter:description'), 'Social metadata includes accessible and complete descriptions.');
-assert(indexHtml.includes('href="/app-icon.svg"'), 'Browser and installation metadata use the corrected institutional icon.');
+assert(indexHtml.includes('/apple-touch-icon.png') && indexHtml.includes('/favicon-32x32.png') && indexHtml.includes('/favicon-16x16.png'), 'Browser and installation metadata use canonical native-size icons.');
 
 assert(serviceWorker.includes("const CACHE_VERSION = 'safety-mobility-2026-07-25-v2'"), 'Service worker uses the Safety Mobility cache namespace.');
 assert(serviceWorker.includes("name.startsWith(`${CACHE_PREFIX}-`)") && serviceWorker.includes('caches.delete(name)'), 'Activation deletes every stale My CCSF cache generation.');
@@ -60,7 +61,7 @@ assert(!serviceWorker.includes('.then(() => self.skipWaiting())'), 'Service-work
 assert(serviceWorker.includes("event.data?.type === 'SKIP_WAITING'") && serviceWorker.includes("event.data?.type === 'GET_VERSION'"), 'Service worker supports explicit update activation and version inspection.');
 assert(serviceWorker.includes("cache: 'no-store'") && serviceWorker.includes('navigationPreload.enable'), 'Navigation uses network-first replacement with navigation preload.');
 assert(!serviceWorker.includes('syncPendingIncidents') && !serviceWorker.includes("event.tag === 'sync-incidents'"), 'Unimplemented offline incident background-sync claims are removed.');
-assert(serviceWorker.includes("icon: '/app-icon.svg'") && serviceWorker.includes("badge: '/favicon-32x32.png'"), 'Push notifications use the corrected institutional icon and compact badge.');
+assert(serviceWorker.includes("icon: '/app-icon-192.png'") && serviceWorker.includes("badge: '/favicon-32x32.png'"), 'Push notifications use canonical native-size identity assets.');
 assert(serviceWorker.includes('/campus-guides/pretoria-campus-structure-map.svg'), 'The traced campus structure reference is available offline without replacing live maps.');
 
 assert(main.includes("updateViaCache: 'none'") && main.includes('registration.update()'), 'Application registration bypasses stale service-worker script caches and checks for updates.');
