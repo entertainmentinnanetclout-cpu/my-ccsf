@@ -1,14 +1,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { execFileSync } from 'node:child_process';
 
 const root = process.cwd();
 const failures = [];
 const passes = [];
 const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
+const exists = (file) => fs.existsSync(path.join(root, file));
 const check = (condition, message) => condition ? passes.push(message) : failures.push(message);
-
-execFileSync(process.execPath, ['scripts/generate-institutional-app-icon.mjs'], { cwd: root, stdio: 'inherit' });
 
 const migration = read('supabase/migrations/20260725103000_student_safety_mobility_and_radar.sql');
 const dashboard = read('src/pages/Dashboard.tsx');
@@ -21,7 +19,6 @@ const splash = read('src/components/shared/SplashScreen.tsx');
 const index = read('index.html');
 const worker = read('public/sw.js');
 const mapAsset = read('public/campus-guides/pretoria-campus-structure-map.svg');
-const icon = read('public/app-icon.svg');
 
 for (const table of ['safety_mobility_sessions', 'safety_mobility_location_updates', 'safety_mobility_events', 'student_safety_presence']) {
   check(migration.includes(`public.${table}`), `Migration defines ${table}.`);
@@ -57,11 +54,13 @@ check(!hook.includes('browser tracking works'), 'Hook contains no misleading gua
 check(hub.includes('cannot locate a powered-off phone') && hub.includes('may pause when the browser is fully closed'), 'UI states phone and browser background-tracking limitations accurately.');
 check(hub.includes('Approximate users are deliberately blurred') && hub.includes('Tap a profile icon'), 'Radar UI explains its interactive, privacy-limited behavior.');
 
-check(manifest.includes('/app-icon.svg') && manifest.includes('/dashboard?tab=safety'), 'PWA manifest uses the corrected icon and Safety Mobility shortcut.');
-check(index.includes('rel="icon" type="image/svg+xml" href="/app-icon.svg"'), 'Browser icon uses the generated white-background institutional icon.');
+for (const icon of ['public/app-icon-192.png', 'public/app-icon-512.png', 'public/maskable-icon-512.png', 'public/apple-touch-icon.png']) {
+  check(exists(icon) && fs.statSync(path.join(root, icon)).size > 5_000, `${icon} exists as a substantive institutional PNG.`);
+}
+check(manifest.includes('/app-icon-512.png') && manifest.includes('/maskable-icon-512.png') && manifest.includes('/dashboard?tab=safety'), 'PWA manifest uses verified PNG icons and the Safety Mobility shortcut.');
+check(index.includes('sizes="180x180" href="/apple-touch-icon.png"') && index.includes('sizes="32x32" href="/favicon-32x32.png"'), 'Browser and installation metadata use verified native-size icons.');
 check(splash.includes('bg-white') && splash.includes('MY CCSF') && splash.includes('themeOverride="light"'), 'Splash displays the CCSF/TUT brand clearly on white.');
-check(icon.includes('fill="#ffffff"') && !icon.includes('Campus safety') && icon.includes('MY CCSF'), 'Generated app icon has a permanent white background and visible MY CCSF label.');
-check(worker.includes('/campus-guides/pretoria-campus-structure-map.svg') && worker.includes('/app-icon.svg'), 'Service worker caches the corrected icon and structure map.');
+check(worker.includes('/campus-guides/pretoria-campus-structure-map.svg') && worker.includes("icon: '/app-icon-192.png'"), 'Service worker caches the structure map and uses the canonical PNG notification icon.');
 
 for (const forbidden of [
   "visibility text not null default 'campus_exact'",
