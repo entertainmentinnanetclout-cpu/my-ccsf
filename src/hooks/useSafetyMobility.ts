@@ -50,6 +50,10 @@ const getBatteryPercent = async (): Promise<number | null> => {
   }
 };
 
+const finiteOrNull = (value: number | null): number | null => (
+  typeof value === 'number' && Number.isFinite(value) ? value : null
+);
+
 const positionToFix = async (position: GeolocationPosition, previousAddress?: string | null): Promise<SafetyLocationFix> => {
   const latitude = position.coords.latitude;
   const longitude = position.coords.longitude;
@@ -62,8 +66,8 @@ const positionToFix = async (position: GeolocationPosition, previousAddress?: st
     latitude,
     longitude,
     accuracy: Number.isFinite(position.coords.accuracy) ? position.coords.accuracy : null,
-    heading: Number.isFinite(position.coords.heading) ? position.coords.heading : null,
-    speed: Number.isFinite(position.coords.speed) ? position.coords.speed : null,
+    heading: finiteOrNull(position.coords.heading),
+    speed: finiteOrNull(position.coords.speed),
     readableLocation,
     capturedAt: new Date(position.timestamp || Date.now()).toISOString(),
   };
