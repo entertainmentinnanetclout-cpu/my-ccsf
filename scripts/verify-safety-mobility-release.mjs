@@ -56,7 +56,7 @@ check(mapAsset.includes('BUILDING') && mapAsset.includes('TECHNIKONRAND') && map
 check(hook.includes('watchPosition') && hook.includes('wakeLock') && hook.includes('getBatteryPercent'), 'Safety Mobility uses live watch, wake lock and device battery context where supported.');
 check(hook.includes('RADAR_STORAGE_KEY') && hook.includes("visibility: 'off'"), 'Radar preference persists but defaults to invisible.');
 check(!hook.includes('browser tracking works'), 'Hook contains no misleading guarantee of permanent browser tracking.');
-check(hub.includes('cannot locate a powered-off phone') && hub.includes('may pause when the browser is fully closed'), 'UI states phone and browser background-tracking limitations accurately.');
+check(hub.includes('cannot locate a powered-off phone') && hub.includes('does not guarantee continuous background tracking when the browser is fully closed'), 'UI states phone and browser background-tracking limitations accurately.');
 check(hub.includes('Approximate users are deliberately blurred') && hub.includes('Tap a profile icon'), 'Radar UI explains its interactive, privacy-limited behavior.');
 
 for (const icon of ['public/app-icon-192.png', 'public/app-icon-512.png', 'public/maskable-icon-512.png', 'public/apple-touch-icon.png']) {
