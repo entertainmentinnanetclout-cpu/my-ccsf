@@ -29,6 +29,17 @@ interface RadarPreference {
   confirmExact: boolean;
 }
 
+interface WakeLockSentinelLike {
+  release: () => Promise<void>;
+}
+
+const isGeolocationError = (value: unknown): value is GeolocationPositionError => (
+  typeof value === 'object'
+  && value !== null
+  && 'code' in value
+  && 'message' in value
+);
+
 const getBatteryPercent = async (): Promise<number | null> => {
   try {
     const nav = navigator as Navigator & { getBattery?: () => Promise<{ level: number }> };
@@ -72,7 +83,7 @@ export function useSafetyMobility({ campus, userId }: { campus: CampusLocation; 
   const sessionRef = useRef<SafetyMobilitySession | null>(null);
   const preferenceRef = useRef<RadarPreference>(radarPreference);
   const lastAddressRef = useRef<string | null>(null);
-  const wakeLockRef = useRef<{ release: () => Promise<void> } | null>(null);
+  const wakeLockRef = useRef<WakeLockSentinelLike | null>(null);
 
   useEffect(() => { sessionRef.current = session; }, [session]);
   useEffect(() => { preferenceRef.current = radarPreference; }, [radarPreference]);
@@ -144,7 +155,7 @@ export function useSafetyMobility({ campus, userId }: { campus: CampusLocation; 
       setError(null);
       return fix;
     } catch (caught) {
-      const message = caught instanceof GeolocationPositionError
+      const message = isGeolocationError(caught)
         ? 'Location permission was denied or the device could not obtain a reliable position.'
         : caught instanceof Error ? caught.message : 'Unable to capture location.';
       setError(message);
@@ -186,15 +197,20 @@ export function useSafetyMobility({ campus, userId }: { campus: CampusLocation; 
   useEffect(() => {
     const shouldKeepAwake = Boolean(session && session.status !== 'completed' && session.status !== 'cancelled');
     const requestWakeLock = async () => {
-      if (!shouldKeepAwake || !('wakeLock' in navigator)) return;
+      const wakeLockApi = (navigator as Navigator & { wakeLock?: { request: (type: 'screen') => Promise<WakeLockSentinelLike> } }).wakeLock;
+      if (!shouldKeepAwake || !wakeLockApi) return;
       try {
-        wakeLockRef.current = await (navigator as Navigator & { wakeLock: { request: (type: 'screen') => Promise<{ release: () => Promise<void> }> } }).wakeLock.request('screen');
+        wakeLockRef.current = await wakeLockApi.request('screen');
       } catch {
         wakeLockRef.current = null;
       }
     };
     void requestWakeLock();
-    return () => { void wakeLockRef.current?.release().catch(() => undefined); wakeLockRef.current = null; };
+    return () => {
+      const current = wakeLockRef.current;
+      wakeLockRef.current = null;
+      if (current) void current.release().catch(() => undefined);
+    };
   }, [session]);
 
   const start = useCallback(async (input: Omit<StartSafetySessionInput, 'campus'>) => {
