@@ -35,7 +35,8 @@ assert(dashboard.includes("label: 'Support'"), 'The student navigation no longer
 assert(dashboard.includes('<StudentChat onNavigate='), 'Guided support routes into verified student workflows.');
 assert(dashboard.includes('role="tablist"') && dashboard.includes('aria-selected='), 'Student navigation exposes tab semantics.');
 assert(dashboard.includes('aria-label="Sign out of CCSF"'), 'The icon-only student sign-out control is labelled.');
-assert(dashboard.includes('useSearchParams') && dashboard.includes("next.set('tab', view)"), 'Student report, case, map and support links are directly addressable.');
+assert(dashboard.includes('useSearchParams') && dashboard.includes("next.set('tab', view)"), 'Student report, case, safety and support links are directly addressable.');
+assert(dashboard.includes("label: 'Safety'") && dashboard.includes('<SafetyMobilityHub'), 'Safety Mobility is a first-class student workflow.');
 
 const studentSupport = read('src/components/student/StudentChat.tsx');
 for (const prohibited of ['generateCaseNumber', 'CCSF AI Support', 'Always Available', 'Math.random()', 'Case Status (']) {
@@ -154,13 +155,13 @@ for (const file of primaryFiles) {
 }
 
 const indexHtml = read('index.html');
-assert(indexHtml.includes('sizes="180x180" href="/apple-touch-icon.png"'), 'Apple touch icon uses its native 180px asset.');
-assert(indexHtml.includes('sizes="32x32" href="/favicon-32x32.png"'), '32px favicon is explicitly declared.');
-assert(indexHtml.includes('sizes="16x16" href="/favicon-16x16.png"'), '16px favicon is explicitly declared.');
+assert(indexHtml.includes('type="image/svg+xml" href="/app-icon.svg"'), 'Browser chrome uses the generated white-background institutional icon.');
+assert(indexHtml.includes('rel="apple-touch-icon" href="/app-icon.svg"'), 'Apple touch installation uses the same white-background institutional icon source.');
 
 const manifest = JSON.parse(read('public/manifest.json'));
-assert(manifest.icons.some((icon) => icon.src === '/maskable-icon-512.png' && icon.purpose === 'maskable'), 'PWA manifest has a separately padded maskable icon.');
-assert(manifest.icons.some((icon) => icon.src === '/app-icon-512.png' && icon.purpose === 'any'), 'PWA manifest has a standard transparent 512px icon.');
+assert(manifest.icons.some((icon) => icon.src === '/app-icon.svg' && icon.purpose.includes('maskable')), 'PWA manifest has a white-background maskable institutional icon.');
+assert(manifest.icons.some((icon) => icon.src === '/app-icon.svg' && icon.purpose.includes('any')), 'PWA manifest has a standard institutional icon.');
+assert(manifest.shortcuts.some((shortcut) => shortcut.url === '/dashboard?tab=safety'), 'PWA manifest includes a direct Safety Mobility shortcut.');
 
 if (failures.length) {
   console.error(`Phase 4 product verification failed with ${failures.length} issue(s):`);
