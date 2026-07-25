@@ -1,7 +1,7 @@
 // My CCSF service worker — institutional PWA shell and push notifications.
 
 const CACHE_PREFIX = 'my-ccsf';
-const CACHE_VERSION = 'phase7-2026-07-19-v4';
+const CACHE_VERSION = 'safety-mobility-2026-07-25-v2';
 const STATIC_CACHE = `${CACHE_PREFIX}-static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${CACHE_VERSION}`;
 const OFFLINE_SHELL = '/index.html';
@@ -16,6 +16,7 @@ const PRECACHE_ASSETS = [
   '/app-icon-512.png',
   '/maskable-icon-512.png',
   '/apple-touch-icon.png',
+  '/campus-guides/pretoria-campus-structure-map.svg',
 ];
 
 function isSameOrigin(url) {

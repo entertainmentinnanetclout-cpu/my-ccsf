@@ -1,11 +1,14 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { makePdf } from './pilot-document-library/pdf-generator.mjs';
-import { makePptx } from './pilot-document-library/pptx-generator.mjs';
+import { makePublicDocuments } from './pilot-document-library/pdf-generator.mjs';
 
 const outDir = path.resolve('public/downloads');
 fs.mkdirSync(outDir, { recursive: true });
-const pdf = makePdf(outDir);
-const pptx = makePptx(outDir);
-console.log(`Generated ${path.basename(pdf.file)} (${pdf.pages} pages, ${pdf.size} bytes)`);
-console.log(`Generated ${path.basename(pptx.file)} (${pptx.slides} slides, ${pptx.size} bytes)`);
+
+const privatePublicPath = path.join(outDir, 'CCSF-Crime-Prevention-Unit-Operating-Structure-Pilot-Activation-Plan-v1.1.pptx');
+if (fs.existsSync(privatePublicPath)) fs.rmSync(privatePublicPath);
+
+const documents = makePublicDocuments(outDir);
+for (const document of documents) {
+  console.log(`Generated ${path.basename(document.file)} (${document.pages} pages, ${document.size} bytes)`);
+}

@@ -72,12 +72,13 @@ Deno.serve(async (req) => {
       routing_destination: string;
       simulation_notice: string;
       requires_location: boolean;
+      requires_live_tracking: boolean;
     } | null = null;
 
     if (scenarioId) {
       const { data, error: scenarioError } = await context.adminClient
         .from('pilot_scenarios')
-        .select('id, scenario_type, expected_category, simulated_severity, routing_destination, simulation_notice, requires_location')
+        .select('id, scenario_type, expected_category, simulated_severity, routing_destination, simulation_notice, requires_location, requires_live_tracking')
         .eq('id', scenarioId)
         .eq('program_id', session.program_id)
         .eq('is_active', true)
@@ -91,6 +92,7 @@ Deno.serve(async (req) => {
     }
 
     const emergency = scenario?.scenario_type === 'emergency_simulation';
+    const locationRequired = emergency || scenario?.requires_location === true || scenario?.requires_live_tracking === true;
     const emergencyConsent = optionalBoolean(body.emergency_consent);
     if (emergency && !emergencyConsent) {
       throw new PilotHttpError(400, 'Emergency location and profile-sharing consent is required.', 'emergency_consent_required');
@@ -113,10 +115,15 @@ Deno.serve(async (req) => {
     const locationLat = optionalNumber(body.location_lat, 'location_lat', -90, 90);
     const locationLng = optionalNumber(body.location_lng, 'location_lng', -180, 180);
     const locationAccuracy = optionalNumber(body.location_accuracy, 'location_accuracy', 0, 100000);
-    const locationDescription = requiredText(body.location_description, 'location_description', 500);
+    const locationDescription = locationRequired
+      ? requiredText(body.location_description, 'location_description', 500)
+      : optionalText(body.location_description, 'location_description', 500);
 
-    if (locationLat === null || locationLng === null) {
-      throw new PilotHttpError(400, 'Every Pilot report requires a captured location.', 'report_location_required');
+    if ((locationLat === null) !== (locationLng === null)) {
+      throw new PilotHttpError(400, 'Latitude and longitude must be provided together.', 'report_location_pair_invalid');
+    }
+    if (locationRequired && (locationLat === null || locationLng === null)) {
+      throw new PilotHttpError(400, 'The selected Pilot scenario requires a captured location.', 'report_location_required');
     }
 
     const { data: report, error: reportError } = await context.adminClient
@@ -167,6 +174,7 @@ Deno.serve(async (req) => {
         scenario_id: scenarioId,
         minimal_emergency_flow: emergency,
         emergency_consent: emergency ? true : null,
+        location_required: locationRequired,
         location_description: locationDescription,
         simulation_only: true,
         simulated_severity: report.simulated_severity,
