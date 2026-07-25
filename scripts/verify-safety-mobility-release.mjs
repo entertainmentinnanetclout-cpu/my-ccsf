@@ -9,6 +9,7 @@ const exists = (file) => fs.existsSync(path.join(root, file));
 const check = (condition, message) => condition ? passes.push(message) : failures.push(message);
 
 const migration = read('supabase/migrations/20260725103000_student_safety_mobility_and_radar.sql');
+const hardening = read('supabase/migrations/20260725104500_student_safety_mobility_campus_scope_hardening.sql');
 const dashboard = read('src/pages/Dashboard.tsx');
 const hub = read('src/components/student/SafetyMobilityHub.tsx');
 const hook = read('src/hooks/useSafetyMobility.ts');
@@ -33,6 +34,10 @@ check(migration.includes("last_seen_at > now() - interval '15 minutes'"), 'Stale
 check(migration.includes('round(presence.latitude::numeric, 3)') && migration.includes('greatest(coalesce(presence.accuracy_meters, 0), 120)'), 'Approximate radar mode limits precision.');
 check(migration.includes('insert into public.incidents') && migration.includes('insert into public.incident_location_updates'), 'A travel alert creates an official case and joins the existing live-location trail.');
 check(migration.includes("share_scope = 'campus_security'") && migration.includes("status = 'alerted'"), 'Alerted travel sessions become visible to authorised campus security.');
+check(hardening.includes('private.safety_require_student_campus') && hardening.includes("'student'::public.user_role"), 'Safety Mobility RPCs require an authenticated student with a verified campus.');
+check(hardening.includes('verified_campus is distinct from p_campus'), 'Client-supplied campus values cannot override the verified student profile.');
+check(hardening.includes('perform private.safety_require_student_campus(p_campus);'), 'Travel, presence and Radar functions enforce campus scope server-side.');
+check(hardening.includes('revoke all on function public.safety_list_campus_radar') && hardening.includes('to authenticated'), 'Safety RPC execution is closed to public/anonymous callers.');
 
 check(dashboard.includes("type StudentView = 'home' | 'report' | 'mycases' | 'safety' | 'messages'"), 'Student dashboard is organised into five clear primary sections.');
 check(dashboard.includes("{ view: 'safety', icon: Radar, label: 'Safety' }"), 'Safety Mobility has a primary student-navigation destination.');
