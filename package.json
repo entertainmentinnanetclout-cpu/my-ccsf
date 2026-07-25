@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "node scripts/verify-safety-mobility-release.mjs && node scripts/generate-pilot-document-library.mjs && vite build",
-    "build:dev": "node scripts/verify-safety-mobility-release.mjs && node scripts/generate-pilot-document-library.mjs && vite build --mode development",
+    "build": "npm run typecheck && node scripts/verify-safety-mobility-release.mjs && node scripts/generate-pilot-document-library.mjs && vite build",
+    "build:dev": "npm run typecheck && node scripts/verify-safety-mobility-release.mjs && node scripts/generate-pilot-document-library.mjs && vite build --mode development",
     "typecheck": "tsc -p tsconfig.app.json --noEmit",
     "test:phase1-auth": "node scripts/verify-phase-1-pilot-auth-navigation.mjs",
     "test:phase2-routing": "node scripts/verify-phase-2-pilot-report-routing.mjs",
@@ -98,6 +98,7 @@
     "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react-swc": "^3.11.0",
     "autoprefixer": "^10.4.21",
+    "@types/react-signature-canvas": "^1.0.7",
     "eslint": "^9.32.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
