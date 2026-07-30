@@ -14,13 +14,14 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { AcademicFraudLaunchCard, ACADEMIC_FRAUD_REPORT_TYPES } from '@/components/shared/AcademicFraudLaunchCard';
+import { MobileEvidencePicker } from '@/components/shared/MobileEvidencePicker';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { usePersistentReportDraft } from '@/hooks/usePersistentReportDraft';
 import { useToast } from '@/hooks/use-toast';
 import { CAMPUS_LABELS, PILOT_MAX_ATTACHMENTS, PILOT_ROUTES } from '@/config/pilot';
 import { captureBrowserPosition, normalizeGeolocationError } from '@/lib/browserGeolocation';
@@ -70,6 +71,15 @@ interface CapturedLocation {
   accuracy: number | null;
 }
 
+interface PilotReportDraft {
+  description: string;
+  category: IncidentCategory | '';
+  academicServiceType: string;
+  locationDescription: string;
+  location: CapturedLocation | null;
+  anonymous: boolean;
+}
+
 const isSessionFailure = (error: unknown) => {
   const message = error instanceof Error ? error.message : '';
   return /pilot session|session_(expired|not_found)|timed out|active owned pilot session/i.test(message);
@@ -108,6 +118,38 @@ export function PilotReportForm({
   const [emergencyConsent, setEmergencyConsent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [locationLoading, setLocationLoading] = useState(false);
+
+  const draftStorageKey = emergency ? null : `ccsf:pilot-report-draft:v1:${participant.user_id}:${scenario.id}`;
+  const draftValue = useMemo<PilotReportDraft>(() => ({
+    description,
+    category,
+    academicServiceType,
+    locationDescription,
+    location,
+    anonymous,
+  }), [academicServiceType, anonymous, category, description, location, locationDescription]);
+  const draftDirty = Boolean(
+    description.trim() || category || academicServiceType || locationDescription.trim() || location || files.length || anonymous,
+  );
+  const {
+    saveNow: saveDraftNow,
+    clearDraft,
+    restoredAt,
+    restoredEvidenceNames,
+  } = usePersistentReportDraft<PilotReportDraft>({
+    storageKey: draftStorageKey,
+    value: draftValue,
+    evidenceNames: files.map((file) => file.name),
+    enabled: !emergency && draftDirty,
+    onRestore: (draft) => {
+      setDescription(draft.description ?? '');
+      setCategory(draft.category ?? '');
+      setAcademicServiceType(draft.academicServiceType ?? '');
+      setLocationDescription(draft.locationDescription ?? '');
+      setLocation(draft.location ?? null);
+      setAnonymous(Boolean(draft.anonymous));
+    },
+  });
 
   useEffect(() => setWorkingSession(session), [session]);
 
@@ -330,6 +372,7 @@ export function PilotReportForm({
         description: [`${report.reference_number}. The case is now visible in the authorised Pilot queue.`, ...followUpWarnings].join(' '),
         variant: followUpWarnings.length ? 'destructive' : 'default',
       });
+      clearDraft();
       navigate(PILOT_ROUTES.report(report.id));
     } catch (caught) {
       await recordPilotFeatureTest({
@@ -473,18 +516,18 @@ export function PilotReportForm({
               <span className="text-xs font-normal text-muted-foreground">{requiresAttachment ? 'Evidence required' : 'Optional'}</span>
             </summary>
             <div className="space-y-4 border-t p-4">
-              <div className="space-y-2">
-                <Label htmlFor={`pilot-files-${scenario.id}`}>{academicFraud ? 'Attach screenshots, PDFs, payment proof or media *' : 'Add photos, video or a document'}</Label>
-                <Input
-                  id={`pilot-files-${scenario.id}`}
-                  type="file"
-                  multiple
-                  accept="image/jpeg,image/png,image/webp,video/mp4,application/pdf"
-                  onChange={(event) => handleFiles(Array.from(event.target.files ?? []))}
-                />
-                <p className="text-xs text-muted-foreground">Up to {PILOT_MAX_ATTACHMENTS} files, maximum 10 MB each. Original files remain private and are served through controlled access.</p>
-                {files.length > 0 && <p className="text-sm font-medium">{files.length} file{files.length === 1 ? '' : 's'} ready: {files.map((file) => file.name).join(', ')}</p>}
-              </div>
+              <MobileEvidencePicker
+                id={`pilot-files-${scenario.id}`}
+                label={academicFraud ? 'Attach screenshots, PDFs, payment proof or media' : 'Add photos, video or a document'}
+                accept="image/jpeg,image/png,image/webp,image/heic,image/heif,video/mp4,application/pdf"
+                files={files}
+                onFilesSelected={handleFiles}
+                onBeforeOpen={saveDraftNow}
+                helpText={`Up to ${PILOT_MAX_ATTACHMENTS} files, maximum 10 MB each. Original files remain private and are served through controlled access.`}
+                required={requiresAttachment}
+                restoredEvidenceNames={restoredEvidenceNames}
+              />
+              {restoredAt && <p className="text-xs text-muted-foreground">Saved report details were restored from {new Date(restoredAt).toLocaleString('en-ZA')}.</p>}
 
               <div className="flex items-start gap-3 rounded-lg bg-background p-3">
                 <Checkbox
@@ -516,7 +559,7 @@ export function PilotReportForm({
         )}
 
         <div className="rounded-lg bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
-          Your Pilot session is kept in sync automatically. Reports and attachments remain inside the isolated Pilot workflow.
+          Your Pilot session and unfinished report details are saved automatically on this device. Reports and attachments remain inside the isolated Pilot workflow.
         </div>
 
         <Button
