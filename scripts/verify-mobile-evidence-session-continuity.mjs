@@ -13,7 +13,9 @@ const auth = read('src/contexts/AuthContext.tsx');
 const pilotContext = read('src/contexts/PilotModeContext.tsx');
 const productionEntry = read('src/components/student/ReportIncident.tsx');
 const productionReport = read('src/components/student/ReportIncidentV2.tsx');
+const pilotEntry = read('src/components/pilot/PilotReportForm.tsx');
 const pilotReport = read('src/components/pilot/PilotReportFormV2.tsx');
+const pilotDashboard = read('src/components/pilot/PilotStudentDashboard.tsx');
 const pilotSession = read('src/pages/pilot/PilotSession.tsx');
 const picker = read('src/components/shared/MobileEvidencePicker.tsx');
 const draftStorage = read('src/lib/reportDraftStorage.ts');
@@ -27,9 +29,11 @@ assert(
   'Production reporting uses the resilient mobile evidence form.',
 );
 assert(
-  pilotSession.includes('PilotReportFormV2')
+  pilotEntry.includes('PilotReportFormV2 as PilotReportForm')
+    && pilotSession.includes('PilotReportFormV2')
+    && pilotDashboard.includes("import { PilotReportForm } from '@/components/pilot/PilotReportForm'")
     && pilotReport.includes('MobileEvidencePicker'),
-  'Pilot reporting uses the resilient mobile evidence form.',
+  'Both Pilot entry routes use the resilient mobile evidence form.',
 );
 assert(
   picker.includes('type="button"')
@@ -40,11 +44,12 @@ assert(
 );
 
 assert(
-  lifecycle.includes("url.pathname === '/dashboard'")
+  lifecycle.includes("url.pathname === '/dashboard' || url.pathname === '/pilot'")
+    && lifecycle.includes("url.searchParams.get('tab') === 'report'")
     && lifecycle.includes('pilot')
     && lifecycle.includes('session')
     && lifecycle.includes('test(url.pathname)'),
-  'Evidence lifecycle restoration is limited to official reporting and Pilot session routes.',
+  'Evidence lifecycle restoration covers official reporting, the actual Pilot dashboard and Pilot session routes.',
 );
 assert(
   lifecycle.includes('window.history.replaceState') && lifecycle.includes('MAX_RESUME_AGE_MS'),
@@ -89,15 +94,20 @@ assert(
   'Pilot report drafts and evidence restore after mobile suspension and clear after submission.',
 );
 assert(
+  pilotDashboard.includes('useUrlBackedView<View>')
+    && pilotDashboard.includes("parameter: 'tab'"),
+  'The actual Pilot dashboard persists the active reporting section in the URL.',
+);
+assert(
   dashboard.includes('readReportDraft<StudentView>')
     && dashboard.includes('writeReportDraft(viewStorageKey, view)'),
-  'The student dashboard restores the last active section instead of returning to Home.',
+  'The official student dashboard restores the last active section instead of returning to Home.',
 );
 
 assert(
   productionReport.includes('uploadEvidenceWithRetry')
     && productionReport.includes('supabase.auth.refreshSession()')
-    && productionReport.includes(".remove([path])"),
+    && productionReport.includes('.remove([path])'),
   'Production evidence upload retries after token renewal and removes orphaned files.',
 );
 assert(

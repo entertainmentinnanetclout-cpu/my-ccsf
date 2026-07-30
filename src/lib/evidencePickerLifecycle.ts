@@ -19,7 +19,7 @@ function isSafeEvidencePath(candidate: string): boolean {
     const url = new URL(candidate, window.location.origin);
     if (url.origin !== window.location.origin) return false;
 
-    if (url.pathname === '/dashboard') {
+    if (url.pathname === '/dashboard' || url.pathname === '/pilot') {
       return url.searchParams.get('tab') === 'report';
     }
 
@@ -33,18 +33,15 @@ function readMarker(): EvidencePickerResumeMarker | null {
   try {
     const raw = window.localStorage.getItem(EVIDENCE_PICKER_RESUME_KEY);
     if (!raw) return null;
-
     const parsed = JSON.parse(raw) as Partial<EvidencePickerResumeMarker>;
     if (typeof parsed.path !== 'string' || typeof parsed.startedAt !== 'number') {
       window.localStorage.removeItem(EVIDENCE_PICKER_RESUME_KEY);
       return null;
     }
-
     if (!isSafeEvidencePath(parsed.path) || Date.now() - parsed.startedAt > MAX_RESUME_AGE_MS) {
       window.localStorage.removeItem(EVIDENCE_PICKER_RESUME_KEY);
       return null;
     }
-
     return { path: parsed.path, startedAt: parsed.startedAt };
   } catch {
     return null;
@@ -54,21 +51,14 @@ function readMarker(): EvidencePickerResumeMarker | null {
 function writeMarker(path: string): void {
   if (!isSafeEvidencePath(path)) return;
   try {
-    window.localStorage.setItem(EVIDENCE_PICKER_RESUME_KEY, JSON.stringify({
-      path,
-      startedAt: Date.now(),
-    } satisfies EvidencePickerResumeMarker));
+    window.localStorage.setItem(EVIDENCE_PICKER_RESUME_KEY, JSON.stringify({ path, startedAt: Date.now() } satisfies EvidencePickerResumeMarker));
   } catch {
     // Storage can be unavailable in restrictive browser modes. The native picker still works.
   }
 }
 
 export function clearEvidencePickerResumeMarker(): void {
-  try {
-    window.localStorage.removeItem(EVIDENCE_PICKER_RESUME_KEY);
-  } catch {
-    // Ignore storage failures.
-  }
+  try { window.localStorage.removeItem(EVIDENCE_PICKER_RESUME_KEY); } catch { /* Ignore storage failures. */ }
 }
 
 export function isEvidencePickerInteractionActive(): boolean {
@@ -77,7 +67,6 @@ export function isEvidencePickerInteractionActive(): boolean {
 
 export function restoreInterruptedEvidenceRoute(): void {
   if (typeof window === 'undefined') return;
-
   const marker = readMarker();
   if (!marker || marker.path === currentPath()) return;
 
@@ -86,9 +75,7 @@ export function restoreInterruptedEvidenceRoute(): void {
     || current.pathname === '/pilot'
     || (current.pathname === '/dashboard' && current.searchParams.get('tab') !== 'report');
 
-  if (looksLikeResetDestination) {
-    window.history.replaceState(window.history.state, '', marker.path);
-  }
+  if (looksLikeResetDestination) window.history.replaceState(window.history.state, '', marker.path);
 }
 
 function isFileInput(target: EventTarget | null): target is HTMLInputElement {
@@ -98,7 +85,6 @@ function isFileInput(target: EventTarget | null): target is HTMLInputElement {
 function scheduleMarkerClearAfterReturn(): void {
   const marker = readMarker();
   if (!marker || currentPath() !== marker.path) return;
-
   if (settleTimer !== null) window.clearTimeout(settleTimer);
   settleTimer = window.setTimeout(() => {
     clearEvidencePickerResumeMarker();
@@ -114,15 +100,12 @@ export function installEvidencePickerLifecycle(): void {
     if (!isFileInput(event.target)) return;
     writeMarker(currentPath());
   }, true);
-
   document.addEventListener('change', (event) => {
     if (isFileInput(event.target)) clearEvidencePickerResumeMarker();
   }, true);
-
   document.addEventListener('cancel', (event) => {
     if (isFileInput(event.target)) clearEvidencePickerResumeMarker();
   }, true);
-
   window.addEventListener('focus', scheduleMarkerClearAfterReturn);
   window.addEventListener('pageshow', scheduleMarkerClearAfterReturn);
 }

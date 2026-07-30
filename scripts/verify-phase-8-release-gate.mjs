@@ -9,7 +9,9 @@ const check = (value, message) => value ? passes.push(message) : failures.push(m
 
 const core = read('src/services/pilot/pilotCoreService.ts');
 const admin = read('src/services/pilot/pilotAdminService.ts');
-const form = read('src/components/pilot/PilotReportForm.tsx');
+const formEntry = read('src/components/pilot/PilotReportForm.tsx');
+const form = read('src/components/pilot/PilotReportFormV2.tsx');
+const pilotEvidence = read('src/services/pilot/pilotEvidenceService.ts');
 const geolocation = read('src/lib/browserGeolocation.ts');
 const tracking = read('src/hooks/pilot/usePilotLocationTracking.ts');
 const student = read('src/components/pilot/PilotStudentDashboard.tsx');
@@ -31,6 +33,7 @@ const completion = read('docs/PHASE_8_COMPLETE.md');
 
 check(core.includes("'pilot-create-session'") && core.includes("'pilot-submit-report'"), 'Student session and report services are isolated Pilot Edge calls.');
 check(['location_lat','location_lng','location_accuracy','location_description'].every((x) => core.includes(x)), 'Report payload preserves all location fields.');
+check(formEntry.includes('PilotReportFormV2 as PilotReportForm'), 'The primary Pilot report entry uses the resilient V2 form.');
 check(core.includes("from('pilot_location_events')") && form.includes("source: 'initial_fix'"), 'Location events use the Pilot location table.');
 check(
   geolocation.includes('enableHighAccuracy: true')
@@ -39,11 +42,16 @@ check(
     && tracking.includes("'live_tracking'"),
   'High-accuracy capture and controlled live tracking workflows remain enabled.',
 );
-check(form.includes('uploadPilotAttachments') && core.includes('PILOT_MAX_ATTACHMENTS') && core.includes('PILOT_MAX_FILE_BYTES'), 'Evidence upload limits and workflow remain enabled.');
+check(
+  form.includes('uploadPilotEvidenceResilient')
+    && pilotEvidence.includes('PILOT_MAX_ATTACHMENTS')
+    && pilotEvidence.includes('PILOT_MAX_FILE_BYTES'),
+  'Evidence upload limits and resilient workflow remain enabled.',
+);
 check(core.includes('createSignedUrl') && core.includes('PILOT_ATTACHMENT_BUCKET'), 'Private evidence retrieval uses signed URLs.');
 check(
   form.includes('I consent to share my current location and registered student profile')
-    && form.includes('does not contact CPS, SAPS, an ambulance or another external emergency service.'),
+    && form.includes('does not contact CPS, SAPS, an ambulance or another external service.'),
   'Emergency reporting requires explicit profile/location sharing and no-dispatch consent.',
 );
 
@@ -75,7 +83,7 @@ check([
   '/admin/pilot',
   '/admin/pilot/reviews',
 ].every((x) => app.includes(`path="${x}"`)), 'All direct Pilot routes, including Phase 3 reviews, remain registered.');
-for (const source of [core, admin, form, student, campus, superAdmin]) {
+for (const source of [core, admin, form, pilotEvidence, student, campus, superAdmin]) {
   check(!["from('incidents')","from('notifications')","from('case_updates')",'send-push-notification'].some((x) => source.includes(x)), 'Active Pilot source is isolated from production workflow tables.');
 }
 check(config.includes('No external emergency service or production dispatch workflow is contacted.'), 'Canonical no-dispatch warning remains permanent.');
