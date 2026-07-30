@@ -9,6 +9,7 @@ import './styles/institutional-portals.css';
 
 const SPLASH_SESSION_KEY = 'ccsf-institutional-splash-phase7';
 const SERVICE_WORKER_UPDATE_INTERVAL = 60 * 60 * 1000;
+const VISIBILITY_UPDATE_MIN_GAP = 5 * 60 * 1000;
 
 function announceServiceWorkerUpdate(registration: ServiceWorkerRegistration) {
   if (!registration.waiting) return;
@@ -19,8 +20,17 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     void navigator.serviceWorker.register('/sw.js', { scope: '/', updateViaCache: 'none' })
       .then((registration) => {
+        let lastUpdateCheckAt = 0;
+        const checkForUpdate = (force = false) => {
+          if (!navigator.onLine) return;
+          const now = Date.now();
+          if (!force && now - lastUpdateCheckAt < VISIBILITY_UPDATE_MIN_GAP) return;
+          lastUpdateCheckAt = now;
+          void registration.update().catch(() => undefined);
+        };
+
         announceServiceWorkerUpdate(registration);
-        void registration.update().catch(() => undefined);
+        checkForUpdate(true);
 
         registration.addEventListener('updatefound', () => {
           const worker = registration.installing;
@@ -32,14 +42,10 @@ if ('serviceWorker' in navigator) {
           });
         });
 
-        window.setInterval(() => {
-          if (navigator.onLine) void registration.update().catch(() => undefined);
-        }, SERVICE_WORKER_UPDATE_INTERVAL);
+        window.setInterval(() => checkForUpdate(true), SERVICE_WORKER_UPDATE_INTERVAL);
 
         document.addEventListener('visibilitychange', () => {
-          if (document.visibilityState === 'visible' && navigator.onLine) {
-            void registration.update().catch(() => undefined);
-          }
+          if (document.visibilityState === 'visible') checkForUpdate(false);
         });
       })
       .catch((error) => {
