@@ -1,7 +1,8 @@
 import { supabase } from '@/integrations/supabase/client';
-import { evidenceChecksum, type EvidenceManifestItem } from '@/lib/evidenceProcessing';
+import { evidenceChecksum, evidenceFileIdentity, type EvidenceManifestItem } from '@/lib/evidenceProcessing';
 import { uploadResumableEvidence } from '@/lib/resumableStorageUpload';
-import type { CampusLocation } from '@/types/pilot';
+import { invokePilotFunction } from '@/services/pilot/pilotEdgeService';
+import type { CampusLocation, PilotReport } from '@/types/pilot';
 
 export type EvidenceUploadStatus = 'queued' | 'uploading' | 'uploaded' | 'failed';
 export interface EvidenceUploadState {
@@ -38,7 +39,6 @@ export interface SubmissionReceipt {
 }
 
 const safeName = (name: string) => name.replace(/[^a-zA-Z0-9._-]/g, '_').slice(-140) || 'evidence';
-const fileKey = (file: File, index: number) => `${index}:${file.name}:${file.size}:${file.lastModified}`;
 
 export async function createEvidenceSubmissionDraft(input: {
   scope: 'official' | 'pilot';
@@ -71,9 +71,8 @@ export async function uploadSubmissionEvidence(input: {
   signal?: AbortSignal;
 }): Promise<EvidenceManifestItem[]> {
   const manifest: EvidenceManifestItem[] = [];
-  for (let index = 0; index < input.files.length; index += 1) {
-    const file = input.files[index];
-    const key = fileKey(file, index);
+  for (const file of input.files) {
+    const key = evidenceFileIdentity(file);
     const objectName = `${crypto.randomUUID()}-${safeName(file.name)}`;
     const path = input.draft.scope === 'official'
       ? `drafts/${input.draft.user_id}/${input.draft.id}/${objectName}`
@@ -123,6 +122,20 @@ export async function finalizeOfficialSubmission(input: {
   return data as unknown as { incident: { id: string }; receipt: SubmissionReceipt };
 }
 
-export function evidenceUploadKey(file: File, index: number): string {
-  return fileKey(file, index);
+export async function finalizePilotSubmission(input: {
+  draft: EvidenceSubmissionDraft;
+  report: Record<string, unknown>;
+  evidence: EvidenceManifestItem[];
+  submittedOffline?: boolean;
+}): Promise<{ report: PilotReport; receipt: SubmissionReceipt }> {
+  return invokePilotFunction<{ report: PilotReport; receipt: SubmissionReceipt }>('pilot-submit-report', {
+    ...input.report,
+    submission_id: input.draft.id,
+    evidence_manifest: input.evidence,
+    submitted_offline: input.submittedOffline ?? false,
+  });
+}
+
+export function evidenceUploadKey(file: File): string {
+  return evidenceFileIdentity(file);
 }
