@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { isApprovedPilotPath, PILOT_ENABLED } from '@/config/pilot';
@@ -27,6 +27,7 @@ const PilotModeContext = createContext<PilotModeContextValue | undefined>(undefi
 export function PilotModeProvider({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const { user, userRole } = useAuth();
+  const userId = user?.id ?? null;
   const isPilotRoute = isApprovedPilotPath(location.pathname);
   const enabled = PILOT_ENABLED && isPilotRoute;
   const [loading, setLoading] = useState(false);
@@ -34,22 +35,26 @@ export function PilotModeProvider({ children }: { children: React.ReactNode }) {
   const [program, setProgram] = useState<PilotProgram | null>(null);
   const [participant, setParticipant] = useState<PilotParticipant | null>(null);
   const [session, setSession] = useState<PilotSession | null>(null);
+  const contextReadyRef = useRef(false);
 
   const refresh = useCallback(async () => {
-    if (!enabled || !user || !userRole) {
+    if (!enabled || !userId || !userRole) {
+      contextReadyRef.current = false;
       setProgram(null);
       setParticipant(null);
       setSession(null);
       setError(null);
+      setLoading(false);
       return;
     }
 
-    setLoading(true);
+    if (!contextReadyRef.current) setLoading(true);
     setError(null);
+
     try {
       if (userRole === 'student') {
         await invokePilotFunction('pilot-enrol-student', {});
-        const context = await loadStudentPilotContext(user.id);
+        const context = await loadStudentPilotContext(userId);
         let nextSession = context.session;
 
         if (context.participant && ['consented', 'active'].includes(context.participant.status)) {
@@ -72,16 +77,21 @@ export function PilotModeProvider({ children }: { children: React.ReactNode }) {
         setParticipant(null);
         setSession(null);
       }
+
+      contextReadyRef.current = true;
     } catch (caught) {
       console.error('Pilot context loading failed', caught);
       setError(caught instanceof Error ? caught.message : 'Unable to load Pilot Mode.');
-      setProgram(null);
-      setParticipant(null);
-      setSession(null);
+
+      if (!contextReadyRef.current) {
+        setProgram(null);
+        setParticipant(null);
+        setSession(null);
+      }
     } finally {
       setLoading(false);
     }
-  }, [enabled, user, userRole]);
+  }, [enabled, userId, userRole]);
 
   useEffect(() => {
     void refresh();
