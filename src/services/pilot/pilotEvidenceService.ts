@@ -5,23 +5,23 @@ import {
   PILOT_MAX_FILE_BYTES,
   PILOT_ALLOWED_MIME_TYPES,
 } from '@/config/pilot';
+import { isAllowedEvidenceFile, normaliseEvidenceMimeType } from '@/lib/evidenceFiles';
 import type { PilotAttachment, PilotReport } from '@/types/pilot';
 
 export function validatePilotEvidence(files: File[]): void {
   if (files.length > PILOT_MAX_ATTACHMENTS) throw new Error(`A maximum of ${PILOT_MAX_ATTACHMENTS} files is allowed.`);
   for (const file of files) {
     if (file.size <= 0 || file.size > PILOT_MAX_FILE_BYTES) throw new Error(`${file.name} exceeds the 10 MB Pilot limit.`);
-    if (!PILOT_ALLOWED_MIME_TYPES.includes(file.type as (typeof PILOT_ALLOWED_MIME_TYPES)[number])) {
-      throw new Error(`${file.name} has an unsupported file type.`);
-    }
+    if (!isAllowedEvidenceFile(file, PILOT_ALLOWED_MIME_TYPES)) throw new Error(`${file.name} has an unsupported file type.`);
   }
 }
 
 async function uploadObjectWithRetry(path: string, file: File): Promise<void> {
+  const mimeType = normaliseEvidenceMimeType(file);
   for (let attempt = 0; attempt < 2; attempt += 1) {
     const { error } = await supabase.storage.from(PILOT_ATTACHMENT_BUCKET).upload(path, file, {
       cacheControl: '3600',
-      contentType: file.type,
+      contentType: mimeType,
       upsert: false,
     });
     if (!error) return;
@@ -41,6 +41,7 @@ export async function uploadPilotEvidenceResilient(
 
   for (let index = 0; index < files.length; index += 1) {
     const file = files[index];
+    const mimeType = normaliseEvidenceMimeType(file);
     const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
     const storagePath = `${report.program_id}/${report.campus}/${userId}/${report.id}/${crypto.randomUUID()}-${safeName}`;
 
@@ -53,7 +54,7 @@ export async function uploadPilotEvidenceResilient(
       uploaded_by: userId,
       storage_path: storagePath,
       original_filename: file.name,
-      mime_type: file.type,
+      mime_type: mimeType,
       size_bytes: file.size,
     }).select('*').single();
 
