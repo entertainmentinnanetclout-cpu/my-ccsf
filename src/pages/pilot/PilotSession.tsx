@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { CheckCircle2, ChevronRight, FileText, Loader2, LogOut, ShieldCheck } from 'lucide-react';
 import { usePilotMode } from '@/contexts/PilotModeContext';
 import { PilotBanner } from '@/components/pilot/PilotBanner';
-import { PilotReportForm } from '@/components/pilot/PilotReportForm';
+import { PilotReportFormV2 } from '@/components/pilot/PilotReportFormV2';
 import { PilotFeedbackForm } from '@/components/pilot/PilotFeedbackForm';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { loadOwnPilotReports, loadPilotScenarios, loadPilotSession, withdrawPilotSession } from '@/services/pilot/pilotCoreService';
 import { PILOT_ROUTES } from '@/config/pilot';
+import { readReportDraft, reportDraftKey, writeReportDraft } from '@/lib/reportDraftStorage';
 import type { PilotReport, PilotScenario, PilotSession as PilotSessionType } from '@/types/pilot';
 
 const SESSION_TABS = new Set(['scenarios', 'reports', 'complete']);
@@ -29,6 +30,7 @@ export default function PilotSession() {
   const [loading, setLoading] = useState(true);
   const requestedTab = searchParams.get('tab');
   const activeTab = requestedTab && SESSION_TABS.has(requestedTab) ? requestedTab : 'scenarios';
+  const scenarioStorageKey = participant?.user_id && sessionId ? reportDraftKey('pilot', participant.user_id, `active-scenario:${sessionId}`) : null;
 
   useEffect(() => {
     if (!sessionId || !program) return;
@@ -38,11 +40,20 @@ export default function PilotSession() {
         setSession(nextSession);
         setScenarios(nextScenarios);
         setReports(nextReports);
-        setActiveScenario((current) => current ?? nextScenarios[0]?.id ?? null);
+        setActiveScenario((current) => {
+          const saved = scenarioStorageKey ? readReportDraft<string>(scenarioStorageKey) : null;
+          if (current && nextScenarios.some((item) => item.id === current)) return current;
+          if (saved && nextScenarios.some((item) => item.id === saved)) return saved;
+          return nextScenarios[0]?.id ?? null;
+        });
       })
       .catch((error) => toast({ title: 'Unable to load Pilot session', description: error.message, variant: 'destructive' }))
       .finally(() => setLoading(false));
-  }, [sessionId, program?.id, toast]);
+  }, [sessionId, program?.id, scenarioStorageKey, toast]);
+
+  useEffect(() => {
+    if (scenarioStorageKey && activeScenario) writeReportDraft(scenarioStorageKey, activeScenario);
+  }, [activeScenario, scenarioStorageKey]);
 
   const completedScenarioIds = useMemo(
     () => new Set(reports.map((report) => report.scenario_id).filter(Boolean)),
@@ -128,7 +139,7 @@ export default function PilotSession() {
             </div>
             {scenarios.length === 0 && <Card><CardContent className="py-10 text-center text-muted-foreground">No active Pilot scenarios are configured.</CardContent></Card>}
             {scenarios.filter((scenario) => scenario.id === activeScenario).map((scenario) => (
-              <PilotReportForm key={scenario.id} scenario={scenario} participant={participant} session={session} emergency={scenario.scenario_type === 'emergency_simulation'} />
+              <PilotReportFormV2 key={scenario.id} scenario={scenario} participant={participant} session={session} emergency={scenario.scenario_type === 'emergency_simulation'} />
             ))}
           </TabsContent>
 
