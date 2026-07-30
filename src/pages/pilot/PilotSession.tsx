@@ -25,7 +25,7 @@ export default function PilotSession() {
   const [session, setSession] = useState<PilotSessionType | null>(null);
   const [scenarios, setScenarios] = useState<PilotScenario[]>([]);
   const [reports, setReports] = useState<PilotReport[]>([]);
-  const [activeScenario, setActiveScenario] = useState<string | null>(null);
+  const [activeScenario, setActiveScenario] = useState<string | null>(searchParams.get('scenario'));
   const [loading, setLoading] = useState(true);
   const requestedTab = searchParams.get('tab');
   const activeTab = requestedTab && SESSION_TABS.has(requestedTab) ? requestedTab : 'scenarios';
@@ -38,7 +38,11 @@ export default function PilotSession() {
         setSession(nextSession);
         setScenarios(nextScenarios);
         setReports(nextReports);
-        setActiveScenario((current) => current ?? nextScenarios[0]?.id ?? null);
+        setActiveScenario((current) => (
+          current && nextScenarios.some((scenario) => scenario.id === current)
+            ? current
+            : nextScenarios[0]?.id ?? null
+        ));
       })
       .catch((error) => toast({ title: 'Unable to load Pilot session', description: error.message, variant: 'destructive' }))
       .finally(() => setLoading(false));
@@ -67,7 +71,17 @@ export default function PilotSession() {
 
   const selectTab = (value: string) => {
     if (!SESSION_TABS.has(value)) return;
-    setSearchParams({ tab: value }, { replace: true });
+    const next = new URLSearchParams(searchParams);
+    next.set('tab', value);
+    setSearchParams(next, { replace: true });
+  };
+
+  const selectScenario = (scenarioId: string) => {
+    setActiveScenario(scenarioId);
+    const next = new URLSearchParams(searchParams);
+    next.set('tab', 'scenarios');
+    next.set('scenario', scenarioId);
+    setSearchParams(next, { replace: true });
   };
 
   if (session.status === 'completed') {
@@ -114,7 +128,7 @@ export default function PilotSession() {
                 <button
                   key={scenario.id}
                   type="button"
-                  onClick={() => setActiveScenario(scenario.id)}
+                  onClick={() => selectScenario(scenario.id)}
                   className={`rounded-xl border p-4 text-left transition ${activeScenario === scenario.id ? 'border-primary bg-primary/5 shadow-md' : 'hover:border-primary/50'}`}
                 >
                   <div className="flex items-start justify-between gap-3">

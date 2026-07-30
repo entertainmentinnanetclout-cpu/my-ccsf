@@ -4,11 +4,19 @@ import { AnimatePresence } from 'framer-motion';
 import App from './App.tsx';
 import SplashScreen from './components/shared/SplashScreen.tsx';
 import { PWA_UPDATE_EVENT } from './components/shared/PWAUpdatePrompt.tsx';
+import {
+  installEvidencePickerLifecycle,
+  isEvidencePickerInteractionActive,
+  restoreInterruptedEvidenceRoute,
+} from './lib/evidencePickerLifecycle.ts';
 import './index.css';
 import './styles/institutional-portals.css';
 
 const SPLASH_SESSION_KEY = 'ccsf-institutional-splash-phase7';
 const SERVICE_WORKER_UPDATE_INTERVAL = 60 * 60 * 1000;
+
+restoreInterruptedEvidenceRoute();
+installEvidencePickerLifecycle();
 
 function announceServiceWorkerUpdate(registration: ServiceWorkerRegistration) {
   if (!registration.waiting) return;
@@ -33,11 +41,17 @@ if ('serviceWorker' in navigator) {
         });
 
         window.setInterval(() => {
-          if (navigator.onLine) void registration.update().catch(() => undefined);
+          if (navigator.onLine && !isEvidencePickerInteractionActive()) {
+            void registration.update().catch(() => undefined);
+          }
         }, SERVICE_WORKER_UPDATE_INTERVAL);
 
         document.addEventListener('visibilitychange', () => {
-          if (document.visibilityState === 'visible' && navigator.onLine) {
+          if (
+            document.visibilityState === 'visible'
+            && navigator.onLine
+            && !isEvidencePickerInteractionActive()
+          ) {
             void registration.update().catch(() => undefined);
           }
         });

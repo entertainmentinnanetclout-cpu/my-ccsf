@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import type { Session, User } from '@supabase/supabase-js';
+import type { AuthChangeEvent, Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import type { PilotRole } from '@/config/pilotRoutes';
 
@@ -46,16 +46,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
   const identityRequestRef = useRef(0);
+  const identityUserIdRef = useRef<string | null>(null);
+  const identityReadyRef = useRef(false);
 
   const clearIdentity = useCallback(() => {
+    identityUserIdRef.current = null;
+    identityReadyRef.current = false;
     setUserRole(null);
     setUserProfile(null);
     setAuthError(null);
   }, []);
 
-  const fetchUserRoleAndProfile = useCallback(async (activeUser: User) => {
+  const fetchUserRoleAndProfile = useCallback(async (
+    activeUser: User,
+    options: { blocking?: boolean } = {},
+  ) => {
     const requestId = ++identityRequestRef.current;
-    setLoading(true);
+    const blocking = options.blocking ?? true;
+    if (blocking) setLoading(true);
 
     try {
       const [roleResponse, profileResponse] = await Promise.all([
@@ -73,6 +81,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (roleResponse.error) throw roleResponse.error;
       if (profileResponse.error) throw profileResponse.error;
       if (requestId !== identityRequestRef.current) return;
+
+      identityUserIdRef.current = activeUser.id;
+      identityReadyRef.current = true;
 
       const role = resolveRole((roleResponse.data ?? []) as Array<{ role: PilotRole }>);
       if (!role) {
@@ -94,6 +105,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setAuthError(null);
     } catch (error) {
       if (requestId !== identityRequestRef.current) return;
+      identityUserIdRef.current = activeUser.id;
+      identityReadyRef.current = false;
       console.error('Unable to load CCSF account identity:', error);
       setUserRole(null);
       setUserProfile(null);
@@ -103,26 +116,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  const applySession = useCallback(async (nextSession: Session | null) => {
-    setSession(nextSession);
-    setUser(nextSession?.user ?? null);
+  const applySession = useCallback(async (
+    nextSession: Session | null,
+    event: AuthChangeEvent | 'RESTORE',
+  ) => {
+    const nextUser = nextSession?.user ?? null;
+    const nextUserId = nextUser?.id ?? null;
+    const identityAlreadyResolved = Boolean(
+      nextUserId
+      && identityReadyRef.current
+      && identityUserIdRef.current === nextUserId,
+    );
 
-    if (!nextSession?.user) {
+    setSession(nextSession);
+    setUser((current) => {
+      if (!nextUser) return null;
+      if (event === 'USER_UPDATED' || current?.id !== nextUser.id) return nextUser;
+      return current;
+    });
+
+    if (!nextUser) {
       identityRequestRef.current += 1;
       clearIdentity();
       setLoading(false);
       return;
     }
 
-    await fetchUserRoleAndProfile(nextSession.user);
+    if (identityAlreadyResolved && event !== 'USER_UPDATED') {
+      setLoading(false);
+      return;
+    }
+
+    await fetchUserRoleAndProfile(nextUser, { blocking: !identityAlreadyResolved });
   }, [clearIdentity, fetchUserRoleAndProfile]);
 
   useEffect(() => {
     let active = true;
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
       queueMicrotask(() => {
-        if (active) void applySession(nextSession);
+        if (active) void applySession(nextSession, event);
       });
     });
 
@@ -130,7 +163,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .then(({ data, error }) => {
         if (!active) return;
         if (error) throw error;
-        return applySession(data.session);
+        return applySession(data.session, 'RESTORE');
       })
       .catch((error) => {
         if (!active) return;
@@ -150,7 +183,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setAuthError('Sign in before retrying account verification.');
       return;
     }
-    await fetchUserRoleAndProfile(user);
+    identityReadyRef.current = false;
+    await fetchUserRoleAndProfile(user, { blocking: true });
   }, [fetchUserRoleAndProfile, user]);
 
   const signOut = useCallback(async () => {
