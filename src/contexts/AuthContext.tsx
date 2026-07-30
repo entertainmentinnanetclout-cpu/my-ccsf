@@ -1,9 +1,10 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import type { Session, User } from '@supabase/supabase-js';
+import type { AuthChangeEvent, Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import type { PilotRole } from '@/config/pilotRoutes';
 
 type UserRole = PilotRole | null;
+type IdentityLoadMode = 'blocking' | 'background';
 
 interface UserProfile {
   id: string;
@@ -46,16 +47,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
   const identityRequestRef = useRef(0);
+  const identityReadyRef = useRef(false);
+  const activeUserIdRef = useRef<string | null>(null);
 
   const clearIdentity = useCallback(() => {
+    identityReadyRef.current = false;
+    activeUserIdRef.current = null;
     setUserRole(null);
     setUserProfile(null);
     setAuthError(null);
   }, []);
 
-  const fetchUserRoleAndProfile = useCallback(async (activeUser: User) => {
+  const fetchUserRoleAndProfile = useCallback(async (
+    activeUser: User,
+    mode: IdentityLoadMode = 'background',
+  ) => {
     const requestId = ++identityRequestRef.current;
-    setLoading(true);
+    const sameIdentity = activeUserIdRef.current === activeUser.id;
+    const shouldBlock = mode === 'blocking' || !identityReadyRef.current || !sameIdentity;
+
+    if (shouldBlock) setLoading(true);
 
     try {
       const [roleResponse, profileResponse] = await Promise.all([
@@ -76,6 +87,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const role = resolveRole((roleResponse.data ?? []) as Array<{ role: PilotRole }>);
       if (!role) {
+        identityReadyRef.current = false;
+        activeUserIdRef.current = activeUser.id;
         setUserRole(null);
         setUserProfile(null);
         setAuthError('This account does not have an authorised CCSF portal role. Contact a CCSF administrator for access.');
@@ -83,6 +96,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       const profile = profileResponse.data;
+      activeUserIdRef.current = activeUser.id;
+      identityReadyRef.current = true;
       setUserRole(role);
       setUserProfile({
         id: activeUser.id,
@@ -95,15 +110,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error) {
       if (requestId !== identityRequestRef.current) return;
       console.error('Unable to load CCSF account identity:', error);
-      setUserRole(null);
-      setUserProfile(null);
-      setAuthError('Your CCSF role and profile could not be verified. Check your connection and retry.');
+
+      if (shouldBlock || !identityReadyRef.current) {
+        identityReadyRef.current = false;
+        setUserRole(null);
+        setUserProfile(null);
+        setAuthError('Your CCSF role and profile could not be verified. Check your connection and retry.');
+      }
+      // Background token refreshes must not unmount a working protected route.
+      // Retain the last verified role/profile and allow the next refresh to retry.
     } finally {
-      if (requestId === identityRequestRef.current) setLoading(false);
+      if (requestId === identityRequestRef.current && shouldBlock) setLoading(false);
     }
   }, []);
 
-  const applySession = useCallback(async (nextSession: Session | null) => {
+  const applySession = useCallback(async (
+    nextSession: Session | null,
+    mode: IdentityLoadMode = 'background',
+  ) => {
     setSession(nextSession);
     setUser(nextSession?.user ?? null);
 
@@ -114,23 +138,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
 
-    await fetchUserRoleAndProfile(nextSession.user);
+    const sameIdentity = activeUserIdRef.current === nextSession.user.id;
+    const identityMode: IdentityLoadMode = mode === 'blocking' || !identityReadyRef.current || !sameIdentity
+      ? 'blocking'
+      : 'background';
+    await fetchUserRoleAndProfile(nextSession.user, identityMode);
   }, [clearIdentity, fetchUserRoleAndProfile]);
 
   useEffect(() => {
     let active = true;
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    const handleAuthChange = (event: AuthChangeEvent, nextSession: Session | null) => {
       queueMicrotask(() => {
-        if (active) void applySession(nextSession);
+        if (!active) return;
+        if (event === 'SIGNED_OUT') {
+          void applySession(null, 'blocking');
+          return;
+        }
+        if (nextSession) void applySession(nextSession, 'background');
       });
-    });
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthChange);
 
     void supabase.auth.getSession()
       .then(({ data, error }) => {
         if (!active) return;
         if (error) throw error;
-        return applySession(data.session);
+        return applySession(data.session, 'blocking');
       })
       .catch((error) => {
         if (!active) return;
@@ -150,7 +185,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setAuthError('Sign in before retrying account verification.');
       return;
     }
-    await fetchUserRoleAndProfile(user);
+    await fetchUserRoleAndProfile(user, identityReadyRef.current ? 'background' : 'blocking');
   }, [fetchUserRoleAndProfile, user]);
 
   const signOut = useCallback(async () => {
