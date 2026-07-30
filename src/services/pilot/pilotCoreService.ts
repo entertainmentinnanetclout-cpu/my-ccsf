@@ -283,19 +283,25 @@ export async function loadPilotNotifications(): Promise<PilotNotification[]> {
   return (data ?? []) as PilotNotification[];
 }
 
-export async function markPilotNotificationRead(notificationId: string): Promise<void> {
-  const { error } = await supabase.rpc('pilot_mark_notification_read', { p_notification_id: notificationId });
-  if (error) fail('Unable to mark the Pilot notification as read.', error);
+export async function markPilotNotificationRead(notificationId: string): Promise<PilotNotification> {
+  const { data, error } = await supabase.rpc('pilot_mark_notification_read', { p_notification_id: notificationId });
+  if (error || !data) fail('Unable to mark Pilot notification as read.', error);
+  return data as PilotNotification;
 }
 
-export function subscribeToPilotNotifications(userId: string, onChange: () => void) {
+export function subscribeToPilotReport(reportId: string, onChange: () => void): () => void {
+  const channel = supabase
+    .channel(`pilot-report-${reportId}`)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'pilot_reports', filter: `id=eq.${reportId}` }, onChange)
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'pilot_report_events', filter: `report_id=eq.${reportId}` }, onChange)
+    .subscribe();
+  return () => void supabase.removeChannel(channel);
+}
+
+export function subscribeToPilotNotifications(userId: string, onChange: () => void): () => void {
   const channel = supabase
     .channel(`pilot-notifications-${userId}`)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'pilot_notifications', filter: `user_id=eq.${userId}` }, onChange)
     .subscribe();
-  return () => { void supabase.removeChannel(channel); };
-}
-
-export async function savePilotFeedbackResponse(input: PilotFeedbackInput): Promise<void> {
-  await savePilotFeedback(input);
+  return () => void supabase.removeChannel(channel);
 }
