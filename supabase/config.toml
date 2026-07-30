@@ -35,3 +35,9 @@ verify_jwt = true
 
 [functions.pilot-student-signup]
 verify_jwt = false
+
+[functions.secure-evidence-link]
+verify_jwt = true
+
+[functions.evidence-submission-cleanup]
+verify_jwt = true
