@@ -12,6 +12,7 @@ interface MobileEvidencePickerProps {
 }
 
 const fileIdentity = (file: File) => `${file.name}:${file.size}:${file.lastModified}`;
+const IMAGE_ACCEPT = 'image/jpeg,image/png,image/webp,image/heic,image/heif';
 
 export function MobileEvidencePicker({
   files,
@@ -56,8 +57,8 @@ export function MobileEvidencePicker({
   };
 
   const browseAccept = acceptPdf
-    ? 'image/jpeg,image/png,image/webp,video/mp4,application/pdf'
-    : 'image/jpeg,image/png,image/webp,video/mp4';
+    ? `${IMAGE_ACCEPT},video/mp4,application/pdf`
+    : `${IMAGE_ACCEPT},video/mp4`;
 
   return (
     <div className="space-y-3" data-testid="mobile-evidence-picker">
@@ -76,7 +77,7 @@ export function MobileEvidencePicker({
       <input
         ref={photoInput}
         type="file"
-        accept="image/jpeg,image/png,image/webp"
+        accept={IMAGE_ACCEPT}
         capture="environment"
         className="sr-only"
         tabIndex={-1}
