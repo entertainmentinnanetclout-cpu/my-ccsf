@@ -31,6 +31,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { usePilotGuide } from '@/hooks/pilot/usePilotGuide';
+import { useUrlBackedView } from '@/hooks/useUrlBackedView';
 import { useToast } from '@/hooks/use-toast';
 import {
   loadOwnPilotReports,
@@ -52,6 +53,7 @@ import type { PilotCarouselAction, PilotCarouselSlide, PilotSafetyDocument } fro
 import type { PilotNotification, PilotParticipant, PilotProgram, PilotReport, PilotScenario, PilotSession } from '@/types/pilot';
 
 type View = 'home' | 'mycases' | 'report' | 'map' | 'support';
+const PILOT_VIEWS = new Set<View>(['home', 'mycases', 'report', 'map', 'support']);
 const TERMINAL_STATUSES = new Set(['simulation_completed', 'cancelled', 'withdrawn', 'expired']);
 const ACADEMIC_FRAUD_SCENARIO_PATTERN = /academic fraud|fake admin services/i;
 
@@ -68,7 +70,13 @@ export function PilotStudentDashboard({
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const guide = usePilotGuide({ autoOpen: true });
-  const [view, setView] = useState<View>('home');
+  const [view, setView] = useUrlBackedView<View>({
+    searchParams,
+    setSearchParams,
+    parameter: 'tab',
+    allowedValues: PILOT_VIEWS,
+    defaultValue: 'home',
+  });
   const [reports, setReports] = useState<PilotReport[]>([]);
   const [scenarios, setScenarios] = useState<PilotScenario[]>([]);
   const [notifications, setNotifications] = useState<PilotNotification[]>([]);
@@ -153,8 +161,9 @@ export function PilotStudentDashboard({
     setView('report');
     const next = new URLSearchParams(searchParams);
     next.delete('open');
+    next.set('tab', 'report');
     setSearchParams(next, { replace: true });
-  }, [academicFraudScenario, searchParams, setSearchParams]);
+  }, [academicFraudScenario, searchParams, setSearchParams, setView]);
 
   const openEmergencySimulation = () => {
     if (!emergencyScenario) {

@@ -6,6 +6,7 @@ import {
   PILOT_MAX_ATTACHMENTS,
   PILOT_MAX_FILE_BYTES,
 } from '@/config/pilot';
+import { isAllowedEvidenceFile, normaliseEvidenceMimeType } from '@/lib/evidenceFiles';
 import type {
   PilotAttachment,
   PilotDeviceInfo,
@@ -202,7 +203,7 @@ export function validatePilotFiles(files: File[]): void {
   if (files.length > PILOT_MAX_ATTACHMENTS) fail(`A maximum of ${PILOT_MAX_ATTACHMENTS} files is allowed.`);
   for (const file of files) {
     if (file.size <= 0 || file.size > PILOT_MAX_FILE_BYTES) fail(`${file.name} exceeds the 10 MB Pilot limit.`);
-    if (!PILOT_ALLOWED_MIME_TYPES.includes(file.type as (typeof PILOT_ALLOWED_MIME_TYPES)[number])) fail(`${file.name} has an unsupported file type.`);
+    if (!isAllowedEvidenceFile(file, PILOT_ALLOWED_MIME_TYPES)) fail(`${file.name} has an unsupported file type.`);
   }
 }
 
@@ -212,8 +213,9 @@ export async function uploadPilotAttachments(report: PilotReport, files: File[],
   for (const file of files) {
     const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
     const storagePath = `${report.program_id}/${report.campus}/${userId}/${report.id}/${crypto.randomUUID()}-${safeName}`;
+    const mimeType = normaliseEvidenceMimeType(file);
     const { error: uploadError } = await supabase.storage.from(PILOT_ATTACHMENT_BUCKET).upload(storagePath, file, {
-      cacheControl: '3600', contentType: file.type, upsert: false,
+      cacheControl: '3600', contentType: mimeType, upsert: false,
     });
     if (uploadError) fail(`Unable to upload ${file.name}.`, uploadError);
     const { data, error } = await supabase.from('pilot_attachments').insert({
@@ -222,10 +224,13 @@ export async function uploadPilotAttachments(report: PilotReport, files: File[],
       report_id: report.id,
       storage_path: storagePath,
       original_filename: file.name,
-      mime_type: file.type,
+      mime_type: mimeType,
       size_bytes: file.size,
     }).select('*').single();
-    if (error || !data) fail('The file uploaded but its Pilot metadata could not be recorded.', error);
+    if (error || !data) {
+      await supabase.storage.from(PILOT_ATTACHMENT_BUCKET).remove([storagePath]);
+      fail('The file uploaded but its Pilot metadata could not be recorded.', error);
+    }
     uploaded.push(data as PilotAttachment);
   }
   return uploaded;
