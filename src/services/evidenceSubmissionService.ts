@@ -38,7 +38,22 @@ export interface SubmissionReceipt {
   payload: Record<string, unknown>;
 }
 
-const safeName = (name: string) => name.replace(/[^a-zA-Z0-9._-]/g, '_').slice(-140) || 'evidence';
+const OBJECT_NAME_PREFIX = 'ccsf:evidence-object-name:v1';
+const safeName = (name: string) => name.replace(/[^a-zA-Z0-9._-]/g, '_').slice(-120) || 'evidence';
+
+function stableObjectName(draftId: string, file: File): string {
+  const storageKey = `${OBJECT_NAME_PREFIX}:${draftId}:${evidenceFileIdentity(file)}`;
+  try {
+    const existing = localStorage.getItem(storageKey);
+    if (existing) return existing;
+    const created = `${crypto.randomUUID()}-${safeName(file.name)}`;
+    localStorage.setItem(storageKey, created);
+    return created;
+  } catch {
+    const identity = evidenceFileIdentity(file).replace(/[^a-zA-Z0-9]/g, '').slice(-32);
+    return `${identity || crypto.randomUUID()}-${safeName(file.name)}`;
+  }
+}
 
 export async function createEvidenceSubmissionDraft(input: {
   scope: 'official' | 'pilot';
@@ -73,7 +88,7 @@ export async function uploadSubmissionEvidence(input: {
   const manifest: EvidenceManifestItem[] = [];
   for (const file of input.files) {
     const key = evidenceFileIdentity(file);
-    const objectName = `${crypto.randomUUID()}-${safeName(file.name)}`;
+    const objectName = stableObjectName(input.draft.id, file);
     const path = input.draft.scope === 'official'
       ? `drafts/${input.draft.user_id}/${input.draft.id}/${objectName}`
       : `${input.draft.program_id}/${input.draft.campus}/${input.draft.user_id}/${input.draft.id}/${objectName}`;
@@ -91,13 +106,7 @@ export async function uploadSubmissionEvidence(input: {
         }),
       });
       const checksum = await evidenceChecksum(file);
-      manifest.push({
-        path,
-        original_filename: file.name,
-        mime_type: file.type,
-        size_bytes: file.size,
-        checksum,
-      });
+      manifest.push({ path, original_filename: file.name, mime_type: file.type, size_bytes: file.size, checksum });
       input.onState?.(key, { status: 'uploaded', progress: 100, resumed: result.resumed });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Evidence upload failed.';
