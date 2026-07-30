@@ -45,10 +45,10 @@ export function MobileEvidencePicker({
     if (selected.length) appendFiles(selected);
   };
 
-  const openPicker = (input: HTMLInputElement | null) => (event: React.MouseEvent<HTMLButtonElement>) => {
+  const openPicker = (input: React.RefObject<HTMLInputElement>) => (event: React.MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
     event.stopPropagation();
-    input?.click();
+    input.current?.click();
   };
 
   const removeFile = (index: number) => {
@@ -62,13 +62,13 @@ export function MobileEvidencePicker({
   return (
     <div className="space-y-3" data-testid="mobile-evidence-picker">
       <div className="grid gap-2 sm:grid-cols-3">
-        <Button type="button" variant="outline" onClick={openPicker(photoInput.current)} disabled={disabled || files.length >= maxFiles}>
+        <Button type="button" variant="outline" onClick={openPicker(photoInput)} disabled={disabled || files.length >= maxFiles}>
           <Camera className="mr-2 h-4 w-4" />Take photo
         </Button>
-        <Button type="button" variant="outline" onClick={openPicker(videoInput.current)} disabled={disabled || files.length >= maxFiles}>
+        <Button type="button" variant="outline" onClick={openPicker(videoInput)} disabled={disabled || files.length >= maxFiles}>
           <Video className="mr-2 h-4 w-4" />Record video
         </Button>
-        <Button type="button" variant="outline" onClick={openPicker(browseInput.current)} disabled={disabled || files.length >= maxFiles}>
+        <Button type="button" variant="outline" onClick={openPicker(browseInput)} disabled={disabled || files.length >= maxFiles}>
           <FolderOpen className="mr-2 h-4 w-4" />Choose files
         </Button>
       </div>
