@@ -25,7 +25,10 @@ assert(
 );
 
 assert(
-  lifecycle.includes("'/dashboard'") && lifecycle.includes("'/pilot/session/"),
+  lifecycle.includes("url.pathname === '/dashboard'")
+    && lifecycle.includes('pilot')
+    && lifecycle.includes('session')
+    && lifecycle.includes('test(url.pathname)'),
   'Evidence lifecycle restoration is limited to the production report and Pilot session routes.',
 );
 assert(
@@ -39,9 +42,9 @@ assert(
   'Native picker open, selection and cancellation are tracked without replacing the file input.',
 );
 
+const restoreCall = main.lastIndexOf('restoreInterruptedEvidenceRoute();');
 assert(
-  main.includes('restoreInterruptedEvidenceRoute();')
-    && main.indexOf('restoreInterruptedEvidenceRoute();') < main.indexOf('createRoot('),
+  restoreCall >= 0 && restoreCall < main.indexOf('createRoot('),
   'Interrupted evidence routes are restored before React Router boots.',
 );
 assert(
