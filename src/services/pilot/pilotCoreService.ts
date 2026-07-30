@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { createAuditedEvidenceLink } from '@/services/evidenceAccessService';
 import { invokePilotFunction } from '@/services/pilot/pilotEdgeService';
 import {
   PILOT_ALLOWED_MIME_TYPES,
@@ -237,10 +238,10 @@ export async function loadPilotAttachments(reportId: string): Promise<PilotAttac
   return (data ?? []) as PilotAttachment[];
 }
 
-export async function createPilotAttachmentSignedUrl(storagePath: string, expiresIn = 300): Promise<string> {
-  const { data, error } = await supabase.storage.from(PILOT_ATTACHMENT_BUCKET).createSignedUrl(storagePath, expiresIn);
-  if (error || !data?.signedUrl) fail('Unable to create a private attachment link.', error);
-  return data.signedUrl;
+export async function createPilotAttachmentSignedUrl(storagePath: string, _expiresIn = 300): Promise<string> {
+  const reportId = storagePath.split('/')[3];
+  if (!reportId) fail('The Pilot attachment path is invalid.');
+  return createAuditedEvidenceLink({ scope: 'pilot', objectPath: storagePath, action: 'preview', pilotReportId: reportId });
 }
 
 export async function recordPilotFeatureTest(input: {
@@ -280,7 +281,7 @@ export async function loadPilotNotifications(): Promise<PilotNotification[]> {
 
 export async function markPilotNotificationRead(notificationId: string): Promise<PilotNotification> {
   const { data, error } = await supabase.rpc('pilot_mark_notification_read', { p_notification_id: notificationId });
-  if (error || !data) fail('Unable to mark Pilot notification as read.', error);
+  if (error || !data) fail('Unable to mark Pilot notification read.', error);
   return data as PilotNotification;
 }
 
