@@ -73,14 +73,14 @@ export function usePersistentReportDraft<T>({
   }, [storageKey]);
 
   useEffect(() => {
-    if (!enabled || !storageKey || restoredKeyRef.current === storageKey) return;
+    if (!storageKey || restoredKeyRef.current === storageKey) return;
     restoredKeyRef.current = storageKey;
     const stored = parseDraft<T>(localStorage.getItem(storageKey));
     if (!stored) return;
     setRestoredAt(stored.savedAt);
     setRestoredEvidenceNames(stored.evidenceNames);
     onRestoreRef.current(stored.data, stored.evidenceNames, stored.savedAt);
-  }, [enabled, storageKey]);
+  }, [storageKey]);
 
   useEffect(() => {
     if (!enabled || !storageKey || restoredKeyRef.current !== storageKey) return;
