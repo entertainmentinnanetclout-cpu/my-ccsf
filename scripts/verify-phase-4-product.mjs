@@ -15,6 +15,7 @@ const requiredFiles = [
   'src/hooks/useSafetyMobility.ts',
   'src/services/safetyMobilityService.ts',
   'src/components/student/ReportIncident.tsx',
+  'src/components/student/ReportIncidentV2.tsx',
   'src/components/shared/SplashScreen.tsx',
   'supabase/migrations/20260725103000_student_safety_mobility_and_radar.sql',
   'supabase/migrations/20260725104500_student_safety_mobility_campus_scope_hardening.sql',
@@ -27,7 +28,8 @@ const dashboard = read('src/pages/Dashboard.tsx');
 const hub = read('src/components/student/SafetyMobilityHub.tsx');
 const hook = read('src/hooks/useSafetyMobility.ts');
 const service = read('src/services/safetyMobilityService.ts');
-const report = read('src/components/student/ReportIncident.tsx');
+const reportEntry = read('src/components/student/ReportIncident.tsx');
+const report = read('src/components/student/ReportIncidentV2.tsx');
 const splash = read('src/components/shared/SplashScreen.tsx');
 const manifest = JSON.parse(read('public/manifest.json'));
 
@@ -54,8 +56,11 @@ for (const rpc of ['safety_start_mobility_session', 'safety_update_mobility_loca
 }
 check(!service.includes("from('pilot_reports')"), 'Official Safety Mobility remains separate from Pilot reports.');
 
+check(reportEntry.includes('ReportIncidentV2 as ReportIncident'), 'Official report entry points to the resilient V2 workflow.');
 check(report.includes('MAX_EVIDENCE_FILES = 3') && report.includes('MAX_EVIDENCE_BYTES = 10 * 1024 * 1024'), 'Evidence uploads remain bounded.');
 check(report.includes("{ value: 'Gbv'"), 'Official reporting retains the GBV category.');
+check(report.includes('finalizeOfficialSubmission') && report.includes('uploadSubmissionEvidence'), 'Official cases finalise only after selected evidence is verified.');
+check(report.includes('Emergency report not delivered'), 'Offline emergency reporting remains fail-closed.');
 check(splash.includes('InstitutionBrand') && splash.includes('bg-white') && splash.includes('MY CCSF'), 'Splash screen presents readable CCSF/TUT branding on white.');
 check(manifest.icons.some((icon) => icon.src === '/app-icon-512.png'), 'Manifest references the opaque app icon.');
 check(manifest.icons.some((icon) => icon.src === '/maskable-icon-512.png'), 'Manifest references the maskable app icon.');
