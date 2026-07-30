@@ -1,9 +1,31 @@
 import * as React from "react";
 
 import { cn } from "@/lib/utils";
+import { normaliseEvidenceMimeType } from "@/lib/evidenceFiles";
 
 const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
-  ({ className, type, ...props }, ref) => {
+  ({ className, type, onChange, onClick, onPointerDown, ...props }, ref) => {
+    const isFileInput = type === "file";
+
+    const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+      if (isFileInput && event.currentTarget.files?.length && typeof DataTransfer !== "undefined") {
+        try {
+          const transfer = new DataTransfer();
+          Array.from(event.currentTarget.files).forEach((file) => {
+            const normalizedType = normaliseEvidenceMimeType(file);
+            const needsNormalizedType = !file.type || file.type === "application/octet-stream";
+            transfer.items.add(needsNormalizedType
+              ? new File([file], file.name, { type: normalizedType, lastModified: file.lastModified })
+              : file);
+          });
+          event.currentTarget.files = transfer.files;
+        } catch (error) {
+          console.warn("The mobile file metadata could not be normalised; using the original file selection.", error);
+        }
+      }
+      onChange?.(event);
+    };
+
     return (
       <input
         type={type}
@@ -12,6 +34,21 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
           className,
         )}
         ref={ref}
+        onChange={handleChange}
+        onPointerDown={(event) => {
+          if (isFileInput) {
+            try {
+              sessionStorage.setItem("ccsf:file-picker-route", `${window.location.pathname}${window.location.search}${window.location.hash}`);
+            } catch {
+              // Session storage can be unavailable in strict private-browser modes.
+            }
+          }
+          onPointerDown?.(event);
+        }}
+        onClick={(event) => {
+          if (isFileInput) event.stopPropagation();
+          onClick?.(event);
+        }}
         {...props}
       />
     );
