@@ -33,14 +33,10 @@ if ('serviceWorker' in navigator) {
         });
 
         window.setInterval(() => {
-          if (navigator.onLine) void registration.update().catch(() => undefined);
-        }, SERVICE_WORKER_UPDATE_INTERVAL);
-
-        document.addEventListener('visibilitychange', () => {
-          if (document.visibilityState === 'visible' && navigator.onLine) {
+          if (navigator.onLine && document.visibilityState === 'visible') {
             void registration.update().catch(() => undefined);
           }
-        });
+        }, SERVICE_WORKER_UPDATE_INTERVAL);
       })
       .catch((error) => {
         console.error('[My CCSF] Service worker registration failed:', error);
