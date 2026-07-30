@@ -18,6 +18,7 @@ import { StudentChat } from '@/components/student/StudentChat';
 import { MyCaseReports } from '@/components/student/MyCaseReports';
 import { BRAND } from '@/brand';
 import { CAMPUS_LABELS } from '@/config/pilot';
+import { readReportDraft, reportDraftKey, writeReportDraft } from '@/lib/reportDraftStorage';
 import type { CampusLocation } from '@/types/pilot';
 
 type StudentView = 'home' | 'report' | 'mycases' | 'safety' | 'messages';
@@ -27,18 +28,35 @@ const Dashboard = () => {
   const { userProfile, signOut } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedView = searchParams.get('tab') as StudentView | null;
-  const [activeView, setActiveView] = useState<StudentView>(requestedView && STUDENT_VIEWS.has(requestedView) ? requestedView : 'home');
+  const viewStorageKey = userProfile?.id ? reportDraftKey('official', userProfile.id, 'dashboard-view') : null;
+  const [activeView, setActiveView] = useState<StudentView>(() => {
+    if (requestedView && STUDENT_VIEWS.has(requestedView)) return requestedView;
+    if (viewStorageKey) {
+      const saved = readReportDraft<StudentView>(viewStorageKey);
+      if (saved && STUDENT_VIEWS.has(saved)) return saved;
+    }
+    return 'home';
+  });
   const campus = userProfile?.campus as CampusLocation | null | undefined;
   const campusLabel = campus ? CAMPUS_LABELS[campus] : 'Campus assignment pending';
 
   useEffect(() => {
     const requested = searchParams.get('tab') as StudentView | null;
-    if (requested && STUDENT_VIEWS.has(requested)) setActiveView(requested);
-    if (!requested) setActiveView('home');
-  }, [searchParams]);
+    if (requested && STUDENT_VIEWS.has(requested)) {
+      setActiveView(requested);
+      if (viewStorageKey) writeReportDraft(viewStorageKey, requested);
+      return;
+    }
+
+    if (viewStorageKey) {
+      const saved = readReportDraft<StudentView>(viewStorageKey);
+      setActiveView(saved && STUDENT_VIEWS.has(saved) ? saved : 'home');
+    }
+  }, [searchParams, viewStorageKey]);
 
   const changeView = (view: StudentView) => {
     setActiveView(view);
+    if (viewStorageKey) writeReportDraft(viewStorageKey, view);
     const next = new URLSearchParams(searchParams);
     if (view === 'home') next.delete('tab');
     else next.set('tab', view);

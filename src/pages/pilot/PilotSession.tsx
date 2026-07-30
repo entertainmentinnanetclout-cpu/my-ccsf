@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { CheckCircle2, ChevronRight, FileText, Loader2, LogOut, ShieldCheck } from 'lucide-react';
 import { usePilotMode } from '@/contexts/PilotModeContext';
 import { PilotBanner } from '@/components/pilot/PilotBanner';
-import { PilotReportForm } from '@/components/pilot/PilotReportForm';
+import { PilotReportFormV2 } from '@/components/pilot/PilotReportFormV2';
 import { PilotFeedbackForm } from '@/components/pilot/PilotFeedbackForm';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -142,7 +142,7 @@ export default function PilotSession() {
             </div>
             {scenarios.length === 0 && <Card><CardContent className="py-10 text-center text-muted-foreground">No active Pilot scenarios are configured.</CardContent></Card>}
             {scenarios.filter((scenario) => scenario.id === activeScenario).map((scenario) => (
-              <PilotReportForm key={scenario.id} scenario={scenario} participant={participant} session={session} emergency={scenario.scenario_type === 'emergency_simulation'} />
+              <PilotReportFormV2 key={scenario.id} scenario={scenario} participant={participant} session={session} emergency={scenario.scenario_type === 'emergency_simulation'} />
             ))}
           </TabsContent>
 
