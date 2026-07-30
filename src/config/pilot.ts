@@ -16,12 +16,7 @@ export {
 const runtimeHostname = typeof window === 'undefined' ? '' : window.location.hostname.toLowerCase();
 const isLocalPilotRuntime = runtimeHostname === 'localhost' || runtimeHostname === '127.0.0.1';
 
-/**
- * Pilot Mode is enabled only by the build-time deployment gate or local development.
- * Production and every unapproved Preview remain fail-closed unless explicitly authorised.
- */
-export const PILOT_ENABLED =
-  import.meta.env.VITE_PILOT_MODE_ENABLED === 'true' || isLocalPilotRuntime;
+export const PILOT_ENABLED = import.meta.env.VITE_PILOT_MODE_ENABLED === 'true' || isLocalPilotRuntime;
 
 export const PILOT_WARNING =
   'Demo Mode: No emergency service has been dispatched. Pilot Test Environment: reports, status changes, notifications, location and evidence workflows are live inside Pilot Mode. No external emergency service or production dispatch workflow is contacted.';
@@ -36,6 +31,8 @@ export const PILOT_ALLOWED_MIME_TYPES = [
   'image/jpeg',
   'image/png',
   'image/webp',
+  'image/heic',
+  'image/heif',
   'video/mp4',
   'application/pdf',
 ] as const;
