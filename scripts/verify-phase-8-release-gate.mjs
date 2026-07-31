@@ -11,7 +11,9 @@ const core = read('src/services/pilot/pilotCoreService.ts');
 const admin = read('src/services/pilot/pilotAdminService.ts');
 const formEntry = read('src/components/pilot/PilotReportForm.tsx');
 const form = read('src/components/pilot/PilotReportFormV2.tsx');
-const pilotEvidence = read('src/services/pilot/pilotEvidenceService.ts');
+const evidenceSubmission = read('src/services/evidenceSubmissionService.ts');
+const resumable = read('src/lib/resumableStorageUpload.ts');
+const evidenceAccess = read('src/services/evidenceAccessService.ts');
 const geolocation = read('src/lib/browserGeolocation.ts');
 const tracking = read('src/hooks/pilot/usePilotLocationTracking.ts');
 const student = read('src/components/pilot/PilotStudentDashboard.tsx');
@@ -27,6 +29,7 @@ const splash = read('src/components/shared/SplashScreen.tsx');
 const sw = read('public/sw.js');
 const manifest = JSON.parse(read('public/manifest.json'));
 const migration = read('supabase/migrations/20260719213542_phase_8_authenticated_assignment_parity.sql');
+const evidenceMigration = read('supabase/migrations/20260730214500_finalize_pilot_evidence_submission.sql');
 const evidence = read('docs/PHASE_8_UAT_EVIDENCE.md');
 const rollback = read('docs/PHASE_8_ROLLBACK_PACKAGE.md');
 const completion = read('docs/PHASE_8_COMPLETE.md');
@@ -43,12 +46,15 @@ check(
   'High-accuracy capture and controlled live tracking workflows remain enabled.',
 );
 check(
-  form.includes('uploadPilotEvidenceResilient')
-    && pilotEvidence.includes('PILOT_MAX_ATTACHMENTS')
-    && pilotEvidence.includes('PILOT_MAX_FILE_BYTES'),
-  'Evidence upload limits and resilient workflow remain enabled.',
+  form.includes('uploadSubmissionEvidence')
+    && form.includes('PILOT_MAX_ATTACHMENTS')
+    && form.includes('PILOT_MAX_FILE_BYTES')
+    && evidenceSubmission.includes('finalizePilotSubmission')
+    && resumable.includes('Tus-Resumable'),
+  'Evidence limits, resumable upload and evidence-first finalisation remain enabled.',
 );
-check(core.includes('createSignedUrl') && core.includes('PILOT_ATTACHMENT_BUCKET'), 'Private evidence retrieval uses signed URLs.');
+check(core.includes('createAuditedEvidenceLink') && evidenceAccess.includes("supabase.functions.invoke('secure-evidence-link'"), 'Private Pilot evidence retrieval uses audited signed links.');
+check(evidenceMigration.includes('finalize_pilot_evidence_submission') && evidenceMigration.includes("bucket_id = 'pilot-report-attachments'"), 'Pilot evidence is verified atomically before report visibility.');
 check(
   form.includes('I consent to share my current location and registered student profile')
     && form.includes('does not contact CPS, SAPS, an ambulance or another external service.'),
@@ -73,17 +79,10 @@ check(migration.includes('p_assigned_to <> v_actor') && migration.includes('raw_
 check(!['public.incidents','public.notifications','public.case_updates','send-push-notification'].some((x) => migration.includes(x)), 'Migration does not touch production case or dispatch paths.');
 
 check([
-  '/pilot',
-  '/pilot/session/:sessionId',
-  '/pilot/report/:reportId',
-  '/pilot/reviews',
-  '/pilot/resources',
-  '/security/pilot',
-  '/security/pilot/reviews',
-  '/admin/pilot',
-  '/admin/pilot/reviews',
+  '/pilot', '/pilot/session/:sessionId', '/pilot/report/:reportId', '/pilot/reviews', '/pilot/resources',
+  '/security/pilot', '/security/pilot/reviews', '/admin/pilot', '/admin/pilot/reviews',
 ].every((x) => app.includes(`path="${x}"`)), 'All direct Pilot routes, including Phase 3 reviews, remain registered.');
-for (const source of [core, admin, form, pilotEvidence, student, campus, superAdmin]) {
+for (const source of [core, admin, form, evidenceSubmission, student, campus, superAdmin]) {
   check(!["from('incidents')","from('notifications')","from('case_updates')",'send-push-notification'].some((x) => source.includes(x)), 'Active Pilot source is isolated from production workflow tables.');
 }
 check(config.includes('No external emergency service or production dispatch workflow is contacted.'), 'Canonical no-dispatch warning remains permanent.');

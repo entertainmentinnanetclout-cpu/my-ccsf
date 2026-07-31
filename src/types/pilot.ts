@@ -38,6 +38,7 @@ export interface PilotDeviceInfo {
   viewport_width: number | null;
   viewport_height: number | null;
   network_type: string | null;
+  [key: string]: Json | undefined;
 }
 
 export interface PilotReportInput {

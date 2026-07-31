@@ -1,0 +1,70 @@
+name: Consolidate Evidence Resilience Branch
+
+on:
+  push:
+    branches:
+      - feature/evidence-resilience-a-e-clean
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    if: github.event.head_commit.message != 'sync: consolidate evidence resilience changes'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out clean branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/evidence-resilience-a-e-clean
+          fetch-depth: 0
+
+      - name: Copy approved implementation files
+        run: |
+          git fetch origin feature/evidence-resilience-phases-a-e-implementation
+          git checkout origin/feature/evidence-resilience-phases-a-e-implementation -- \
+            docs/EVIDENCE_RESILIENCE_PHASES_A_E.md \
+            docs/EVIDENCE_RESILIENCE_RELEASE_STATUS.md \
+            docs/EVIDENCE_RESILIENCE_ROLLBACK.md \
+            docs/EVIDENCE_RESILIENCE_SECURITY_NOTES.md \
+            docs/EVIDENCE_RESILIENCE_UAT_MATRIX.md \
+            package.json \
+            scripts/verify-evidence-resilience-phases-a-e.mjs \
+            scripts/verify-mobile-evidence-session-continuity.mjs \
+            scripts/verify-phase-2-pilot-report-routing.mjs \
+            scripts/verify-phase-4-product.mjs \
+            scripts/verify-phase-8-release-gate.mjs \
+            src/components/admin/IncidentDetailsModal.tsx \
+            src/components/pilot/PilotEvidenceAnalytics.tsx \
+            src/components/pilot/PilotReportForm.tsx \
+            src/components/pilot/PilotReportFormV2.tsx \
+            src/components/shared/MobileEvidencePicker.tsx \
+            src/components/shared/SubmissionReceiptCard.tsx \
+            src/components/student/ReportIncidentV2.tsx \
+            src/hooks/useUrlBackedView.ts \
+            src/lib/evidencePickerLifecycle.ts \
+            src/lib/evidenceProcessing.ts \
+            src/lib/offlineReportQueue.ts \
+            src/lib/resumableStorageUpload.ts \
+            src/pages/pilot/SuperAdminPilotPage.tsx \
+            src/services/evidenceAccessService.ts \
+            src/services/evidenceSubmissionService.ts \
+            src/services/pilot/pilotCoreService.ts \
+            supabase/config.toml \
+            supabase/functions/evidence-submission-cleanup/index.ts \
+            supabase/functions/pilot-submit-report/index.ts \
+            supabase/functions/secure-evidence-link/index.ts \
+            supabase/migrations/20260730213000_evidence_resilience_phases_c_e.sql \
+            supabase/migrations/20260730214500_finalize_pilot_evidence_submission.sql
+
+      - name: Commit consolidated branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add --all
+          if git diff --cached --quiet; then
+            echo "No consolidation changes required."
+            exit 0
+          fi
+          git commit -m "sync: consolidate evidence resilience changes"
+          git push origin HEAD:feature/evidence-resilience-a-e-clean
