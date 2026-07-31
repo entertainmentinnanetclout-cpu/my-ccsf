@@ -24,7 +24,7 @@ export function SubmissionReceiptCard({
       <header><div class="muted">Tshwane University of Technology · Campus Community Safety Forum</div><h1>Report Submission Receipt</h1></header>
       <div class="box"><div class="row"><strong>Reference</strong><span>${escapeHtml(receipt.reference_number)}</span></div><div class="row"><strong>Environment</strong><span>${escapeHtml(receipt.scope === 'pilot' ? 'Controlled Pilot' : 'Official CCSF')}</span></div><div class="row"><strong>Submitted</strong><span>${escapeHtml(new Date(receipt.submitted_at).toLocaleString('en-ZA'))}</span></div><div class="row"><strong>Campus</strong><span>${escapeHtml(receipt.campus ?? 'Not recorded')}</span></div><div class="row"><strong>Evidence files</strong><span>${escapeHtml(receipt.evidence_count)}</span></div></div>
       <div class="notice">Keep this receipt as proof that the report reached the authorised CCSF workflow. It does not replace emergency contact procedures.</div>
-      <script>window.addEventListener('load',()=>window.print())<\/script></body></html>`);
+      <script>window.addEventListener('load',()=>window.print())</script></body></html>`);
     popup.document.close();
   };
 
