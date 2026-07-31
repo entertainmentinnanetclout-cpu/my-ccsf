@@ -141,7 +141,7 @@ for (const functionSlug of ['pilot-create-session', 'pilot-submit-report']) {
 }
 assert(coreService.includes("from('pilot_location_events')"), 'Location writes target pilot_location_events.');
 assert(coreService.includes("from('pilot_attachments')"), 'Attachment metadata targets pilot_attachments.');
-assert(coreService.includes('createSignedUrl'), 'Private attachments use signed URLs.');
+assert(coreService.includes('createAuditedEvidenceLink'), 'Private attachments use audited signed links.');
 
 const reviewService = read('src/services/pilot/pilotReviewService.ts');
 assert(reviewService.includes("'pilot-review-attachments'"), 'Pilot review screenshots use the private review bucket.');
