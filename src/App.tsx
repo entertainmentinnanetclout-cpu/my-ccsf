@@ -27,6 +27,7 @@ import Profile from './pages/Profile';
 import ProfileCompletion from './pages/ProfileCompletion';
 import Judiciary from './pages/Judiciary';
 import Security from './pages/Security';
+import SafetyQuest from './pages/SafetyQuest';
 import PilotAuth from './pages/pilot/PilotAuth';
 import PilotLanding from './pages/pilot/PilotLanding';
 import PilotSession from './pages/pilot/PilotSession';
@@ -109,6 +110,11 @@ const App = () => (
                     } />
                   </Route>
 
+                  <Route path="/safety-quest" element={
+                    <ProtectedRoute allowedRoles={['student']}>
+                      <SafetyQuest />
+                    </ProtectedRoute>
+                  } />
                   <Route element={<Layout />}>
                     <Route path="/" element={<Index />} />
                     <Route path="/auth" element={<OfficialEntryIntentBoundary><Auth /></OfficialEntryIntentBoundary>} />

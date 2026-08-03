@@ -14,6 +14,7 @@ import { ReportIncident } from '@/components/student/ReportIncident';
 import { EmergencyReport } from '@/components/student/EmergencyReport';
 import { SafetyMobilityHub } from '@/components/student/SafetyMobilityHub';
 import { StudentDashboardHome } from '@/components/student/StudentDashboardHome';
+import { SafetyQuestLaunchCard } from '@/components/student/SafetyQuestLaunchCard';
 import { StudentChat } from '@/components/student/StudentChat';
 import { MyCaseReports } from '@/components/student/MyCaseReports';
 import { BRAND } from '@/brand';
@@ -140,6 +141,9 @@ const Dashboard = () => {
                     <Button className="shrink-0 bg-[#F2A900] font-extrabold text-[#002F6C] hover:bg-[#F2A900]/90" onClick={() => changeView('safety')}><Radar className="mr-2 h-5 w-5" />Open Safety Hub</Button>
                   </CardContent>
                 </Card>
+              </div>
+              <div className="px-4">
+                <SafetyQuestLaunchCard />
               </div>
               <StudentDashboardHome campus={campus || undefined} />
             </div>
