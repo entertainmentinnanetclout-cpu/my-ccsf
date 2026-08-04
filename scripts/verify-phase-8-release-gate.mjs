@@ -79,9 +79,9 @@ check(migration.includes('p_assigned_to <> v_actor') && migration.includes('raw_
 check(!['public.incidents','public.notifications','public.case_updates','send-push-notification'].some((x) => migration.includes(x)), 'Migration does not touch production case or dispatch paths.');
 
 check([
-  '/pilot', '/pilot/session/:sessionId', '/pilot/report/:reportId', '/pilot/reviews', '/pilot/resources',
+  '/pilot', '/pilot/session/:sessionId', '/pilot/report/:reportId', '/pilot/reviews', '/pilot/resources', '/pilot/safety-quest',
   '/security/pilot', '/security/pilot/reviews', '/admin/pilot', '/admin/pilot/reviews',
-].every((x) => app.includes(`path="${x}"`)), 'All direct Pilot routes, including Phase 3 reviews, remain registered.');
+].every((x) => app.includes(`path="${x}"`)), 'All direct Pilot routes, including Safety Quest and Phase 3 reviews, remain registered.');
 for (const source of [core, admin, form, evidenceSubmission, student, campus, superAdmin]) {
   check(!["from('incidents')","from('notifications')","from('case_updates')",'send-push-notification'].some((x) => source.includes(x)), 'Active Pilot source is isolated from production workflow tables.');
 }
@@ -92,7 +92,7 @@ check(vite.includes('APPROVED_PILOT_PRODUCTION_BRANCH = "main"') && vite.include
 check(vite.includes('explicitPilotFlag === "false" ? "false"'), 'The explicit false Pilot flag remains an emergency kill switch.');
 
 check(student.includes('title="Track your cases"') && student.includes("onClick={() => setView('mycases')}")
-  && student.includes('title="Test location"') && student.includes("onClick={() => setView('map')}")
+  && student.includes('title="Open Safety hub"') && student.includes("onClick={() => setView('safety')}")
   && student.includes('title="Support centre"') && student.includes("onClick={() => setView('support')}")
   && student.includes('<button onClick={onClick}'), 'Every student quick-action card has a real destination and click handler.');
 check(student.includes('onClick={openEmergencySimulation}') && student.includes('onClick={() => void refresh(true)}') && student.includes('onClick={() => void markRead(item)}'), 'Student emergency, refresh and notification actions have working handlers.');
@@ -114,7 +114,7 @@ for (const [name, source] of [['student', student], ['campus', campus], ['super-
 check([student,campus,superAdmin].every((x) => x.includes('role="tablist"') && x.includes('aria-selected=')), 'All role navigation exposes accessible tab state.');
 check(mobile.includes("typeof maxItems === 'number' ? items.slice(0, maxItems) : items") && mobile.includes('overflow-x-auto') && mobile.includes('safe-area-inset-bottom'), 'Mobile navigation shows every section by default and remains safe-area aware.');
 check(!student.includes('maxItems=') && !campus.includes('maxItems=') && !superAdmin.includes('maxItems='), 'Student, campus and super-admin portals do not opt into mobile truncation.');
-check(brand.includes('getTutLogo(activeTheme)') && brand.includes('BRAND.assets.ccsfLogo'), 'Canonical CCSF and separate TUT theme logos remain paired.');
+check(brand.includes('getTutLogo(activeTheme)') && brand.includes('BRAND.assets.ccsfLogo'), 'Canonical CPS/CCSF and separate TUT theme logos remain paired.');
 check(splash.includes('useReducedMotion') && splash.includes('InstitutionBrand'), 'Splash remains institutional and reduced-motion aware.');
 check(manifest.theme_color === '#002F6C' && manifest.lang === 'en-ZA' && manifest.icons.some((x) => String(x.purpose).includes('maskable')), 'PWA identity, locale and maskable icon remain correct.');
 check(sw.includes("CACHE_VERSION = 'safety-mobility-2026-07-25-v2'") && sw.includes("type === 'SKIP_WAITING'"), 'PWA cache replacement remains controlled.');
