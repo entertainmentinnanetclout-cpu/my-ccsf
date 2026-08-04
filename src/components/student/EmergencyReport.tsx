@@ -1,39 +1,31 @@
 import { useState } from 'react';
+import { motion } from 'framer-motion';
+import { AlertTriangle, Loader2, MapPin, Radio, StopCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { useToast } from '@/hooks/use-toast';
-import { motion } from 'framer-motion';
-import { AlertTriangle, MapPin, Loader2, Radio, StopCircle } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/hooks/use-toast';
 import { useLocationTracking } from '@/hooks/useLocationTracking';
-import { Badge } from '@/components/ui/badge';
+import { captureBrowserPosition, normalizeGeolocationError } from '@/lib/browserGeolocation';
+import { formatCoordinatePair, reverseGeocodeCoordinates } from '@/lib/reverseGeocode';
 import { CampusEmergencyContact } from './CampusEmergencyContact';
+import type { Database } from '@/integrations/supabase/types';
 
-// Reverse geocode using free Nominatim API (OpenStreetMap)
-const reverseGeocode = async (lat: number, lng: number): Promise<string> => {
-  try {
-    const response = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
-      {
-        headers: {
-          'Accept-Language': 'en',
-          'User-Agent': 'CCSF-Campus-Safety-App'
-        }
-      }
-    );
-    const data = await response.json();
-    
-    if (data.display_name) {
-      return data.display_name;
-    }
-    return `Coordinates: ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-  } catch (error) {
-    console.error('Geocoding error:', error);
-    return `Coordinates: ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-  }
-};
+type IncidentCategory = Database['public']['Enums']['incident_category'];
+const EMERGENCY_TYPES: Array<{ value: IncidentCategory; label: string }> = [
+  { value: 'Public violence', label: 'Immediate danger / feeling unsafe' },
+  { value: 'Assault common', label: 'Assault or threat' },
+  { value: 'Assault GBH', label: 'Serious physical assault' },
+  { value: 'Gbv', label: 'Gender-based violence' },
+  { value: 'Armed robbery', label: 'Armed threat or robbery' },
+  { value: 'Arson', label: 'Fire or suspected arson' },
+  { value: 'Attempted murder', label: 'Life-threatening attack' },
+];
 
 export const EmergencyReport = () => {
   const { user } = useAuth();
@@ -41,288 +33,145 @@ export const EmergencyReport = () => {
   const [open, setOpen] = useState(false);
   const [sending, setSending] = useState(false);
   const [consentAgreed, setConsentAgreed] = useState(false);
-  const [gettingLocation, setGettingLocation] = useState(false);
-  const [currentAddress, setCurrentAddress] = useState<string>('');
-  
-  const { startTracking, stopTracking, isTracking, currentIncidentId } = useLocationTracking();
+  const [category, setCategory] = useState<IncidentCategory>('Public violence');
+  const [details, setDetails] = useState('I need immediate safety assistance.');
+  const [locationPreview, setLocationPreview] = useState('');
+  const { startTracking, stopTracking, isTracking } = useLocationTracking();
+
+  const reset = () => {
+    setConsentAgreed(false);
+    setCategory('Public violence');
+    setDetails('I need immediate safety assistance.');
+    setLocationPreview('');
+  };
 
   const sendEmergencyReport = async () => {
-    if (!consentAgreed) {
-      toast({
-        title: 'Consent Required',
-        description: 'Please confirm the emergency declaration before sending.',
-        variant: 'destructive',
-      });
+    if (!user || !consentAgreed || details.trim().length < 5) {
+      toast({ title: 'Complete the emergency declaration', description: 'Choose the emergency type, add a short description and confirm the declaration.', variant: 'destructive' });
       return;
     }
 
     setSending(true);
-    setGettingLocation(true);
-
     try {
-      let location = { lat: null as number | null, lng: null as number | null };
-      let locationAddress = 'Location unavailable';
-      
-      if (navigator.geolocation) {
-        try {
-          const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(resolve, reject, { 
-              timeout: 10000,
-              enableHighAccuracy: true,
-              maximumAge: 0
-            });
-          });
-          location = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          };
-          
-          // Get readable address from coordinates
-          setGettingLocation(false);
-          locationAddress = await reverseGeocode(location.lat!, location.lng!);
-          setCurrentAddress(locationAddress);
-          
-        } catch (error) {
-          console.log('Location access denied or unavailable:', error);
-          setGettingLocation(false);
-        }
+      let latitude: number | null = null;
+      let longitude: number | null = null;
+      let accuracy: number | null = null;
+      let address: string | null = null;
+      try {
+        const { position } = await captureBrowserPosition();
+        latitude = position.coords.latitude;
+        longitude = position.coords.longitude;
+        accuracy = position.coords.accuracy ?? null;
+        const resolved = await reverseGeocodeCoordinates(latitude, longitude);
+        address = resolved.address ?? formatCoordinatePair(latitude, longitude);
+        setLocationPreview(`${address}${accuracy ? ` · ±${Math.round(accuracy)} m` : ''}`);
+      } catch (locationError) {
+        const normalized = normalizeGeolocationError(locationError);
+        toast({ title: 'Location unavailable', description: `The emergency case will still be created. ${normalized.message}` });
       }
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user?.id)
-        .single();
-
-      // Build comprehensive emergency description
-      let description = '🚨 EMERGENCY SITUATION REPORTED\n\n';
-      description += '═══════════════════════════════\n';
-      description += 'STUDENT INFORMATION:\n';
-      description += `• Name: ${profile?.first_name || 'Unknown'} ${profile?.last_name || ''}\n`;
-      description += `• Student Number: ${profile?.student_number || 'Not provided'}\n`;
-      description += `• Phone: ${profile?.phone_number || 'Not provided'}\n`;
-      description += `• Email: ${profile?.email || 'Not provided'}\n`;
-      description += '═══════════════════════════════\n\n';
-      description += 'EMERGENCY CONTACT:\n';
-      description += `• Name: ${profile?.emergency_contact_name || 'Not provided'}\n`;
-      description += `• Phone: ${profile?.emergency_contact_phone || 'Not provided'}\n`;
-      description += `• Relationship: ${profile?.emergency_contact_relationship || 'Not provided'}\n`;
-      description += '═══════════════════════════════\n\n';
-      description += 'MEDICAL INFORMATION:\n';
-      description += `• Blood Type: ${profile?.blood_type || 'Unknown'}\n`;
-      description += `• Allergies: ${profile?.allergies || 'None specified'}\n`;
-      description += `• Chronic Conditions: ${profile?.chronic_conditions || 'None specified'}\n`;
-      description += '═══════════════════════════════\n\n';
-      description += '📍 LIVE LOCATION TRACKING ENABLED\n';
-      description += 'Location updates every 30 seconds until resolved.\n\n';
-      description += '⚠️ User unable to provide details. Immediate assistance required.\n';
-      description += 'Student has confirmed this is a genuine emergency.';
-
-      const { data: incident, error } = await supabase.from('incidents').insert({
-        title: '🚨 EMERGENCY ALERT - LIVE TRACKING',
-        description,
-        category: 'Assault common',
-        reporter_id: user?.id,
-        is_anonymous: false,
-        location_lat: location.lat,
-        location_lng: location.lng,
-        location_description: locationAddress,
-      }).select().single();
-
-      if (error) throw error;
-
-      // Start live location tracking
-      if (incident) {
-        startTracking(incident.id);
-      }
+      const { data, error } = await supabase.rpc('create_emergency_alert' as never, {
+        p_category: category,
+        p_reason: details.trim(),
+        p_latitude: latitude,
+        p_longitude: longitude,
+        p_accuracy_meters: accuracy,
+        p_location_description: address,
+      } as never);
+      if (error || !data) throw error ?? new Error('The emergency case could not be created.');
+      const incident = data as unknown as { id: string };
+      startTracking(incident.id);
 
       toast({
-        title: 'Emergency Alert Sent',
-        description: 'Campus security has been notified. Your location is being tracked.',
-        variant: 'default',
+        title: 'Emergency case created',
+        description: 'Your case is in the official CCSF/CPS queue. Use the verified emergency contact below for immediate voice assistance.',
       });
-
       setOpen(false);
-      setConsentAgreed(false);
-      setCurrentAddress('');
-    } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: 'Failed to send emergency alert. Please call campus security directly.',
-        variant: 'destructive',
-      });
+      reset();
+    } catch (error) {
+      toast({ title: 'Emergency case not delivered', description: error instanceof Error ? error.message : 'Use the verified campus emergency contact immediately.', variant: 'destructive' });
     } finally {
       setSending(false);
-      setGettingLocation(false);
     }
-  };
-
-  const handleStopTracking = () => {
-    stopTracking();
-    toast({
-      title: 'Location Tracking Stopped',
-      description: 'Your location is no longer being shared.',
-    });
   };
 
   return (
     <>
-      {/* Live tracking indicator */}
       {isTracking && (
         <motion.div
-          className="fixed bottom-36 md:bottom-24 right-4 sm:right-6 z-40"
+          className="fixed bottom-[calc(env(safe-area-inset-bottom)+9.75rem)] right-[max(1rem,env(safe-area-inset-right))] z-[60] md:bottom-24"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <div className="bg-destructive text-destructive-foreground rounded-lg p-3 shadow-lg flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <Radio className="h-4 w-4 animate-pulse" />
-              <span className="text-sm font-medium">Live Tracking Active</span>
-            </div>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-7 px-2 hover:bg-destructive-foreground/10"
-              onClick={handleStopTracking}
-            >
-              <StopCircle className="h-4 w-4 mr-1" />
-              Stop
+          <div className="flex max-w-[calc(100vw-2rem)] items-center gap-3 rounded-2xl bg-destructive p-3 text-destructive-foreground shadow-2xl">
+            <Radio className="h-4 w-4 shrink-0 animate-pulse" aria-hidden="true" />
+            <span className="text-xs font-bold sm:text-sm">Live tracking active while My CCSF is open</span>
+            <Button size="sm" variant="ghost" className="h-9 shrink-0 hover:bg-white/10" onClick={stopTracking}>
+              <StopCircle className="mr-1 h-4 w-4" />Stop
             </Button>
           </div>
         </motion.div>
       )}
 
       <motion.div
-        className="fixed bottom-20 md:bottom-6 right-4 sm:right-6 z-40"
+        className="fixed bottom-[calc(env(safe-area-inset-bottom)+5.75rem)] right-[max(1rem,env(safe-area-inset-right))] z-[60] md:bottom-6"
         initial={{ scale: 0 }}
         animate={{ scale: 1 }}
         transition={{ type: 'spring', stiffness: 260, damping: 20 }}
       >
         <Button
-          size="lg"
+          size="icon"
           variant="destructive"
-          className="h-12 w-12 rounded-full shadow-xl animate-emergency-blink ring-2 ring-destructive/30"
+          className="h-14 w-14 touch-manipulation rounded-full border-2 border-white/70 shadow-[0_14px_35px_rgba(190,18,60,0.42)] ring-4 ring-destructive/20"
           onClick={() => setOpen(true)}
+          aria-label="Open emergency safety alert"
+          data-testid="emergency-safety-button"
         >
-          <AlertTriangle className="h-5 w-5" />
+          <AlertTriangle className="h-6 w-6" aria-hidden="true" />
         </Button>
       </motion.div>
 
-      <Dialog open={open} onOpenChange={(isOpen) => {
-        setOpen(isOpen);
-        if (!isOpen) {
-          setConsentAgreed(false);
-          setCurrentAddress('');
-        }
-      }}>
-        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+      <Dialog open={open} onOpenChange={(isOpen) => { setOpen(isOpen); if (!isOpen) reset(); }}>
+        <DialogContent className="max-h-[calc(100dvh-2rem)] max-w-md overflow-y-auto pb-[max(1.5rem,env(safe-area-inset-bottom))]">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-2xl text-destructive">
-              <AlertTriangle className="h-6 w-6" />
-              Emergency Alert
-            </DialogTitle>
-            <DialogDescription className="text-base">
-              This will immediately send an emergency alert to campus security with your location and profile information.
-            </DialogDescription>
+            <DialogTitle className="flex items-center gap-2 text-2xl text-destructive"><AlertTriangle className="h-6 w-6" />Emergency safety alert</DialogTitle>
+            <DialogDescription>Create an official high-priority case and share the best location your device can provide.</DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-4">
-            <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
-              <p className="text-sm font-medium mb-2">
-                Emergency alert will include:
-              </p>
-              <ul className="text-sm space-y-1 text-muted-foreground">
-                <li className="flex items-center gap-2">
-                  <span>•</span> Your name and student number
-                </li>
-                <li className="flex items-center gap-2">
-                  <span>•</span> Your phone number
-                </li>
-                <li className="flex items-center gap-2">
-                  <MapPin className="h-4 w-4 text-primary" />
-                  <span className="font-medium">Your live location (full address)</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <span>•</span> Emergency contact details
-                </li>
-                <li className="flex items-center gap-2">
-                  <span>•</span> Medical information (blood type, allergies)
-                </li>
-              </ul>
+          <div className="space-y-4 py-3">
+            <div className="space-y-2">
+              <Label>Emergency type</Label>
+              <Select value={category} onValueChange={(value) => setCategory(value as IncidentCategory)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{EMERGENCY_TYPES.map((type) => <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="emergency-details">What is happening?</Label>
+              <Textarea id="emergency-details" value={details} onChange={(event) => setDetails(event.target.value)} maxLength={1000} rows={4} />
+              <p className="text-xs text-muted-foreground">Do not include information that is not needed for immediate assistance.</p>
             </div>
 
-            {/* Live tracking info */}
-            <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg flex items-start gap-3">
-              <Radio className="h-5 w-5 text-primary mt-0.5" />
-              <div>
-                <p className="text-sm font-medium text-foreground">
-                  Live Location Tracking
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Your location will be updated every 30 seconds until the case is resolved. You can stop tracking at any time.
-                </p>
-              </div>
-            </div>
-
-            {/* Current location preview */}
-            {currentAddress && (
-              <div className="p-3 bg-success/10 border border-success/20 rounded-lg">
-                <p className="text-xs font-medium text-success mb-1">
-                  📍 Your Location:
-                </p>
-                <p className="text-sm text-foreground">
-                  {currentAddress}
-                </p>
+            {locationPreview && (
+              <div className="rounded-xl border border-success/25 bg-success/10 p-3">
+                <p className="flex items-center gap-2 text-xs font-bold text-success"><MapPin className="h-4 w-4" />Location captured</p>
+                <p className="mt-1 text-sm">{locationPreview}</p>
               </div>
             )}
 
-            {/* Consent Declaration */}
-            <div className="p-4 bg-warning/10 border border-warning/20 rounded-lg space-y-3">
-              <p className="text-sm font-medium text-foreground">
-                ⚠️ Emergency Declaration
-              </p>
-              <p className="text-xs text-muted-foreground">
-                By sending this alert, I confirm that this is a genuine emergency requiring immediate assistance. 
-                I understand that misuse of the emergency system may result in disciplinary action.
-              </p>
-              <div className="flex items-start space-x-3 pt-2">
-                <Checkbox 
-                  id="emergency-consent" 
-                  checked={consentAgreed}
-                  onCheckedChange={(checked) => setConsentAgreed(checked === true)}
-                />
-                <label htmlFor="emergency-consent" className="text-sm cursor-pointer text-foreground font-medium">
-                  I confirm this is a genuine emergency
-                </label>
+            <div className="rounded-xl border border-warning/25 bg-warning/10 p-4">
+              <div className="flex items-start gap-3">
+                <Checkbox id="emergency-consent" checked={consentAgreed} onCheckedChange={(checked) => setConsentAgreed(checked === true)} />
+                <Label htmlFor="emergency-consent" className="cursor-pointer leading-5">I confirm this is a genuine emergency and consent to sharing my profile identity and current location with authorised safety personnel.</Label>
               </div>
             </div>
-
             <CampusEmergencyContact />
           </div>
 
-          <div className="flex gap-3">
-            <Button
-              variant="outline"
-              className="flex-1"
-              onClick={() => setOpen(false)}
-              disabled={sending}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              className="flex-1"
-              onClick={sendEmergencyReport}
-              disabled={sending || !consentAgreed}
-            >
-              {sending ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  {gettingLocation ? 'Getting Location...' : 'Sending...'}
-                </>
-              ) : (
-                'Send Emergency Alert'
-              )}
+          <div className="grid grid-cols-2 gap-3">
+            <Button variant="outline" onClick={() => setOpen(false)} disabled={sending}>Cancel</Button>
+            <Button variant="destructive" onClick={() => void sendEmergencyReport()} disabled={sending || !consentAgreed}>
+              {sending ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Creating case…</> : 'Send alert'}
             </Button>
           </div>
         </DialogContent>

@@ -261,6 +261,9 @@ export function useSafetyMobility({ campus, userId }: { campus: CampusLocation; 
       return;
     }
     const fix = location ?? await captureNow();
+    if (next.visibility === 'campus_exact' && (fix.accuracy === null || fix.accuracy > 50)) {
+      throw new Error('Exact Radar sharing requires a fresh GPS fix accurate to 50 metres or better. Move outdoors, enable Precise Location, and try again.');
+    }
     await setSafetyPresence({ ...input, campus, location: fix });
     localStorage.setItem(RADAR_STORAGE_KEY, JSON.stringify(next));
     setRadarPreference(next);

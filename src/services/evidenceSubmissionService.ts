@@ -1,5 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
-import { evidenceChecksum, evidenceFileIdentity, type EvidenceManifestItem } from '@/lib/evidenceProcessing';
+import { evidenceChecksum, evidenceFileIdentity, normaliseEvidenceMimeType, type EvidenceManifestItem } from '@/lib/evidenceProcessing';
 import { uploadResumableEvidence } from '@/lib/resumableStorageUpload';
 import { invokePilotFunction } from '@/services/pilot/pilotEdgeService';
 import type { CampusLocation, PilotReport } from '@/types/pilot';
@@ -106,7 +106,7 @@ export async function uploadSubmissionEvidence(input: {
         }),
       });
       const checksum = await evidenceChecksum(file);
-      manifest.push({ path, original_filename: file.name, mime_type: file.type, size_bytes: file.size, checksum });
+      manifest.push({ path, original_filename: file.name, mime_type: normaliseEvidenceMimeType(file), size_bytes: file.size, checksum });
       input.onState?.(key, { status: 'uploaded', progress: 100, resumed: result.resumed });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Evidence upload failed.';

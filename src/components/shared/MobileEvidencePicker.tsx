@@ -100,8 +100,8 @@ export function MobileEvidencePicker({
       </div>
 
       <input ref={photoInput} type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" capture="environment" className="sr-only" tabIndex={-1} onChange={(event) => void handleSelection(event)} aria-label="Take an evidence photo" />
-      <input ref={videoInput} type="file" accept="video/mp4" capture="environment" className="sr-only" tabIndex={-1} onChange={(event) => void handleSelection(event)} aria-label="Record an evidence video" />
-      <input ref={galleryInput} type="file" multiple accept="image/jpeg,image/png,image/webp,image/heic,image/heif,video/mp4" className="sr-only" tabIndex={-1} onChange={(event) => void handleSelection(event)} aria-label="Choose evidence from the gallery" />
+      <input ref={videoInput} type="file" accept="video/mp4,video/quicktime,video/webm,video/3gpp,video/3gpp2,.mov,.m4v,.webm,.3gp,.3g2" capture="environment" className="sr-only" tabIndex={-1} onChange={(event) => void handleSelection(event)} aria-label="Record an evidence video" />
+      <input ref={galleryInput} type="file" multiple accept="image/jpeg,image/png,image/webp,image/heic,image/heif,video/mp4,video/quicktime,video/webm,video/3gpp,video/3gpp2,.mov,.m4v,.webm,.3gp,.3g2" className="sr-only" tabIndex={-1} onChange={(event) => void handleSelection(event)} aria-label="Choose evidence from the gallery" />
       {acceptPdf && <input ref={documentInput} type="file" multiple accept="application/pdf" className="sr-only" tabIndex={-1} onChange={(event) => void handleSelection(event)} aria-label="Choose evidence documents" />}
 
       <div className="rounded-lg border border-dashed bg-muted/20 p-3 text-xs leading-5 text-muted-foreground">
