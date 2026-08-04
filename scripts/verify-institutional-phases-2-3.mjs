@@ -71,7 +71,7 @@ check(profileEntry.includes("export { default } from '@/pages/InstitutionalProfi
 check(profile.includes('PremiumAvatarUpload') && profile.includes('InstitutionBrand'), 'Profile uses canonical branding and the premium profile image workflow.');
 check(profile.includes('Emergency ready') && profile.includes('Privacy boundary') && profile.includes('Save profile securely'), 'Profile communicates readiness, privacy and secure-save state.');
 check(profile.includes('touch-manipulation') && profile.includes('safe-area-inset-bottom'), 'Profile controls are mobile touch and safe-area aware.');
-check(profile.includes('isValidPhone') && profile.includes('student number required'), 'Profile validates core institutional identity fields before saving.');
+check(profile.includes('isValidPhone') && profile.includes('Student number required'), 'Profile validates core institutional identity fields before saving.');
 check(avatar.includes('ReactCrop') && avatar.includes('circularCrop') && avatar.includes('cropImage'), 'Profile image workflow supports a controlled crop step.');
 check(avatar.includes('outputSize = 1024') && avatar.includes("contentType: blob.type"), 'Avatar output is normalised to a high-quality consistent size and MIME type.');
 check(avatar.includes('image/heic') && avatar.includes('image/heif'), 'Avatar selector accepts supported modern phone image formats.');
