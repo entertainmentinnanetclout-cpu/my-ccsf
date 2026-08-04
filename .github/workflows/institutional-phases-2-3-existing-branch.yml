@@ -39,6 +39,9 @@ jobs:
       - name: Integrate first-party Campus Radar
         run: node scripts/apply-institutional-radar-integration.mjs
 
+      - name: Apply ES2020 compatibility
+        run: node scripts/apply-es2020-compatibility.mjs
+
       - name: Add institutional release gate
         run: node scripts/apply-institutional-package-gate.mjs
 
