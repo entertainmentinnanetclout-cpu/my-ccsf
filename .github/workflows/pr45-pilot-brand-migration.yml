@@ -97,7 +97,6 @@ jobs:
             scripts/generate-brand-assets.py \
             scripts/verify-branding.mjs \
             scripts/pilot-document-library/pdf-brand-engine.mjs \
-            .github/workflows/phase4-brand-assets.yml \
             vite.config.ts \
             src/components/pilot/PilotStudentDashboard.tsx \
             src/components/student/SafetyQuestLaunchCard.tsx \
