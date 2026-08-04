@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ComponentType } from 'react';
+import { useEffect, useMemo, useRef, useState, type ComponentType } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import {
@@ -23,7 +23,6 @@ import {
   ShieldAlert,
   ShieldCheck,
   Sparkles,
-  TrafficCone,
   Trophy,
   Users,
   type LucideProps,
@@ -42,11 +41,13 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { cn } from '@/lib/utils';
 import {
-  CPS_AREAS,
-  QUEST_CHECKPOINTS,
+  QUEST_TOPIC_LABELS,
+  QUEST_TOPICS,
   QUEST_TOTAL,
+  createQuestPlan,
   type QuestIconName,
 } from './questCatalog';
+import { SAFETY_QUEST_VERSION } from './questData';
 import { useSafetyQuestProgress, type QuestSyncState } from './useSafetyQuestProgress';
 import './safety-quest.css';
 
@@ -68,10 +69,6 @@ const SYNC_COPY: Record<QuestSyncState, string> = {
   device: 'Saved on this device',
 };
 
-const ROUTE_POINTS = QUEST_CHECKPOINTS
-  .map(({ runnerPosition: point }) => `${point.x},${point.y}`)
-  .join(' ');
-
 type AnswerOutcome = 'correct' | 'wrong' | null;
 
 export function SafetyQuestGame({ userId }: { userId: string | null | undefined }) {
@@ -84,14 +81,23 @@ export function SafetyQuestGame({ userId }: { userId: string | null | undefined 
   const stageRef = useRef<HTMLDivElement>(null);
   const prefersReducedMotion = useReducedMotion();
 
+  const quest = useMemo(
+    () => createQuestPlan(`${SAFETY_QUEST_VERSION}:${userId ?? 'guest'}`),
+    [userId],
+  );
+  const routePoints = useMemo(
+    () => quest.map(({ runnerPosition: point }) => `${point.x},${point.y}`).join(' '),
+    [quest],
+  );
+
   const currentIndex = Math.min(progress.currentCheckpoint, QUEST_TOTAL - 1);
-  const currentCheckpoint = QUEST_CHECKPOINTS[currentIndex];
+  const currentCheckpoint = quest[currentIndex];
   const runnerPosition = progress.currentCheckpoint >= QUEST_TOTAL
-    ? QUEST_CHECKPOINTS[QUEST_TOTAL - 1].runnerPosition
+    ? quest[QUEST_TOTAL - 1].runnerPosition
     : currentCheckpoint.runnerPosition;
   const completionPercent = Math.round((progress.currentCheckpoint / QUEST_TOTAL) * 100);
   const isComplete = progress.currentCheckpoint >= QUEST_TOTAL;
-
+  const accuracy = progress.attempts > 0 ? Math.round((progress.score / progress.attempts) * 100) : null;
 
   useEffect(() => {
     const scroller = stageRef.current;
@@ -117,16 +123,16 @@ export function SafetyQuestGame({ userId }: { userId: string | null | undefined 
 
   const submitAnswer = () => {
     if (selectedCheckpoint === null || !selectedOption) return;
-    const checkpoint = QUEST_CHECKPOINTS[selectedCheckpoint];
-    const option = checkpoint.options.find((item) => item.id === selectedOption);
-    if (!option) return;
+    const checkpoint = quest[selectedCheckpoint];
+    const optionExists = checkpoint.options.some((item) => item.id === selectedOption);
+    if (!optionExists) return;
 
-    const answerIsCorrect = option.correct === true;
+    const answerIsCorrect = selectedOption === checkpoint.correctOptionId;
     setOutcome(answerIsCorrect ? 'correct' : 'wrong');
-    void recordAnswer(selectedCheckpoint, checkpoint.id, option.id, answerIsCorrect);
+    void recordAnswer(selectedCheckpoint, checkpoint.id, selectedOption, answerIsCorrect);
   };
 
-  const selected = selectedCheckpoint === null ? null : QUEST_CHECKPOINTS[selectedCheckpoint];
+  const selected = selectedCheckpoint === null ? null : quest[selectedCheckpoint];
   const selectedWasCompleted = selectedCheckpoint !== null && selectedCheckpoint < progress.currentCheckpoint;
   const showLesson = outcome === 'correct' || (selectedWasCompleted && outcome !== 'wrong');
   const SyncIcon = syncState === 'device' ? CloudOff : Cloud;
@@ -153,15 +159,19 @@ export function SafetyQuestGame({ userId }: { userId: string | null | undefined 
       <main className="mx-auto w-full max-w-[1680px] px-3 pb-16 pt-6 sm:px-6 lg:px-8">
         <section className="safety-quest-hero" aria-labelledby="quest-title">
           <div className="max-w-3xl">
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#F2A900]/35 bg-[#F2A900]/10 px-3 py-1.5 text-xs font-black uppercase tracking-[0.16em] text-[#FFD36A]">
+            <motion.div
+              initial={prefersReducedMotion ? false : { opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#F2A900]/35 bg-[#F2A900]/10 px-3 py-1.5 text-xs font-black uppercase tracking-[0.16em] text-[#FFD36A]"
+            >
               <Sparkles className="h-4 w-4" aria-hidden="true" />
-              Interactive student onboarding
-            </div>
+              Randomized TUT safety challenge
+            </motion.div>
             <h1 id="quest-title" className="text-balance text-3xl font-black tracking-tight text-white sm:text-5xl lg:text-6xl">
-              Learn the campus. <span className="text-[#F2A900]">Spot the risk.</span>
+              Know the campus. <span className="text-[#F2A900]">Choose under pressure.</span>
             </h1>
             <p className="mt-4 max-w-2xl text-sm leading-6 text-white/70 sm:text-base">
-              Tap the active person or station, answer one practical question, and watch your student marker move toward Control. This is a learning journey—not a pass-or-fail test.
+              Complete eight missions drawn from a larger TUT Pretoria West safety bank. Questions and answer positions vary by student, and some choices are intentionally close—read the scenario carefully before you commit.
             </p>
           </div>
 
@@ -171,7 +181,12 @@ export function SafetyQuestGame({ userId }: { userId: string | null | undefined 
                 <p className="text-xs font-black uppercase tracking-[0.14em] text-white/60">Mission progress</p>
                 <p className="mt-1 text-3xl font-black text-white">{progress.currentCheckpoint}<span className="text-base text-white/50"> / {QUEST_TOTAL}</span></p>
               </div>
-              <Trophy className={cn('h-8 w-8', isComplete ? 'text-[#F2A900]' : 'text-white/25')} aria-hidden="true" />
+              <motion.div
+                animate={isComplete && !prefersReducedMotion ? { rotate: [0, -8, 8, 0], scale: [1, 1.14, 1] } : { rotate: 0, scale: 1 }}
+                transition={{ duration: 0.8 }}
+              >
+                <Trophy className={cn('h-8 w-8', isComplete ? 'text-[#F2A900]' : 'text-white/25')} aria-hidden="true" />
+              </motion.div>
             </div>
             <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10" aria-hidden="true">
               <motion.div
@@ -181,7 +196,16 @@ export function SafetyQuestGame({ userId }: { userId: string | null | undefined 
                 transition={{ duration: prefersReducedMotion ? 0 : 0.6 }}
               />
             </div>
-            <p className="mt-3 text-xs font-semibold text-white/60">{progress.attempts} answer{progress.attempts === 1 ? '' : 's'} submitted</p>
+            <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
+              <div className="rounded-xl border border-white/10 bg-white/[0.045] px-3 py-2">
+                <p className="font-bold text-white/45">Attempts</p>
+                <p className="mt-0.5 text-base font-black text-white">{progress.attempts}</p>
+              </div>
+              <div className="rounded-xl border border-white/10 bg-white/[0.045] px-3 py-2">
+                <p className="font-bold text-white/45">Accuracy</p>
+                <p className="mt-0.5 text-base font-black text-white">{accuracy === null ? '—' : `${accuracy}%`}</p>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -189,7 +213,7 @@ export function SafetyQuestGame({ userId }: { userId: string | null | undefined 
           <div className="mb-3 flex items-center justify-between gap-3 px-1">
             <div className="flex items-center gap-2 text-sm font-bold text-white/75">
               <Footprints className="h-4 w-4 text-[#F2A900]" aria-hidden="true" />
-              {isComplete ? 'Journey complete' : `Next: ${currentCheckpoint.title}`}
+              {isComplete ? 'Journey complete' : `Mission ${currentIndex + 1}: ${currentCheckpoint.title}`}
             </div>
             <p className="text-xs font-semibold text-white/50 md:hidden">Swipe the scene to explore →</p>
           </div>
@@ -229,22 +253,13 @@ export function SafetyQuestGame({ userId }: { userId: string | null | undefined 
 
                 <div className="safety-quest-scene-caption">
                   <MapPin className="h-4 w-4" aria-hidden="true" />
-                  Building 21 &middot; Fountain precinct
-                </div>
-
-                <div className="safety-quest-location-chip safety-quest-location-chip--office">
-                  <Building2 className="h-4 w-4" aria-hidden="true" />
-                  CPS office · Building 4 · G-51
-                </div>
-                <div className="safety-quest-location-chip safety-quest-location-chip--control">
-                  <MapPin className="h-4 w-4" aria-hidden="true" />
-                  Control · Building 4 · G-63
+                  TUT Pretoria West · Interactive safety route
                 </div>
 
                 <svg className="safety-quest-route" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-                  <polyline points={ROUTE_POINTS} pathLength="1" className="safety-quest-route-base" />
+                  <polyline points={routePoints} pathLength="1" className="safety-quest-route-base" />
                   <motion.polyline
-                    points={ROUTE_POINTS}
+                    points={routePoints}
                     pathLength="1"
                     className="safety-quest-route-complete"
                     initial={false}
@@ -256,15 +271,19 @@ export function SafetyQuestGame({ userId }: { userId: string | null | undefined 
                 <motion.div
                   className="safety-quest-runner"
                   initial={false}
-                  animate={{ left: `${runnerPosition.x}%`, top: `${runnerPosition.y}%` }}
+                  animate={{
+                    left: `${runnerPosition.x}%`,
+                    top: `${runnerPosition.y}%`,
+                    scale: outcome === 'correct' && !prefersReducedMotion ? [1, 1.16, 1] : 1,
+                  }}
                   transition={{ duration: prefersReducedMotion ? 0 : 0.9, type: 'spring', stiffness: 90, damping: 17 }}
-                  aria-label={`Your position: checkpoint ${Math.min(progress.currentCheckpoint + 1, QUEST_TOTAL)}`}
+                  aria-label={`Your position: mission ${Math.min(progress.currentCheckpoint + 1, QUEST_TOTAL)}`}
                 >
                   <CircleUserRound className="h-5 w-5" aria-hidden="true" />
                   <span>You</span>
                 </motion.div>
 
-                {QUEST_CHECKPOINTS.map((checkpoint, index) => {
+                {quest.map((checkpoint, index) => {
                   const Icon = ICONS[checkpoint.icon];
                   const complete = index < progress.currentCheckpoint;
                   const active = index === progress.currentCheckpoint && !isComplete;
@@ -291,7 +310,7 @@ export function SafetyQuestGame({ userId }: { userId: string | null | undefined 
                         {complete ? <Check className="h-5 w-5" /> : locked ? <LockKeyhole className="h-4 w-4" /> : <Icon className="h-5 w-5" />}
                       </span>
                       <span className="safety-quest-node-copy">
-                        <small>{complete ? 'Mastered' : active ? 'Tap to begin' : `Checkpoint ${index + 1}`}</small>
+                        <small>{complete ? 'Mastered' : active ? 'Tap to answer' : `Mission ${index + 1}`}</small>
                         <strong>{checkpoint.title}</strong>
                       </span>
                     </button>
@@ -306,18 +325,30 @@ export function SafetyQuestGame({ userId }: { userId: string | null | undefined 
           {isComplete ? (
             <motion.section
               key="complete"
-              initial={{ opacity: 0, y: 24 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={prefersReducedMotion ? false : { opacity: 0, y: 24, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ type: 'spring', stiffness: 130, damping: 16 }}
               className="safety-quest-complete-card"
               aria-labelledby="mission-complete-title"
             >
-              <div className="safety-quest-complete-icon"><Trophy className="h-8 w-8" aria-hidden="true" /></div>
+              <motion.div
+                className="safety-quest-complete-icon"
+                animate={prefersReducedMotion ? undefined : { y: [0, -5, 0] }}
+                transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
+              >
+                <Trophy className="h-8 w-8" aria-hidden="true" />
+              </motion.div>
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-black uppercase tracking-[0.16em] text-[#F2A900]">Safety Quest complete</p>
-                <h2 id="mission-complete-title" className="mt-1 text-2xl font-black text-white">You know where to go and what to question.</h2>
+                <h2 id="mission-complete-title" className="mt-1 text-2xl font-black text-white">You completed a personalized TUT safety set.</h2>
                 <p className="mt-2 max-w-3xl text-sm leading-6 text-white/70">
-                  Remember the two destinations: the CPS office is Building 4, G-51; reports to Control go to Building 4, G-63. Keep the fraud checks with you whenever a service asks for trust, credentials, or payment.
+                  Key routes to retain: student admin such as registration, proof of registration and academic records → Building 21; mental-health support → Student Counselling; CPS office → Building 4, G-51; Control/reporting → Building 4, G-63. CCSF focuses on prevention and safety awareness while CPS provides institutional protection functions.
                 </p>
+                <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold">
+                  <span className="rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1.5 text-emerald-200">{progress.attempts} attempts</span>
+                  <span className="rounded-full border border-[#F2A900]/25 bg-[#F2A900]/10 px-3 py-1.5 text-[#FFD36A]">{accuracy ?? 100}% accuracy</span>
+                  <span className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-white/70">8 safety domains</span>
+                </div>
               </div>
               <div className="flex shrink-0 flex-col gap-2 sm:flex-row lg:flex-col">
                 <Button asChild className="bg-[#F2A900] font-extrabold text-[#07152A] hover:bg-[#FFD36A]">
@@ -329,24 +360,30 @@ export function SafetyQuestGame({ userId }: { userId: string | null | undefined 
               </div>
             </motion.section>
           ) : (
-            <motion.section key="brief" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-7 grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
+            <motion.section
+              key="brief"
+              initial={prefersReducedMotion ? false : { opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-7 grid gap-4 lg:grid-cols-[1.15fr_0.85fr]"
+            >
               <div className="safety-quest-info-card">
                 <BookOpenCheck className="h-6 w-6 text-[#F2A900]" aria-hidden="true" />
                 <div>
-                  <p className="text-xs font-black uppercase tracking-[0.14em] text-white/50">Two destinations to remember</p>
-                  <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                    <LocationFact label="CPS office" location="Building 4 · G-51" />
-                    <LocationFact label="Control / reports" location="Building 4 · G-63" />
+                  <p className="text-xs font-black uppercase tracking-[0.14em] text-white/50">Eight knowledge domains</p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {QUEST_TOPICS.map((topic) => (
+                      <span key={topic} className="safety-quest-service-pill">{QUEST_TOPIC_LABELS[topic]}</span>
+                    ))}
                   </div>
                 </div>
               </div>
               <div className="safety-quest-info-card">
                 <Users className="h-6 w-6 text-[#F2A900]" aria-hidden="true" />
                 <div>
-                  <p className="text-xs font-black uppercase tracking-[0.14em] text-white/50">CPS areas you will meet</p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {CPS_AREAS.map((area) => <span key={area} className="safety-quest-service-pill">{area}</span>)}
-                  </div>
+                  <p className="text-xs font-black uppercase tracking-[0.14em] text-white/50">No answer spoilers</p>
+                  <p className="mt-2 text-sm leading-6 text-white/70">
+                    Your eight questions are selected from a larger bank and answer positions are shuffled. Locations and routing answers are revealed only after you answer correctly.
+                  </p>
                 </div>
               </div>
             </motion.section>
@@ -357,17 +394,30 @@ export function SafetyQuestGame({ userId }: { userId: string | null | undefined 
       <Dialog open={selectedCheckpoint !== null} onOpenChange={(open) => !open && closeCheckpoint()}>
         <DialogContent className="max-h-[90vh] overflow-y-auto border-white/10 bg-[#09172B] p-0 text-white shadow-2xl sm:max-w-xl">
           {selected && (
-            <div>
+            <motion.div
+              key={`${selected.id}-${showLesson ? 'lesson' : 'question'}`}
+              initial={prefersReducedMotion ? false : { opacity: 0, scale: 0.985 }}
+              animate={{ opacity: 1, scale: 1 }}
+            >
               <div className="border-b border-white/10 bg-gradient-to-br from-[#123A70] via-[#0C274E] to-[#151027] px-6 py-6">
                 <DialogHeader className="text-left">
-                  <div className="mb-4 flex items-center gap-3">
-                    <div className="rounded-2xl border border-[#F2A900]/35 bg-[#F2A900]/12 p-3 text-[#F2A900]">
-                      {(() => { const Icon = ICONS[selected.icon]; return <Icon className="h-6 w-6" aria-hidden="true" />; })()}
+                  <div className="mb-4 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <motion.div
+                        className="rounded-2xl border border-[#F2A900]/35 bg-[#F2A900]/12 p-3 text-[#F2A900]"
+                        animate={prefersReducedMotion ? undefined : { rotate: [0, -4, 4, 0] }}
+                        transition={{ duration: 0.55 }}
+                      >
+                        {(() => { const Icon = ICONS[selected.icon]; return <Icon className="h-6 w-6" aria-hidden="true" />; })()}
+                      </motion.div>
+                      <div>
+                        <p className="text-xs font-black uppercase tracking-[0.14em] text-[#F2A900]">{selected.eyebrow}</p>
+                        <p className="mt-1 text-xs font-semibold text-white/60">{selected.character}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-xs font-black uppercase tracking-[0.14em] text-[#F2A900]">{selected.eyebrow}</p>
-                      <p className="mt-1 text-xs font-semibold text-white/60">{selected.character}</p>
-                    </div>
+                    <span className="rounded-full border border-white/15 bg-white/5 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-white/55">
+                      Randomized
+                    </span>
                   </div>
                   <DialogTitle className="text-2xl font-black text-white">{selected.title}</DialogTitle>
                   <DialogDescription className="mt-2 text-sm leading-6 text-white/70">
@@ -378,13 +428,31 @@ export function SafetyQuestGame({ userId }: { userId: string | null | undefined 
 
               <div className="px-6 py-6">
                 {showLesson ? (
-                  <motion.div initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }}>
-                    <div className="rounded-2xl border border-emerald-400/25 bg-emerald-400/10 p-5">
-                      <div className="flex items-center gap-2 text-sm font-black text-emerald-300">
+                  <motion.div
+                    initial={prefersReducedMotion ? false : { opacity: 0, scale: 0.94, y: 12 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    transition={{ type: 'spring', stiffness: 180, damping: 15 }}
+                  >
+                    <div className="relative overflow-hidden rounded-2xl border border-emerald-400/25 bg-emerald-400/10 p-5">
+                      {!prefersReducedMotion && outcome === 'correct' && (
+                        <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+                          {[12, 31, 56, 78, 90].map((left, index) => (
+                            <motion.span
+                              key={left}
+                              className="absolute h-1.5 w-1.5 rounded-full bg-[#F2A900]"
+                              style={{ left: `${left}%`, top: '58%' }}
+                              initial={{ opacity: 0, y: 10, scale: 0.4 }}
+                              animate={{ opacity: [0, 1, 0], y: -42 - index * 5, scale: [0.4, 1.4, 0.7] }}
+                              transition={{ duration: 1, delay: index * 0.07 }}
+                            />
+                          ))}
+                        </div>
+                      )}
+                      <div className="relative flex items-center gap-2 text-sm font-black text-emerald-300">
                         <BadgeCheck className="h-5 w-5" aria-hidden="true" />
-                        {outcome === 'correct' ? 'Correct—checkpoint unlocked' : 'Checkpoint mastered'}
+                        {outcome === 'correct' ? 'Correct — mission unlocked' : 'Mission mastered'}
                       </div>
-                      <p className="mt-3 text-sm leading-6 text-white/80">{selected.lesson}</p>
+                      <p className="relative mt-3 text-sm leading-6 text-white/80">{selected.lesson}</p>
                     </div>
                     <Button className="mt-5 w-full bg-[#F2A900] font-extrabold text-[#07152A] hover:bg-[#FFD36A]" onClick={closeCheckpoint}>
                       {isComplete ? 'View mission summary' : outcome === 'correct' ? 'Continue the journey' : 'Back to the scene'}
@@ -392,35 +460,52 @@ export function SafetyQuestGame({ userId }: { userId: string | null | undefined 
                     </Button>
                   </motion.div>
                 ) : (
-                  <>
+                  <motion.div
+                    animate={outcome === 'wrong' && !prefersReducedMotion ? { x: [0, -8, 8, -5, 5, 0] } : { x: 0 }}
+                    transition={{ duration: 0.36 }}
+                  >
                     <RadioGroup value={selectedOption} onValueChange={setSelectedOption} className="gap-3" aria-label="Answer choices">
                       {selected.options.map((option, optionIndex) => (
-                        <Label
+                        <motion.div
                           key={option.id}
-                          htmlFor={`quest-option-${option.id}`}
-                          className={cn(
-                            'safety-quest-answer',
-                            selectedOption === option.id && 'is-selected',
-                          )}
+                          initial={prefersReducedMotion ? false : { opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: prefersReducedMotion ? 0 : optionIndex * 0.055 }}
                         >
-                          <RadioGroupItem id={`quest-option-${option.id}`} value={option.id} className="border-white/35 text-[#F2A900]" />
-                          <span className="safety-quest-answer-letter" aria-hidden="true">{String.fromCharCode(65 + optionIndex)}</span>
-                          <span>{option.label}</span>
-                        </Label>
+                          <Label
+                            htmlFor={`quest-option-${option.id}`}
+                            className={cn(
+                              'safety-quest-answer',
+                              selectedOption === option.id && 'is-selected',
+                            )}
+                          >
+                            <RadioGroupItem id={`quest-option-${option.id}`} value={option.id} className="border-white/35 text-[#F2A900]" />
+                            <span className="safety-quest-answer-letter" aria-hidden="true">{String.fromCharCode(65 + optionIndex)}</span>
+                            <span>{option.label}</span>
+                          </Label>
+                        </motion.div>
                       ))}
                     </RadioGroup>
 
-                    {outcome === 'wrong' && (
-                      <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="mt-4 rounded-2xl border border-rose-400/25 bg-rose-400/10 p-4" role="alert">
-                        <div className="flex items-start gap-3">
-                          <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-rose-300" aria-hidden="true" />
-                          <div>
-                            <p className="text-sm font-black text-rose-200">Pause and look again</p>
-                            <p className="mt-1 text-xs leading-5 text-white/70">This journey is here to teach, so try another answer. Look for the safest official action.</p>
+                    <AnimatePresence>
+                      {outcome === 'wrong' && (
+                        <motion.div
+                          initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0 }}
+                          className="mt-4 rounded-2xl border border-rose-400/25 bg-rose-400/10 p-4"
+                          role="alert"
+                        >
+                          <div className="flex items-start gap-3">
+                            <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-rose-300" aria-hidden="true" />
+                            <div>
+                              <p className="text-sm font-black text-rose-200">Not quite — reassess the route</p>
+                              <p className="mt-1 text-xs leading-5 text-white/70">Re-read the scenario and choose the most accurate TUT, CCSF or CPS action. The correct option may appear in any position.</p>
+                            </div>
                           </div>
-                        </div>
-                      </motion.div>
-                    )}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
 
                     <div className="mt-5 flex gap-3">
                       {outcome === 'wrong' ? (
@@ -429,26 +514,17 @@ export function SafetyQuestGame({ userId }: { userId: string | null | undefined 
                         </Button>
                       ) : (
                         <Button className="w-full bg-[#F2A900] font-extrabold text-[#07152A] hover:bg-[#FFD36A]" disabled={!selectedOption} onClick={submitAnswer}>
-                          Check my answer <ChevronRight className="ml-2 h-4 w-4" aria-hidden="true" />
+                          Lock in answer <ChevronRight className="ml-2 h-4 w-4" aria-hidden="true" />
                         </Button>
                       )}
                     </div>
-                  </>
+                  </motion.div>
                 )}
               </div>
-            </div>
+            </motion.div>
           )}
         </DialogContent>
       </Dialog>
-    </div>
-  );
-}
-
-function LocationFact({ label, location }: { label: string; location: string }) {
-  return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.045] px-3 py-2.5">
-      <p className="text-xs font-semibold text-white/50">{label}</p>
-      <p className="mt-0.5 text-sm font-black text-white">{location}</p>
     </div>
   );
 }

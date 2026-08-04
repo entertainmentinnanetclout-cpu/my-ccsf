@@ -131,11 +131,19 @@ export function useSafetyQuestProgress(userId: string | null | undefined) {
         return;
       }
 
+      if (data && data.quest_version !== SAFETY_QUEST_VERSION) {
+        const freshProgress = emptyProgress();
+        applyProgress(freshProgress);
+        writeDeviceProgress(userId, freshProgress);
+        await persist(freshProgress);
+        return;
+      }
+
       if (data) {
         const remoteProgress: SafetyQuestProgress = {
           questVersion: data.quest_version,
-          currentCheckpoint: data.current_checkpoint,
-          score: data.score,
+          currentCheckpoint: Math.min(Math.max(data.current_checkpoint, 0), QUEST_TOTAL),
+          score: Math.min(Math.max(data.score, 0), QUEST_TOTAL),
           attempts: data.attempts,
           answers: answersFromJson(data.answers),
           completedAt: data.completed_at,
