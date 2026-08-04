@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - agent/institutional-hardening-phase-1
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
@@ -11,9 +14,10 @@ permissions:
 
 jobs:
   harden-and-verify:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
-      - name: Check out branch
+      - name: Check out hardening branch
         uses: actions/checkout@v4
         with:
           ref: agent/institutional-hardening-phase-1
