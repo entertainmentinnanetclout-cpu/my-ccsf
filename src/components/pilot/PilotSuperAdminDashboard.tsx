@@ -13,6 +13,7 @@ import {
   Download,
   FileText,
   GraduationCap,
+  HeartHandshake,
   History,
   LayoutDashboard,
   Loader2,
@@ -34,6 +35,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { PilotBanner } from '@/components/pilot/PilotBanner';
 import { PilotConfigurationPanel } from '@/components/pilot/PilotConfigurationPanel';
 import { PilotCsvExportPanel } from '@/components/pilot/PilotCsvExportPanel';
+import { CommunityAdminDashboard } from '@/components/community/CommunityAdminDashboard';
 import { LiveOperationsVisuals, type LiveVisualRecord } from '@/components/admin/visualizations/LiveOperationsVisuals';
 import { MobileBottomNav } from '@/components/shared/MobileBottomNav';
 import { Badge } from '@/components/ui/badge';
@@ -78,7 +80,7 @@ import type {
 } from '@/types/pilot';
 import type { PilotStudentProfile } from '@/services/pilot/pilotAdminService';
 
-type AdminView = 'overview' | 'operations' | 'campuses' | 'programmes' | 'participants' | 'analytics' | 'governance' | 'audit';
+type AdminView = 'overview' | 'operations' | 'campuses' | 'programmes' | 'participants' | 'analytics' | 'community' | 'governance' | 'audit';
 type ActionMode = 'note' | 'notify' | null;
 
 const EMPTY_DATA: PilotAdminData = {
@@ -243,6 +245,7 @@ export function PilotSuperAdminDashboard() {
     { view: 'programmes', icon: Settings2, label: 'Programmes' },
     { view: 'participants', icon: Users, label: 'Students' },
     { view: 'analytics', icon: BarChart3, label: 'Analytics' },
+    { view: 'community', icon: HeartHandshake, label: 'Community' },
     { view: 'governance', icon: Database, label: 'Governance' },
     { view: 'audit', icon: History, label: 'Audit' },
   ];
@@ -597,6 +600,8 @@ export function PilotSuperAdminDashboard() {
           </div>
         </div>
       )}
+
+      {activeView === 'community' && <CommunityAdminDashboard environment="pilot" />}
 
       {activeView === 'governance' && (
         <div className="space-y-6">

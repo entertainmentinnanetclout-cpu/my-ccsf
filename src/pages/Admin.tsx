@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { motion } from 'framer-motion';
-import { Shield, LayoutDashboard, AlertCircle, Megaphone, MessageSquare, BarChart3, Images, Users, Siren, Building2, Wifi } from 'lucide-react';
+import { Shield, LayoutDashboard, AlertCircle, Megaphone, MessageSquare, BarChart3, Images, Users, Siren, Building2, Wifi, HeartHandshake } from 'lucide-react';
 import { InstitutionBrand } from '@/components/shared/InstitutionBrand';
 import { AdminOverview } from '@/components/admin/AdminOverview';
 import { AdminIncidents } from '@/components/admin/AdminIncidents';
@@ -22,10 +22,11 @@ import { CasesProvider } from '@/contexts/CasesContext';
 import { MasterSyncButton } from '@/components/admin/MasterSyncButton';
 import { OfficeView } from '@/components/admin/OfficeView';
 import { WifiAccessPointManager } from '@/components/admin/WifiAccessPointManager';
+import { CommunityAdminDashboard } from '@/components/community/CommunityAdminDashboard';
 
 const Admin = () => {
   const navigate = useNavigate();
-  const [activeView, setActiveView] = useState<'overview' | 'incidents' | 'analytics' | 'announcements' | 'communication' | 'carousel' | 'admins' | 'escalation' | 'office' | 'wifi'>('overview');
+  const [activeView, setActiveView] = useState<'overview' | 'incidents' | 'analytics' | 'announcements' | 'communication' | 'carousel' | 'admins' | 'community' | 'escalation' | 'office' | 'wifi'>('overview');
   const navItems = [{
     view: 'overview',
     icon: LayoutDashboard,
@@ -58,6 +59,10 @@ const Admin = () => {
     view: 'admins',
     icon: Users,
     label: 'Admins'
+  }, {
+    view: 'community',
+    icon: HeartHandshake,
+    label: 'Community'
   }, {
     view: 'wifi',
     icon: Wifi,
@@ -187,6 +192,7 @@ const Admin = () => {
             {activeView === 'communication' && <StaffCommunication />}
             {activeView === 'carousel' && <CarouselManager />}
             {activeView === 'admins' && <CampusAdminManager />}
+            {activeView === 'community' && <CommunityAdminDashboard environment="official" />}
             {activeView === 'wifi' && <WifiAccessPointManager />}
             {activeView === 'office' && <OfficeView />}
           </motion.div>

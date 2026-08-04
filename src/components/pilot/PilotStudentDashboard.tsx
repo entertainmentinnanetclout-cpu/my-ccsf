@@ -19,6 +19,7 @@ import {
   Radar,
   ShieldCheck,
   Siren,
+  UsersRound,
 } from 'lucide-react';
 import { PilotBanner } from '@/components/pilot/PilotBanner';
 import { PilotDashboardCarousel } from '@/components/pilot/PilotDashboardCarousel';
@@ -27,11 +28,13 @@ import { PilotUserGuideDialog } from '@/components/pilot/PilotUserGuideDialog';
 import { AcademicFraudLaunchCard } from '@/components/shared/AcademicFraudLaunchCard';
 import { StudentDashboardHome } from '@/components/student/StudentDashboardHome';
 import { SafetyMobilityHub } from '@/components/student/SafetyMobilityHub';
+import { CommunityHub } from '@/components/community/CommunityHub';
 import { MobileBottomNav } from '@/components/shared/MobileBottomNav';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useAuth } from '@/contexts/AuthContext';
 import { usePilotGuide } from '@/hooks/pilot/usePilotGuide';
 import { useUrlBackedView } from '@/hooks/useUrlBackedView';
 import { useToast } from '@/hooks/use-toast';
@@ -54,8 +57,8 @@ import { formatCoordinatePair } from '@/lib/reverseGeocode';
 import type { PilotCarouselAction, PilotCarouselSlide, PilotSafetyDocument } from '@/types/pilotExperience';
 import type { PilotNotification, PilotParticipant, PilotProgram, PilotReport, PilotScenario, PilotSession } from '@/types/pilot';
 
-type View = 'home' | 'mycases' | 'report' | 'safety' | 'support';
-const PILOT_VIEWS = new Set<View>(['home', 'mycases', 'report', 'safety', 'support']);
+type View = 'home' | 'mycases' | 'report' | 'safety' | 'community' | 'support';
+const PILOT_VIEWS = new Set<View>(['home', 'mycases', 'report', 'safety', 'community', 'support']);
 const TERMINAL_STATUSES = new Set(['simulation_completed', 'cancelled', 'withdrawn', 'expired']);
 const ACADEMIC_FRAUD_SCENARIO_PATTERN = /academic fraud|fake admin services/i;
 
@@ -71,6 +74,7 @@ export function PilotStudentDashboard({
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
+  const { userProfile } = useAuth();
   const guide = usePilotGuide({ autoOpen: true });
   const [view, setView] = useUrlBackedView<View>({
     searchParams,
@@ -154,6 +158,7 @@ export function PilotStudentDashboard({
     { view: 'mycases', icon: FileText, label: 'My Cases' },
     { view: 'report', icon: Plus, label: 'Report' },
     { view: 'safety', icon: Radar, label: 'Safety' },
+    { view: 'community', icon: UsersRound, label: 'Community' },
     { view: 'support', icon: LifeBuoy, label: 'Support' },
   ];
 
@@ -259,7 +264,7 @@ export function PilotStudentDashboard({
       </div>
       <div className="px-4 pt-5 sm:px-6">
         <Card className="hidden p-2 shadow-elevated md:block">
-          <div className="grid grid-cols-5 gap-2" role="tablist" aria-label="Student Pilot portal sections">
+          <div className="grid grid-cols-6 gap-2" role="tablist" aria-label="Student Pilot portal sections">
             {navItems.map(({ view: itemView, icon: Icon, label }) => (
               <Button key={itemView} role="tab" aria-selected={view === itemView} variant={view === itemView ? 'default' : 'ghost'} onClick={() => setView(itemView as View)}>
                 <Icon className="mr-2 h-4 w-4" />{label}{itemView === 'support' && unread > 0 && <Badge className="ml-2">{unread}</Badge>}
@@ -376,6 +381,22 @@ export function PilotStudentDashboard({
                 {!locationReports.length && <p className="py-8 text-center text-muted-foreground">No Pilot case has captured a location yet.</p>}
               </CardContent>
             </Card>
+          </div>
+        )}
+
+        {view === 'community' && (
+          <div className="px-4 sm:px-6">
+            <CommunityHub
+              environment="pilot"
+              identity={{
+                userId: participant.user_id,
+                fullName: userProfile?.full_name ?? 'TUT Student',
+                email: userProfile?.email ?? '',
+                campus: participant.campus,
+                profileCompleted: userProfile?.profile_completed ?? true,
+              }}
+              onCompleteProfile={() => navigate('/profile')}
+            />
           </div>
         )}
 
