@@ -63,12 +63,12 @@ jobs:
       - name: Commit verified integration
         if: github.event_name != 'pull_request'
         run: |
-          if git diff --quiet -- src/components/student/SafetyMobilityHub.tsx package.json; then
+          if git diff --quiet -- src/components/student/SafetyMobilityHub.tsx src/components/student/InstitutionalCampusRadar.tsx src/components/student/InstitutionalCaseReports.tsx package.json; then
             echo "No integration changes to commit."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/components/student/SafetyMobilityHub.tsx package.json
+          git add src/components/student/SafetyMobilityHub.tsx src/components/student/InstitutionalCampusRadar.tsx src/components/student/InstitutionalCaseReports.tsx package.json
           git commit -m "feat: complete institutional Campus Radar and premium student surfaces"
           git push origin HEAD:agent/institutional-hardening-phase-1
