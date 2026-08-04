@@ -4,13 +4,21 @@ on:
   push:
     branches:
       - agent/institutional-hardening-phase-1
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
   contents: write
 
+concurrency:
+  group: institutional-phases-2-3-existing-branch
+  cancel-in-progress: true
+
 jobs:
   integrate-and-verify:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
       - name: Check out existing hardening branch
@@ -53,6 +61,7 @@ jobs:
         run: npm run build
 
       - name: Commit verified integration
+        if: github.event_name != 'pull_request'
         run: |
           if git diff --quiet -- src/components/student/SafetyMobilityHub.tsx package.json; then
             echo "No integration changes to commit."
