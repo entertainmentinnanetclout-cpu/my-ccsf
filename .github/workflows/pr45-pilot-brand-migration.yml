@@ -1,0 +1,65 @@
+name: PR45 Pilot and CPS-CCSF Migration
+
+on:
+  push:
+    branches:
+      - agent/safety-quest-game
+    paths:
+      - src/assets/cps-ccsf-official-source.png
+      - scripts/pr45-pilot-brand-migration.mjs
+      - .github/workflows/pr45-pilot-brand-migration.yml
+
+permissions:
+  contents: write
+
+jobs:
+  migrate-and-verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          python -m pip install --disable-pip-version-check pillow==11.3.0
+
+      - name: Apply focused migration
+        run: node scripts/pr45-pilot-brand-migration.mjs
+
+      - name: Generate app and favicon derivatives from official logo
+        run: python scripts/generate-brand-assets.py
+
+      - name: Verify branding and Safety Quest parity
+        run: |
+          npm run test:branding
+          npm run test:safety-quest
+          npm run typecheck
+          npm run build
+          git diff --check
+
+      - name: Commit verified migration
+        run: |
+          if git diff --quiet; then
+            echo 'Migration already applied.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'fix: canonicalize CPS-CCSF branding and restore Pilot Safety parity'
+          git push origin HEAD:${GITHUB_REF_NAME}
