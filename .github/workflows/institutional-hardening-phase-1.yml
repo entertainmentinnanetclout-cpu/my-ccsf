@@ -33,7 +33,9 @@ jobs:
         run: npm ci
 
       - name: Apply Phase 1 hardening patch
-        run: node scripts/apply-institutional-hardening-phase-1.mjs
+        run: |
+          node scripts/apply-institutional-hardening-phase-1.mjs
+          node scripts/fix-institutional-hardening-phase-1-runner.mjs
 
       - name: Verify institutional hardening
         run: npm run test:institutional-hardening
