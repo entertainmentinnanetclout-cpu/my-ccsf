@@ -38,7 +38,7 @@ jobs:
       - name: Apply focused migration
         run: node scripts/pr45-pilot-brand-migration.mjs
 
-      - name: Fit official mark and harden Pilot parity assertion
+      - name: Finish canonical source migration
         run: |
           python - <<'PY'
           from pathlib import Path
@@ -64,6 +64,14 @@ jobs:
           if not matched:
               raise SystemExit('Pilot-aware Safety Quest assertion was not found')
           gate_path.write_text('\n'.join(gate_lines) + '\n')
+
+          pdf_path = Path('scripts/pilot-document-library/pdf-brand-engine.mjs')
+          pdf_text = pdf_path.read_text()
+          old_pdf_logo = "path.resolve('src/assets/Campus safety forum logo design(1).png')"
+          new_pdf_logo = "path.resolve('src/assets/cps-ccsf-official-source.png')"
+          if old_pdf_logo not in pdf_text:
+              raise SystemExit('Legacy PDF brand-engine logo reference was not found')
+          pdf_path.write_text(pdf_text.replace(old_pdf_logo, new_pdf_logo, 1))
           PY
 
       - name: Generate app and favicon derivatives from official logo
@@ -88,6 +96,7 @@ jobs:
             src/brand/index.ts \
             scripts/generate-brand-assets.py \
             scripts/verify-branding.mjs \
+            scripts/pilot-document-library/pdf-brand-engine.mjs \
             .github/workflows/phase4-brand-assets.yml \
             vite.config.ts \
             src/components/pilot/PilotStudentDashboard.tsx \
