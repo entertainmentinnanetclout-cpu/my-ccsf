@@ -28,14 +28,17 @@ if (artwork.size < 200_000) throw new Error('Safety Quest artwork is unexpectedl
 
 const app = read('src/App.tsx');
 const dashboard = read('src/pages/Dashboard.tsx');
+const safetyHub = read('src/components/student/SafetyMobilityHub.tsx');
 const catalog = read('src/features/safety-quest/questCatalog.ts');
 const game = read('src/features/safety-quest/SafetyQuestGame.tsx');
+const styles = read('src/features/safety-quest/safety-quest.css');
 const progress = read('src/features/safety-quest/useSafetyQuestProgress.ts');
 const migration = read('supabase/migrations/20260803201923_safety_quest_progress.sql');
 const types = read('src/integrations/supabase/types.ts');
 
 requireMatch(app, /path="\/safety-quest"[\s\S]*allowedRoles=\{\['student'\]\}/, 'Safety Quest must remain a protected student route.');
-requireMatch(dashboard, /<SafetyQuestLaunchCard\s*\/>/, 'Student dashboard must launch Safety Quest.');
+requireMatch(safetyHub, /data-testid="student-safety-tools"[\s\S]*<SafetyQuestLaunchCard\s*\/>/, 'The Safety tab must surface Safety Quest as a primary safety tool.');
+if (dashboard.includes('<SafetyQuestLaunchCard')) throw new Error('Safety Quest must live under the Safety tab instead of the dashboard Home view.');
 
 const checkpointCount = (catalog.match(/^\s{4}id: '[a-z0-9-]+',$/gm) ?? []).length;
 if (checkpointCount !== 8) throw new Error(`Expected 8 Safety Quest checkpoints; found ${checkpointCount}.`);
@@ -54,6 +57,10 @@ for (const phrase of [
 }
 
 requireMatch(game, /data-testid=\{`quest-checkpoint-\$\{index \+ 1\}`\}/, 'Checkpoint interaction targets are missing.');
+requireMatch(game, /safety-quest-campus-photo[\s\S]*animate=\{prefersReducedMotion/, 'The real-campus scene must keep its motion treatment.');
+requireMatch(game, /safety-quest-brand-lockup[\s\S]*tutLogo[\s\S]*ccsfLogo[\s\S]*cpsLogo/, 'TUT, CCSF and CPS branding must remain in the game scene.');
+requireMatch(game, /Building 21[\s\S]*Fountain precinct/, 'The game board must identify the real Building 21 fountain location.');
+requireMatch(styles, /prefers-reduced-motion[\s\S]*safety-quest-sunwash[\s\S]*animation: none !important/, 'Ambient scene animation must respect reduced-motion preferences.');
 requireMatch(game, /initial=\{\{ width: '0%' \}\}/, 'Zero progress must render as an empty bar.');
 requireMatch(progress, /localStorage\.setItem/, 'Device progress fallback is missing.');
 requireMatch(progress, /persistQueueRef\.current\.then\(save, save\)/, 'Progress writes must remain ordered.');

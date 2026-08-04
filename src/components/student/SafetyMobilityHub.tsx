@@ -26,6 +26,7 @@ import {
   Users,
 } from 'lucide-react';
 import { CampusMap } from '@/components/student/CampusMap';
+import { SafetyQuestLaunchCard } from '@/components/student/SafetyQuestLaunchCard';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -222,6 +223,16 @@ export function SafetyMobilityHub({ campus }: { campus: CampusLocation }) {
             <Button variant="destructive" className="font-extrabold" onClick={() => navigate('/dashboard?tab=report')}><PhoneCall className="mr-2 h-4 w-4" />Emergency</Button>
           </div>
         </div>
+      </section>
+      <section className="space-y-3" aria-labelledby="student-safety-tools-title" data-testid="student-safety-tools">
+        <div className="flex flex-col justify-between gap-1 px-1 sm:flex-row sm:items-end">
+          <div>
+            <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-primary">Safety tools</p>
+            <h3 id="student-safety-tools-title" className="mt-1 text-2xl font-black tracking-tight">Learn, prepare and take action</h3>
+          </div>
+          <p className="max-w-xl text-sm text-muted-foreground">Safety Quest is the onboarding tool for CPS services, fraud awareness, office locations and reporting.</p>
+        </div>
+        <SafetyQuestLaunchCard />
       </section>
 
       {mobility.error && <div className="flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive"><AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />{mobility.error}</div>}

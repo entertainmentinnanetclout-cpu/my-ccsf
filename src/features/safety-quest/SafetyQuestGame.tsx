@@ -29,6 +29,9 @@ import {
   type LucideProps,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import ccsfLogo from '@/assets/ccsf-logo.png';
+import cpsLogo from '@/assets/CPS Campus Protection Services logo(1).png';
+import tutLogo from '@/assets/tut-logo.png';
 import {
   Dialog,
   DialogContent,
@@ -193,13 +196,36 @@ export function SafetyQuestGame({ userId }: { userId: string | null | undefined 
           <div className="safety-quest-frame">
             <div className="safety-quest-scroll" ref={stageRef}>
               <div className="safety-quest-stage">
-                <img
+                <motion.img
                   src="/safety-quest-campus.jpg"
                   alt=""
-                  className="absolute inset-0 h-full w-full object-cover"
+                  className="safety-quest-campus-photo"
                   draggable={false}
+                  initial={false}
+                  animate={prefersReducedMotion
+                    ? { scale: 1, x: '0%', y: '0%' }
+                    : { scale: [1, 1.025, 1], x: ['0%', '-0.35%', '0%'], y: ['0%', '-0.2%', '0%'] }}
+                  transition={{ duration: 24, repeat: prefersReducedMotion ? 0 : Infinity, ease: 'easeInOut' }}
                 />
+                <div className="safety-quest-sunwash" aria-hidden="true" />
+                <div className="safety-quest-fountain-shimmer" aria-hidden="true" />
                 <div className="safety-quest-vignette" aria-hidden="true" />
+
+                <div className="safety-quest-brand-lockup" aria-label="TUT, CCSF and Campus Protection Services partnership">
+                  <div className="safety-quest-brand-tut">
+                    <img src={tutLogo} alt="Tshwane University of Technology" />
+                  </div>
+                  <div className="safety-quest-brand-community">
+                    <img src={ccsfLogo} alt="Campus Community Safety Forum" />
+                    <span aria-hidden="true" />
+                    <img src={cpsLogo} alt="Campus Protection Services" />
+                  </div>
+                </div>
+
+                <div className="safety-quest-scene-caption">
+                  <MapPin className="h-4 w-4" aria-hidden="true" />
+                  Building 21 &middot; Fountain precinct
+                </div>
 
                 <div className="safety-quest-location-chip safety-quest-location-chip--office">
                   <Building2 className="h-4 w-4" aria-hidden="true" />
