@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FileText, FlaskConical, Home, LifeBuoy, LogOut, MapPin, Plus, Radar, Shield, ShieldCheck } from 'lucide-react';
+import { FileText, FlaskConical, Home, LifeBuoy, LogOut, MapPin, Plus, Radar, Shield, ShieldCheck, UsersRound } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -10,6 +10,7 @@ import { NotificationBell } from '@/components/shared/NotificationBell';
 import { ThemeToggle } from '@/components/shared/ThemeToggle';
 import { MobileBottomNav } from '@/components/shared/MobileBottomNav';
 import { AcademicFraudLaunchCard } from '@/components/shared/AcademicFraudLaunchCard';
+import { CommunityHub } from '@/components/community/CommunityHub';
 import { ReportIncident } from '@/components/student/ReportIncident';
 import { EmergencyReport } from '@/components/student/EmergencyReport';
 import { SafetyMobilityHub } from '@/components/student/SafetyMobilityHub';
@@ -21,10 +22,11 @@ import { CAMPUS_LABELS } from '@/config/pilot';
 import { readReportDraft, reportDraftKey, writeReportDraft } from '@/lib/reportDraftStorage';
 import type { CampusLocation } from '@/types/pilot';
 
-type StudentView = 'home' | 'report' | 'mycases' | 'safety' | 'messages';
-const STUDENT_VIEWS = new Set<StudentView>(['home', 'report', 'mycases', 'safety', 'messages']);
+type StudentView = 'home' | 'report' | 'mycases' | 'safety' | 'community' | 'messages';
+const STUDENT_VIEWS = new Set<StudentView>(['home', 'report', 'mycases', 'safety', 'community', 'messages']);
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const { userProfile, signOut } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedView = searchParams.get('tab') as StudentView | null;
@@ -68,6 +70,7 @@ const Dashboard = () => {
     { view: 'mycases', icon: FileText, label: 'My Cases' },
     { view: 'report', icon: Plus, label: 'Report' },
     { view: 'safety', icon: Radar, label: 'Safety' },
+    { view: 'community', icon: UsersRound, label: 'Community' },
     { view: 'messages', icon: LifeBuoy, label: 'Support' },
   ];
 
@@ -118,7 +121,7 @@ const Dashboard = () => {
       <main className="w-full pb-24 md:pb-6">
         <motion.div initial={{ opacity: 0, y: 25 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.4 }} className="mb-4 px-4 sm:mb-6">
           <Card className="hidden bg-card/95 p-2 shadow-elevated backdrop-blur-sm md:block sm:p-3">
-            <div className="grid grid-cols-5 gap-1.5 sm:gap-2" role="tablist" aria-label="Student portal sections">
+            <div className="grid grid-cols-6 gap-1.5 sm:gap-2" role="tablist" aria-label="Student portal sections">
               {navItems.map(({ view, icon: Icon, label }) => (
                 <motion.div key={view} whileHover={{ scale: 1.05, y: -2 }} whileTap={{ scale: 0.95 }}>
                   <Button role="tab" aria-selected={activeView === view} variant={activeView === view ? 'default' : 'ghost'} onClick={() => changeView(view as StudentView)} className={`w-full px-1 text-xs transition-all sm:px-3 sm:text-sm ${activeView === view ? 'bg-gradient-to-r from-primary to-secondary shadow-lg' : 'hover:bg-primary/10'}`} size="sm">
@@ -149,6 +152,19 @@ const Dashboard = () => {
             {activeView === 'report' && <><AcademicFraudLaunchCard pilotHref="/pilot?open=academic-fraud" /><ReportIncident /></>}
             {activeView === 'safety' && campus && <SafetyMobilityHub campus={campus} />}
             {activeView === 'safety' && !campus && <Card><CardContent className="p-8 text-center"><Radar className="mx-auto h-10 w-10 text-primary" /><h2 className="mt-4 text-xl font-bold">Complete your campus profile first</h2><p className="mt-2 text-sm text-muted-foreground">Safety Mobility needs your verified campus for routing, Radar and campus-specific support.</p><Button asChild className="mt-5"><Link to="/profile-completion">Complete profile</Link></Button></CardContent></Card>}
+            {activeView === 'community' && userProfile && (
+              <CommunityHub
+                environment="official"
+                identity={{
+                  userId: userProfile.id,
+                  fullName: userProfile.full_name ?? 'TUT Student',
+                  email: userProfile.email,
+                  campus: userProfile.campus,
+                  profileCompleted: userProfile.profile_completed,
+                }}
+                onCompleteProfile={() => navigate('/profile-completion')}
+              />
+            )}
             {activeView === 'messages' && <StudentChat onNavigate={changeView} />}
           </div>
         </motion.div>
