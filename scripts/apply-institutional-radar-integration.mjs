@@ -90,6 +90,23 @@ if (source.includes('plottedStudents') || source.includes('mapsUrl') || source.i
 if (!source.includes('<InstitutionalCampusRadar') || !source.includes('<CampusMap campus={campus} />')) {
   throw new Error('Institutional Radar integration was not completed.');
 }
-
 writeFileSync(path, source);
-console.log('Institutional Campus Safety Radar integrated into SafetyMobilityHub.');
+
+const compatibilityFiles = [
+  'src/components/student/InstitutionalCampusRadar.tsx',
+  'src/components/student/InstitutionalCaseReports.tsx',
+];
+for (const compatibilityPath of compatibilityFiles) {
+  const current = readFileSync(compatibilityPath, 'utf8');
+  const compatible = current
+    .replace(/\.replaceAll\('_', ' '\)/g, ".replace(/_/g, ' ')")
+    .replace(/\.replaceAll\('-', ''\)/g, ".replace(/-/g, '')")
+    .replace(/\.replaceAll\('&', '&amp;'\)/g, ".replace(/&/g, '&amp;')")
+    .replace(/\.replaceAll\('<', '&lt;'\)/g, ".replace(/</g, '&lt;')")
+    .replace(/\.replaceAll\('>', '&gt;'\)/g, ".replace(/>/g, '&gt;')")
+    .replace(/\.replaceAll\('\\"', '&quot;'\)/g, ".replace(/\\\"/g, '&quot;')")
+    .replace(/\.replaceAll\("'", '&#039;'\)/g, ".replace(/'/g, '&#039;')");
+  writeFileSync(compatibilityPath, compatible);
+}
+
+console.log('Institutional Campus Safety Radar integrated with current TypeScript target compatibility.');
