@@ -12,13 +12,19 @@ const campus = read('src/components/pilot/PilotCampusSecurityDashboard.tsx');
 const campusPage = read('src/pages/pilot/CampusPilotPage.tsx');
 const app = read('src/App.tsx');
 
-for (const label of ['Home', 'My Cases', 'Report', 'Map', 'Support']) {
+for (const label of ['Home', 'My Cases', 'Report', 'Safety', 'Support']) {
   assert(student.includes(`label: '${label}'`), `Student Pilot includes official ${label} navigation.`);
 }
 assert(
   student.includes('<PilotDashboardCarousel')
     && student.includes('<StudentDashboardHome campus={participant.campus} />'),
   'Student Pilot uses both the isolated managed carousel and shared campus/residence carousel.',
+);
+assert(
+  student.includes('<SafetyMobilityHub campus={participant.campus} />')
+    && student.includes("view === 'safety'")
+    && student.includes('Location and Tracking'),
+  'Student Pilot uses the shared Safety hub while retaining Pilot location and tracking workflows.',
 );
 assert(student.includes('loadOwnPilotReports') && student.includes('loadPilotScenarios') && student.includes('loadPilotNotifications'), 'Student Pilot loads isolated cases, workflows and notifications.');
 assert(
