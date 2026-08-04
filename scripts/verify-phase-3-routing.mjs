@@ -185,4 +185,4 @@ if (failures.length) {
 }
 
 console.log(`Phase 3 routing verification passed (${passes.length} assertions).`);
-for (const pass of passes) console.log(`- ${pass}`));
+for (const pass of passes) console.log(`- ${pass}`);
