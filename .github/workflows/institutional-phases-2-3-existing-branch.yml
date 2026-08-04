@@ -12,10 +12,6 @@ on:
 permissions:
   contents: write
 
-concurrency:
-  group: institutional-phases-2-3-existing-branch
-  cancel-in-progress: true
-
 jobs:
   integrate-and-verify:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
