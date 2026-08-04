@@ -18,17 +18,17 @@ export function SafetyQuestLaunchCard() {
         <div className="max-w-2xl">
           <div className="inline-flex items-center gap-2 rounded-full border border-[#F2A900]/35 bg-[#F2A900]/12 px-3 py-1.5 text-xs font-black uppercase tracking-[0.14em] text-[#FFD36A]">
             <Sparkles className="h-4 w-4" aria-hidden="true" />
-            New · Interactive onboarding
+            Randomized · Interactive onboarding
           </div>
           <h2 className="mt-4 text-3xl font-black tracking-tight sm:text-4xl">Safety Quest</h2>
           <p className="mt-3 max-w-xl text-sm leading-6 text-white/70 sm:text-base">
-            Meet the people behind campus safety, spot fraudulent service tactics, and unlock the route from the CPS office to Control—one practical question at a time.
+            Test what you know about CCSF, CPS, TUT student administration, Student Counselling, fraud awareness, reporting, campus navigation and personal safety through a personalized set of practical scenarios.
           </p>
 
           <div className="mt-5 flex flex-wrap gap-2.5 text-xs font-extrabold text-white/80">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-black/25 px-3 py-2 backdrop-blur-sm"><Gamepad2 className="h-4 w-4 text-[#F2A900]" />8 checkpoints</span>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-black/25 px-3 py-2 backdrop-blur-sm"><Building2 className="h-4 w-4 text-[#F2A900]" />CPS · G-51</span>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-black/25 px-3 py-2 backdrop-blur-sm"><MapPin className="h-4 w-4 text-[#F2A900]" />Control · G-63</span>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-black/25 px-3 py-2 backdrop-blur-sm"><Gamepad2 className="h-4 w-4 text-[#F2A900]" />8 randomized missions</span>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-black/25 px-3 py-2 backdrop-blur-sm"><Building2 className="h-4 w-4 text-[#F2A900]" />TUT support navigation</span>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-black/25 px-3 py-2 backdrop-blur-sm"><MapPin className="h-4 w-4 text-[#F2A900]" />No location hints</span>
           </div>
         </div>
 
