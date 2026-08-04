@@ -5,7 +5,7 @@ const replacements = new Map([
   [".replaceAll('&', '&amp;')", ".replace(/&/g, '&amp;')"],
   [".replaceAll('<', '&lt;')", ".replace(/</g, '&lt;')"],
   [".replaceAll('>', '&gt;')", ".replace(/>/g, '&gt;')"],
-  [".replaceAll('\\\"', '&quot;')", ".replace(/\\\"/g, '&quot;')"],
+  [`.replaceAll('"', '&quot;')`, `.replace(/"/g, '&quot;')`],
   [`.replaceAll("'", '&#039;')`, `.replace(/'/g, '&#039;')`],
   ["poi.confidence.replaceAll('_', ' ')", "poi.confidence.replace(/_/g, ' ')"],
 ]);
