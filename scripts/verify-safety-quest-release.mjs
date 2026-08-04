@@ -58,7 +58,8 @@ for (const phrase of [
 
 requireMatch(game, /data-testid=\{`quest-checkpoint-\$\{index \+ 1\}`\}/, 'Checkpoint interaction targets are missing.');
 requireMatch(game, /safety-quest-campus-photo[\s\S]*animate=\{prefersReducedMotion/, 'The real-campus scene must keep its motion treatment.');
-requireMatch(game, /safety-quest-brand-lockup[\s\S]*tutLogo[\s\S]*ccsfLogo[\s\S]*cpsLogo/, 'TUT, CCSF and CPS branding must remain in the game scene.');
+requireMatch(game, /import \{ InstitutionBrand \} from '@\/components\/shared\/InstitutionBrand';/, 'Safety Quest must use the shared institutional brand lockup.');
+requireMatch(game, /safety-quest-brand-lockup[\s\S]*<InstitutionBrand\b[\s\S]*cpsLogo/, 'TUT/CCSF shared branding and the CPS mark must remain in the game scene.');
 requireMatch(game, /Building 21[\s\S]*Fountain precinct/, 'The game board must identify the real Building 21 fountain location.');
 requireMatch(styles, /prefers-reduced-motion[\s\S]*safety-quest-sunwash[\s\S]*animation: none !important/, 'Ambient scene animation must respect reduced-motion preferences.');
 requireMatch(game, /initial=\{\{ width: '0%' \}\}/, 'Zero progress must render as an empty bar.');
@@ -74,4 +75,4 @@ requireMatch(migration, /revoke all[\s\S]*from anon/i, 'Anonymous Safety Quest t
 requireMatch(migration, /grant select, insert, update[\s\S]*to authenticated/i, 'Authenticated grants must remain least-privilege.');
 requireMatch(types, /safety_quest_progress:\s*\{/, 'Generated Supabase types are missing Safety Quest progress.');
 
-console.log('Safety Quest release verification passed (8 checkpoints, protected route, curriculum, artwork, persistence, and RLS migration).');
+console.log('Safety Quest release verification passed (8 checkpoints, protected route, curriculum, canonical branding, artwork, persistence, and RLS migration).');
