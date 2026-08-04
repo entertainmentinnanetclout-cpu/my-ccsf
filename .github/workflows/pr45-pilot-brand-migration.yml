@@ -38,17 +38,32 @@ jobs:
       - name: Apply focused migration
         run: node scripts/pr45-pilot-brand-migration.mjs
 
-      - name: Fit official mark to launcher-safe optical bounds
+      - name: Fit official mark and harden Pilot parity assertion
         run: |
           python - <<'PY'
           from pathlib import Path
-          path = Path('scripts/generate-brand-assets.py')
-          text = path.read_text()
+
+          icon_path = Path('scripts/generate-brand-assets.py')
+          icon_text = icon_path.read_text()
           source = 'STANDARD_FOOTPRINT = 0.782\nMASKABLE_FOOTPRINT = 0.66'
           target = 'STANDARD_FOOTPRINT = 0.85\nMASKABLE_FOOTPRINT = 0.72'
-          if source not in text:
+          if source not in icon_text:
               raise SystemExit('Expected icon footprint constants were not found')
-          path.write_text(text.replace(source, target, 1))
+          icon_path.write_text(icon_text.replace(source, target, 1))
+
+          gate_path = Path('scripts/verify-safety-quest-release.mjs')
+          gate_text = gate_path.read_text()
+          gate_lines = gate_text.splitlines()
+          replacement = "if (!launchCard.includes(\"location.pathname.startsWith('/pilot') ? '/pilot/safety-quest' : '/safety-quest'\")) throw new Error('Safety Quest launch must remain Pilot-aware.');"
+          matched = False
+          for index, line in enumerate(gate_lines):
+              if 'Safety Quest launch must remain Pilot-aware.' in line:
+                  gate_lines[index] = replacement
+                  matched = True
+                  break
+          if not matched:
+              raise SystemExit('Pilot-aware Safety Quest assertion was not found')
+          gate_path.write_text('\n'.join(gate_lines) + '\n')
           PY
 
       - name: Generate app and favicon derivatives from official logo
