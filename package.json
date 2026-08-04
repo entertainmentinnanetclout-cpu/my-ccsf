@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "npm run typecheck && npm run test:mobile-evidence && npm run test:evidence-resilience && node scripts/verify-safety-mobility-release.mjs && node scripts/verify-safety-quest-release.mjs && node scripts/generate-pilot-document-library.mjs && vite build",
-    "build:dev": "npm run typecheck && npm run test:mobile-evidence && npm run test:evidence-resilience && node scripts/verify-safety-mobility-release.mjs && node scripts/verify-safety-quest-release.mjs && node scripts/generate-pilot-document-library.mjs && vite build --mode development",
+    "build": "npm run typecheck && npm run test:mobile-evidence && npm run test:evidence-resilience && node scripts/verify-safety-mobility-release.mjs && node scripts/verify-safety-quest-release.mjs && node scripts/verify-institutional-phases-2-3.mjs && node scripts/generate-pilot-document-library.mjs && vite build",
+    "build:dev": "npm run typecheck && npm run test:mobile-evidence && npm run test:evidence-resilience && node scripts/verify-safety-mobility-release.mjs && node scripts/verify-safety-quest-release.mjs && node scripts/verify-institutional-phases-2-3.mjs && node scripts/generate-pilot-document-library.mjs && vite build --mode development",
     "typecheck": "tsc -p tsconfig.app.json --noEmit",
     "test:phase1-auth": "node scripts/verify-phase-1-pilot-auth-navigation.mjs",
     "test:phase2-routing": "node scripts/verify-phase-2-pilot-report-routing.mjs",
@@ -28,9 +28,10 @@
     "test:safety-mobility": "node scripts/verify-safety-mobility-release.mjs",
     "test:safety-quest": "node scripts/verify-safety-quest-release.mjs",
     "test:institutional-hardening": "node scripts/verify-institutional-hardening-phase-1.mjs",
-    "qa:pilot": "npm run test:phase1-auth && npm run test:phase2-routing && npm run test:phase3-reviews && npm run test:phase4-experience && npm run test:phase5-release && npm run test:pilot-isolation && npm run test:phase3-routing && npm run test:phase4-product && npm run test:phase4-5-parity && npm run test:phase6-parity && npm run test:phase7-consistency && npm run test:mobile-evidence && npm run test:evidence-resilience && npm run test:phase8-release && npm run test:branding && npm run test:student-home && npm run test:admin-visuals && npm run typecheck && npm run lint && npm run build",
+    "qa:pilot": "npm run test:phase1-auth && npm run test:phase2-routing && npm run test:phase3-reviews && npm run test:phase4-experience && npm run test:phase5-release && npm run test:pilot-isolation && npm run test:phase3-routing && npm run test:phase4-product && npm run test:phase4-5-parity && npm run test:phase6-parity && npm run test:phase7-consistency && npm run test:mobile-evidence && npm run test:evidence-resilience && npm run test:phase8-release && npm run test:branding && npm run test:student-home && npm run test:admin-visuals && npm run test:institutional-phases-2-3 && npm run typecheck && npm run lint && npm run build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:institutional-phases-2-3": "node scripts/verify-institutional-phases-2-3.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

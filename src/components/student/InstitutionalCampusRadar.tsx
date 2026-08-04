@@ -509,7 +509,7 @@ function PoiDetail({ poi, origin, hasVisualRoute }: { poi: CampusSafetyPoi; orig
         </p>
       </div>
       <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
-        <Sparkles className="h-4 w-4 text-primary" />Data confidence: {poi.confidence.replaceAll('_', ' ')}
+        <Sparkles className="h-4 w-4 text-primary" />Data confidence: {poi.confidence.replace(/_/g, ' ')}
       </div>
     </div>
   );

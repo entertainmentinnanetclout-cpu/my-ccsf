@@ -63,17 +63,17 @@ const STATUS_CONFIG: Record<string, { label: string; className: string; stage: n
 };
 
 const getStatus = (status: string) => STATUS_CONFIG[status] ?? STATUS_CONFIG.pending;
-const caseReference = (id: string) => `CCSF-${id.replaceAll('-', '').slice(0, 8).toUpperCase()}`;
+const caseReference = (id: string) => `CCSF-${id.replace(/-/g, '').slice(0, 8).toUpperCase()}`;
 const formatCampus = (campus: string | null) => campus
   ? campus.split('_').map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
   : 'Campus pending';
 
 const escapeHtml = (value: string) => value
-  .replaceAll('&', '&amp;')
-  .replaceAll('<', '&lt;')
-  .replaceAll('>', '&gt;')
-  .replaceAll('"', '&quot;')
-  .replaceAll("'", '&#039;');
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&#039;');
 
 export const InstitutionalCaseReports = () => {
   const { user } = useAuth();
