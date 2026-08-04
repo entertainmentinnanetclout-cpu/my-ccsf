@@ -28,10 +28,9 @@ import {
   Users,
   type LucideProps,
 } from 'lucide-react';
+import { InstitutionBrand } from '@/components/shared/InstitutionBrand';
 import { Button } from '@/components/ui/button';
-import ccsfLogo from '@/assets/ccsf-logo.png';
 import cpsLogo from '@/assets/CPS Campus Protection Services logo(1).png';
-import tutLogo from '@/assets/tut-logo.png';
 import {
   Dialog,
   DialogContent,
@@ -213,11 +212,15 @@ export function SafetyQuestGame({ userId }: { userId: string | null | undefined 
 
                 <div className="safety-quest-brand-lockup" aria-label="TUT, CCSF and Campus Protection Services partnership">
                   <div className="safety-quest-brand-tut">
-                    <img src={tutLogo} alt="Tshwane University of Technology" />
+                    <InstitutionBrand
+                      size="compact"
+                      themeOverride="dark"
+                      className="w-full justify-center"
+                      ccsfClassName="!w-auto"
+                      tutClassName="!w-auto"
+                    />
                   </div>
                   <div className="safety-quest-brand-community">
-                    <img src={ccsfLogo} alt="Campus Community Safety Forum" />
-                    <span aria-hidden="true" />
                     <img src={cpsLogo} alt="Campus Protection Services" />
                   </div>
                 </div>
