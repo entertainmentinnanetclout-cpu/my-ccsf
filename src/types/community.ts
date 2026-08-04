@@ -16,6 +16,9 @@ export type CommunityApplicationStatus =
 export type CommunityVerificationStatus = 'not_submitted' | 'pending' | 'verified' | 'failed' | 'expired' | 'requires_resubmission';
 export type CommunitySubmissionStatus = 'draft' | 'submitted' | 'under_review' | 'changes_requested' | 'approved' | 'scheduled' | 'published' | 'rejected' | 'archived';
 export type TeamApprovalStatus = 'incomplete' | 'awaiting_players' | 'ready_for_submission' | 'under_review' | 'approved' | 'waitlisted' | 'rejected' | 'withdrawn';
+export type SportsRole = 'player' | 'coach';
+export type SportsTeamStatus = 'recruiting' | 'activated' | 'waitlisted' | 'draw_published' | 'withdrawn';
+export type SportsJoinRequestStatus = 'pending' | 'approved' | 'rejected' | 'withdrawn';
 
 export interface CommunityIdentity {
   userId: string;
@@ -149,4 +152,98 @@ export interface CommunityContentSubmissionInput {
   summary: string;
   link: string;
   status: CommunitySubmissionStatus;
+}
+
+export interface SportsTournamentSummary {
+  id: string;
+  name: string;
+  sport: 'Soccer' | 'Netball';
+  campus: string | null;
+  venue: string | null;
+  startsAt: string;
+  registrationDeadline: string;
+  drawsPublishAt: string;
+  teamLimit: number;
+  requiredPlayerCount: number;
+  coachRequired: boolean;
+  prize: string | null;
+  status: string;
+  rules: string[];
+}
+
+export interface SportsTeamMemberSummary {
+  userId: string;
+  displayName: string;
+  role: SportsRole;
+  joinedAt: string;
+}
+
+export interface SportsJoinRequestSummary {
+  id: string;
+  userId: string;
+  displayName: string;
+  role: SportsRole;
+  status: SportsJoinRequestStatus;
+  requestedAt: string;
+}
+
+export interface SportsTeamSummary {
+  id: string;
+  environment: CommunityEnvironment;
+  tournamentId: string;
+  name: string;
+  description: string | null;
+  affiliationType: string | null;
+  affiliationName: string | null;
+  logoPath: string | null;
+  creatorRole: SportsRole;
+  status: SportsTeamStatus;
+  acceptingRequests: boolean;
+  activatedAt: string | null;
+  queuePosition: number | null;
+  approvedPlayerCount: number;
+  approvedCoachCount: number;
+  requiredPlayerCount: number;
+  coachRequired: boolean;
+  roster: SportsTeamMemberSummary[];
+  pendingRequests: SportsJoinRequestSummary[];
+  isOwner: boolean;
+  myMembershipRole: SportsRole | null;
+  myRequestStatus: SportsJoinRequestStatus | null;
+  createdAt: string;
+}
+
+export interface SportsFixtureSummary {
+  id: string;
+  tournamentId: string;
+  roundName: string;
+  matchNumber: number;
+  homeTeamId: string | null;
+  homeTeamName: string;
+  awayTeamId: string | null;
+  awayTeamName: string;
+  scheduledAt: string;
+  venue: string | null;
+  status: string;
+}
+
+export interface SportsHubSnapshot {
+  serverTime: string;
+  sportsRole: SportsRole | null;
+  tournaments: SportsTournamentSummary[];
+  teams: SportsTeamSummary[];
+  fixtures: SportsFixtureSummary[];
+  persistenceReady: boolean;
+  warning?: string;
+}
+
+export interface SportsCreateTeamInput {
+  environment: CommunityEnvironment;
+  tournamentId: string;
+  name: string;
+  description: string;
+  affiliationType: 'Residence' | 'Faculty' | 'Course' | 'Campus community' | 'Independent';
+  affiliationName: string;
+  creatorRole: SportsRole;
+  rulesAccepted: boolean;
 }
