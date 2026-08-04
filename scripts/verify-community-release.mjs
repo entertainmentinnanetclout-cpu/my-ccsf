@@ -67,7 +67,7 @@ for (const phrase of [
 
 assert(sports.includes('team.approvedPlayerCount') && sports.includes('team.requiredPlayerCount'), 'Team cards calculate live minimum-player progress.');
 assert(sports.includes('team.pendingRequests') && sports.includes("reviewRequest(request.id, 'approved')"), 'Team owners can approve incoming join requests.');
-assert(sports.includes('team.roster.map'), 'Approved roster members are publicly rendered.');
+assert(sports.includes('selectedTeam.roster.map') || sports.includes('team.roster.map'), 'Approved roster members are publicly rendered.');
 assert(sports.includes('Student numbers, email addresses and phone numbers are never shown'), 'Public roster explicitly excludes private student identifiers.');
 assert(sports.includes('There is no hard roster maximum'), 'Sports UI states that minimum activation does not impose a hard roster cap.');
 assert(sports.includes('loading="lazy"') && sports.includes('decoding="async"'), 'Team logos use efficient lazy image delivery.');
