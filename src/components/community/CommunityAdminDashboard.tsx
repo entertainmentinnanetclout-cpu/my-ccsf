@@ -1,60 +1,73 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Activity,
-  Award,
-  BarChart3,
-  Bell,
-  CalendarDays,
-  ClipboardCheck,
-  FileText,
-  Gamepad2,
+  CalendarClock,
+  CheckCircle2,
+  Clock3,
   Loader2,
-  Megaphone,
-  Podcast,
+  LockKeyhole,
   RefreshCw,
-  Settings2,
   ShieldCheck,
   Trophy,
-  UserCheck,
   Users,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { COMMUNITY_GAMES, COMMUNITY_ROLES, COMMUNITY_TOURNAMENTS } from '@/data/communityCatalog';
-import { loadCommunityAdminMetrics } from '@/services/communityService';
-import type { CommunityEnvironment } from '@/types/community';
-
-interface CommunityMetrics {
-  members: number;
-  applications: number;
-  games: number;
-  teams: number;
-  compliantTeams: number;
-  contentSubmissions: number;
-}
-
-const EMPTY_METRICS: CommunityMetrics = {
-  members: 0,
-  applications: 0,
-  games: 0,
-  teams: 0,
-  compliantTeams: 0,
-  contentSubmissions: 0,
-};
+import { useToast } from '@/hooks/use-toast';
+import { generateTournamentDraw, loadSportsHub, subscribeSportsHub } from '@/services/sportsTournamentService';
+import type { CommunityEnvironment, SportsHubSnapshot, SportsTeamSummary, SportsTournamentSummary } from '@/types/community';
 
 export function CommunityAdminDashboard({ environment }: { environment: CommunityEnvironment }) {
-  const [metrics, setMetrics] = useState<CommunityMetrics>(EMPTY_METRICS);
+  const { toast } = useToast();
+  const [snapshot, setSnapshot] = useState<SportsHubSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [drawingTournamentId, setDrawingTournamentId] = useState<string | null>(null);
 
-  const refresh = async () => {
-    setLoading(true);
-    setMetrics(await loadCommunityAdminMetrics(environment));
-    setLoading(false);
+  const refresh = useCallback(async (force = false) => {
+    if (force) setRefreshing(true);
+    try {
+      setSnapshot(await loadSportsHub(environment, force));
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [environment]);
+
+  useEffect(() => { void refresh(true); }, [refresh]);
+  useEffect(() => subscribeSportsHub(environment, () => void refresh(true)), [environment, refresh]);
+
+  const metrics = useMemo(() => {
+    const teams = snapshot?.teams ?? [];
+    return {
+      teams: teams.length,
+      recruiting: teams.filter((team) => team.status === 'recruiting').length,
+      onboarded: teams.filter((team) => team.status === 'activated' || team.status === 'draw_published').length,
+      waitlisted: teams.filter((team) => team.status === 'waitlisted').length,
+      approvedPlayers: teams.reduce((total, team) => total + team.approvedPlayerCount, 0),
+      pendingRequests: teams.reduce((total, team) => total + team.pendingRequests.length, 0),
+    };
+  }, [snapshot?.teams]);
+
+  const createDraw = async (tournament: SportsTournamentSummary) => {
+    setDrawingTournamentId(tournament.id);
+    try {
+      await generateTournamentDraw(environment, tournament.id);
+      await refresh(true);
+      toast({ title: `${tournament.sport} draw generated`, description: `Fixtures remain hidden from students until ${formatSast(tournament.drawsPublishAt)}.` });
+    } catch (error) {
+      toast({ title: 'Draw could not be generated', description: error instanceof Error ? error.message : 'Try again.', variant: 'destructive' });
+    } finally {
+      setDrawingTournamentId(null);
+    }
   };
 
-  useEffect(() => { void refresh(); }, [environment]);
+  if (loading || !snapshot) {
+    return <div className="flex min-h-[420px] items-center justify-center" role="status"><Loader2 className="h-9 w-9 animate-spin text-primary" /></div>;
+  }
 
   return (
     <div className="space-y-6" data-testid={`community-admin-${environment}`}>
@@ -62,77 +75,91 @@ export function CommunityAdminDashboard({ environment }: { environment: Communit
         <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-center">
           <div>
             <div className="flex flex-wrap items-center gap-2"><Badge className="bg-[#F2A900] font-black text-[#002F6C]">Community Administration</Badge><Badge variant="outline" className="border-white/30 text-white">{environment === 'pilot' ? 'Pilot records' : 'Official records'}</Badge></div>
-            <h2 className="mt-4 text-3xl font-black">Join the Community Management</h2>
-            <p className="mt-2 max-w-3xl text-sm text-white/75">Manage members, applications, games, sports, attendance, moderation, points, notifications and governance without exposing incident or student-document data to unauthorised volunteers.</p>
+            <h2 className="mt-4 text-3xl font-black">Soccer and Netball Tournament Operations</h2>
+            <p className="mt-2 max-w-3xl text-sm text-white/75">Monitor discoverable teams, approved public rosters, onboarding progress, the first-eight activation queue and the timed Friday draw release. Other community modules remain locked during this pilot.</p>
           </div>
-          <Button variant="secondary" onClick={() => void refresh()} disabled={loading}>{loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}Refresh</Button>
+          <Button variant="secondary" onClick={() => void refresh(true)} disabled={refreshing}>{refreshing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}Refresh</Button>
         </div>
       </section>
 
+      {snapshot.warning && <div className="rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100"><LockKeyhole className="mr-2 inline h-4 w-4" />{snapshot.warning}</div>}
+
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
-        <AdminMetric icon={Users} value={metrics.members} label="Members" />
-        <AdminMetric icon={ClipboardCheck} value={metrics.applications} label="Applications" />
-        <AdminMetric icon={Gamepad2} value={metrics.games || COMMUNITY_GAMES.length} label="Active games" />
         <AdminMetric icon={Trophy} value={metrics.teams} label="Teams" />
-        <AdminMetric icon={UserCheck} value={metrics.compliantTeams} label="Compliant teams" />
-        <AdminMetric icon={Podcast} value={metrics.contentSubmissions} label="Content queue" />
+        <AdminMetric icon={Clock3} value={metrics.recruiting} label="Onboarding" />
+        <AdminMetric icon={CheckCircle2} value={metrics.onboarded} label="Onboarded" />
+        <AdminMetric icon={Activity} value={metrics.waitlisted} label="Waitlisted" />
+        <AdminMetric icon={Users} value={metrics.approvedPlayers} label="Approved players" />
+        <AdminMetric icon={CalendarClock} value={metrics.pendingRequests} label="Pending requests" />
       </div>
 
-      <Tabs defaultValue="overview">
+      <Tabs defaultValue="sports">
         <TabsList className="grid h-auto grid-cols-3 gap-1 rounded-2xl p-1 md:grid-cols-6">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="applications">Applications</TabsTrigger>
-          <TabsTrigger value="games">Games</TabsTrigger>
           <TabsTrigger value="sports">Sports</TabsTrigger>
-          <TabsTrigger value="content">Content</TabsTrigger>
+          <TabsTrigger value="draws">Draws</TabsTrigger>
           <TabsTrigger value="governance">Governance</TabsTrigger>
+          <TabsTrigger value="games">Games</TabsTrigger>
+          <TabsTrigger value="roles">Roles</TabsTrigger>
+          <TabsTrigger value="media">Media</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="grid gap-5 lg:grid-cols-2">
-          <AdminSection icon={Activity} title="Community operations" description="Current operational areas and authorised management queues." items={['Members and verification', 'Role applications and assignments', 'Events and attendance', 'Points and badge approvals', 'Notifications and reminders', 'Community analytics']} />
-          <AdminSection icon={BarChart3} title="Impact analytics" description="Privacy-safe participation and conversion reporting." items={['Community tab visits', 'Games started and completed', 'Team registrations and onboarding conversion', 'Role application completion', 'Event attendance', 'Content views and publication']} />
+        <TabsContent value="sports" className="space-y-6">
+          {snapshot.tournaments.map((tournament) => {
+            const teams = snapshot.teams.filter((team) => team.tournamentId === tournament.id);
+            return <TournamentAdminCard key={tournament.id} tournament={tournament} teams={teams} />;
+          })}
         </TabsContent>
 
-        <TabsContent value="applications" className="space-y-5">
-          <AdminSection icon={ClipboardCheck} title="Role application workflow" description="Review, shortlist, interview, approve, waitlist, reject or close student applications." items={COMMUNITY_ROLES.map((role) => role.title)} />
-          <Notice text="Community-role approval does not grant admin, developer, incident, security-case or document access. Assign platform permissions separately through authorised RBAC." />
-        </TabsContent>
-
-        <TabsContent value="games" className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {COMMUNITY_GAMES.map((game) => <Card key={game.id}><CardHeader><div className="flex items-center justify-between gap-2"><Badge>{game.difficulty}</Badge><Badge variant="outline">{game.points} pts</Badge></div><CardTitle>{game.title}</CardTitle><CardDescription>{game.description}</CardDescription></CardHeader><CardContent className="space-y-2 text-sm"><p><strong>Checkpoint mode:</strong> {game.type.replace(/_/g, ' ')}</p><p><strong>Verification:</strong> Required for high-value points</p><Button variant="outline" className="w-full"><Settings2 className="mr-2 h-4 w-4" />Manage Game</Button></CardContent></Card>)}
-        </TabsContent>
-
-        <TabsContent value="sports" className="space-y-5">
-          {COMMUNITY_TOURNAMENTS.map((tournament) => <Card key={tournament.id}><CardHeader><div className="flex items-center justify-between gap-3"><div><CardTitle>{tournament.name}</CardTitle><CardDescription>{tournament.date} · {tournament.venue}</CardDescription></div><Badge>{tournament.approvedTeams}/{tournament.teamLimit} approved</Badge></div></CardHeader><CardContent className="grid gap-3 md:grid-cols-4"><StatusCell label="Required players" value={tournament.requiredPlayers} /><StatusCell label="Coach required" value={tournament.coachRequired ? 'Yes' : 'No'} /><StatusCell label="Queue rule" value="Compliance timestamp" /><StatusCell label="Status" value={tournament.status} /></CardContent></Card>)}
-          <Notice text="The first eight priority rule must use compliance_completed_at only after all required players are onboarded and verified, the coach requirement is complete and rules are accepted. Administrators retain fraud and duplicate-player override authority." />
-        </TabsContent>
-
-        <TabsContent value="content" className="grid gap-5 lg:grid-cols-2">
-          <AdminSection icon={Podcast} title="Content moderation" description="Every student contribution enters review before publication." items={['Draft', 'Submitted', 'Under Review', 'Changes Requested', 'Approved', 'Scheduled', 'Published', 'Rejected or Archived']} />
-          <AdminSection icon={Megaphone} title="Community channels" description="Manage official community publishing destinations." items={['Campus Community Podcast', 'Vlogs', 'Blogs', 'News and Updates', 'Student Interviews', 'Sports and Residence Updates']} />
+        <TabsContent value="draws" className="space-y-6">
+          {snapshot.tournaments.map((tournament) => {
+            const eligible = snapshot.teams.filter((team) => team.tournamentId === tournament.id && (team.status === 'activated' || team.status === 'draw_published') && (team.queuePosition ?? 999) <= tournament.teamLimit);
+            const fixtures = snapshot.fixtures.filter((fixture) => fixture.tournamentId === tournament.id);
+            return <Card key={tournament.id} className="shadow-elevated"><CardHeader><div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start"><div><CardTitle>{tournament.sport} draw control</CardTitle><CardDescription>Onboarding closes {formatSast(tournament.registrationDeadline)}. Student visibility unlocks automatically {formatSast(tournament.drawsPublishAt)}.</CardDescription></div><Badge variant="outline">{eligible.length}/{tournament.teamLimit} eligible</Badge></div></CardHeader><CardContent className="space-y-4"><div className="grid gap-3 sm:grid-cols-3"><StatusCell label="Tournament starts" value={formatSast(tournament.startsAt)} /><StatusCell label="Prepared fixtures" value={fixtures.length} /><StatusCell label="Release rule" value="Timed at 18:00" /></div><Button onClick={() => void createDraw(tournament)} disabled={!snapshot.persistenceReady || drawingTournamentId === tournament.id || eligible.length < 2}>{drawingTournamentId === tournament.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trophy className="mr-2 h-4 w-4" />}Generate official draw</Button><p className="rounded-xl border border-[#F2A900]/45 bg-[#F2A900]/10 p-3 text-sm">The draw uses only onboarded teams within the first eight queue positions. It can be prepared after Friday 12:00, but students cannot see fixtures before Friday 18:00.</p></CardContent></Card>;
+          })}
         </TabsContent>
 
         <TabsContent value="governance" className="grid gap-5 lg:grid-cols-2">
-          <AdminSection icon={ShieldCheck} title="Access boundaries" description="Community permissions are separated from safety-case permissions." items={['Patrol volunteers cannot access private incidents', 'Sports coordinators cannot access safety cases', 'Content contributors cannot publish without moderation', 'Student documents require authorised verification access', 'Developer access is never granted automatically']} />
-          <AdminSection icon={FileText} title="Audit requirements" description="Sensitive operations should create immutable audit records." items={['Application status changes', 'Role assignments', 'Team compliance overrides', 'Point and badge awards', 'Content publication', 'Student verification decisions']} />
+          <GovernanceCard title="Roster and activation controls" items={['Only completed My CCSF profiles can create or join teams', 'A student cannot be approved for two teams in the same tournament', 'Only the team creator or an administrator can approve requests', 'Soccer requires 15 approved players and one approved coach', 'Netball requires 12 approved players; a coach is optional', 'Activation is automatic and first-eight queue positions are timestamped']} />
+          <GovernanceCard title="Privacy and resource controls" items={['Public rosters expose approved names and roles only', 'Student numbers, email addresses and phone numbers remain private', 'One compressed WebP logo is stored per team', 'Logo uploads target 512×512 and approximately 220 KB', 'The Sports hub loads through one aggregated RPC', 'One debounced realtime channel refreshes cross-device changes']} />
         </TabsContent>
+
+        <TabsContent value="games"><ComingSoonAdmin title="Community Games" /></TabsContent>
+        <TabsContent value="roles"><ComingSoonAdmin title="Roles and Volunteering" /></TabsContent>
+        <TabsContent value="media"><ComingSoonAdmin title="Blogs and Media" /></TabsContent>
       </Tabs>
     </div>
   );
+}
+
+function TournamentAdminCard({ tournament, teams }: { tournament: SportsTournamentSummary; teams: SportsTeamSummary[] }) {
+  const recruiting = teams.filter((team) => team.status === 'recruiting');
+  const onboarded = teams.filter((team) => team.status === 'activated' || team.status === 'draw_published');
+  const waitlisted = teams.filter((team) => team.status === 'waitlisted');
+  return <Card className="shadow-elevated"><CardHeader><div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start"><div><div className="flex gap-2"><Badge>{tournament.sport}</Badge><Badge variant="outline">{onboarded.length}/{tournament.teamLimit} onboarded</Badge></div><CardTitle className="mt-3">{tournament.name}</CardTitle><CardDescription>{formatSast(tournament.startsAt)} · {tournament.venue}</CardDescription></div><div className="text-sm text-muted-foreground"><p>Deadline: <strong className="text-foreground">{formatSast(tournament.registrationDeadline)}</strong></p><p>Draw release: <strong className="text-foreground">{formatSast(tournament.drawsPublishAt)}</strong></p></div></div></CardHeader><CardContent className="space-y-5"><div className="grid gap-3 sm:grid-cols-4"><StatusCell label="Onboarding" value={recruiting.length} /><StatusCell label="Onboarded" value={onboarded.length} /><StatusCell label="Waitlisted" value={waitlisted.length} /><StatusCell label="Minimum" value={`${tournament.requiredPlayerCount} players${tournament.coachRequired ? ' + coach' : ''}`} /></div><div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{teams.map((team) => <AdminTeamCard key={team.id} team={team} />)}{teams.length === 0 && <p className="col-span-full rounded-xl border border-dashed p-8 text-center text-muted-foreground">No teams have been created for this tournament.</p>}</div></CardContent></Card>;
+}
+
+function AdminTeamCard({ team }: { team: SportsTeamSummary }) {
+  const progress = Math.min(100, Math.round((team.approvedPlayerCount / Math.max(team.requiredPlayerCount, 1)) * 100));
+  return <div className="rounded-2xl border p-4"><div className="flex items-start justify-between gap-3"><div><p className="font-black">{team.name}</p><p className="text-xs text-muted-foreground">Created by a {team.creatorRole}</p></div><Badge variant={team.status === 'activated' || team.status === 'draw_published' ? 'default' : 'secondary'}>{team.status.replace(/_/g, ' ')}</Badge></div><div className="mt-4"><div className="flex justify-between text-sm"><span>Players</span><strong>{team.approvedPlayerCount}/{team.requiredPlayerCount}</strong></div><Progress value={progress} className="mt-2" /></div><div className="mt-3 grid grid-cols-2 gap-2"><StatusCell label="Coach" value={team.coachRequired ? `${team.approvedCoachCount}/1` : `${team.approvedCoachCount} optional`} /><StatusCell label="Requests" value={team.pendingRequests.length} /></div>{team.queuePosition && <p className="mt-3 rounded-xl bg-primary/10 p-2 text-center text-xs font-black text-primary">Queue position {team.queuePosition}</p>}</div>;
 }
 
 function AdminMetric({ icon: Icon, value, label }: { icon: typeof Users; value: string | number; label: string }) {
   return <Card><CardContent className="p-5"><Icon className="h-5 w-5 text-primary" /><p className="mt-3 text-3xl font-black">{value}</p><p className="text-sm text-muted-foreground">{label}</p></CardContent></Card>;
 }
 
-function AdminSection({ icon: Icon, title, description, items }: { icon: typeof Users; title: string; description: string; items: string[] }) {
-  return <Card className="h-full"><CardHeader><CardTitle className="flex items-center gap-2"><Icon className="h-5 w-5 text-primary" />{title}</CardTitle><CardDescription>{description}</CardDescription></CardHeader><CardContent className="grid gap-2 sm:grid-cols-2">{items.map((item) => <div key={item} className="flex items-start gap-2 rounded-xl border p-3 text-sm"><ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-success" />{item}</div>)}</CardContent></Card>;
-}
-
 function StatusCell({ label, value }: { label: string; value: string | number }) {
   return <div className="rounded-xl border bg-muted/30 p-3"><p className="text-xs text-muted-foreground">{label}</p><p className="mt-1 font-bold">{value}</p></div>;
 }
 
-function Notice({ text }: { text: string }) {
-  return <div className="rounded-2xl border border-[#F2A900]/50 bg-[#F2A900]/10 p-4 text-sm"><Bell className="mr-2 inline h-4 w-4 text-primary" />{text}</div>;
+function GovernanceCard({ title, items }: { title: string; items: string[] }) {
+  return <Card><CardHeader><CardTitle className="flex items-center gap-2"><ShieldCheck className="h-5 w-5 text-primary" />{title}</CardTitle></CardHeader><CardContent className="space-y-2">{items.map((item) => <p key={item} className="flex gap-2 rounded-xl border p-3 text-sm"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success" />{item}</p>)}</CardContent></Card>;
+}
+
+function ComingSoonAdmin({ title }: { title: string }) {
+  return <Card className="border-[#F2A900]/45"><CardContent className="p-10 text-center"><LockKeyhole className="mx-auto h-10 w-10 text-muted-foreground" /><Badge className="mt-4 animate-pulse bg-[#F2A900] font-black text-[#002F6C]">COMING SOON</Badge><h3 className="mt-4 text-xl font-black">{title}</h3><p className="mt-2 text-sm text-muted-foreground">This administration module remains locked while Soccer and Netball onboarding is the active community pilot.</p></CardContent></Card>;
+}
+
+function formatSast(value: string) {
+  if (!value) return 'To be confirmed';
+  return new Intl.DateTimeFormat('en-ZA', { timeZone: 'Africa/Johannesburg', dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
 }
