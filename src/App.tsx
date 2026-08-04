@@ -83,6 +83,11 @@ const App = () => (
                         <PilotRouteGuard allowedRoles={['student']}><PilotResources /></PilotRouteGuard>
                       </ProtectedRoute>
                     } />
+                    <Route path="/pilot/safety-quest" element={
+                      <ProtectedRoute allowedRoles={['student']}>
+                        <PilotRouteGuard allowedRoles={['student']}><SafetyQuest /></PilotRouteGuard>
+                      </ProtectedRoute>
+                    } />
                     <Route path="/security/pilot" element={
                       <ProtectedRoute allowedRoles={['security', 'admin']}>
                         <PilotRouteGuard allowedRoles={['security', 'admin']}><CampusPilotPage /></PilotRouteGuard>

@@ -1,10 +1,13 @@
 import { motion } from 'framer-motion';
 import { ArrowRight, Building2, Gamepad2, MapPin, ShieldCheck, Sparkles } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 
 export function SafetyQuestLaunchCard() {
+  const location = useLocation();
+  const safetyQuestHref = location.pathname.startsWith('/pilot') ? '/pilot/safety-quest' : '/safety-quest';
+
   return (
     <Card className="group relative overflow-hidden border-[#F2A900]/45 bg-[#07152A] text-white shadow-large">
       <div className="absolute inset-0 bg-[url('/safety-quest-campus.jpg')] bg-cover bg-[position:52%_45%] opacity-45 transition duration-700 group-hover:scale-[1.02] group-hover:opacity-55" aria-hidden="true" />
@@ -31,7 +34,7 @@ export function SafetyQuestLaunchCard() {
 
         <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }} className="flex lg:justify-end">
           <Button asChild size="lg" className="h-12 w-full bg-[#F2A900] px-6 font-black text-[#07152A] shadow-[0_15px_40px_rgba(242,169,0,0.24)] hover:bg-[#FFD36A] sm:w-auto">
-            <Link to="/safety-quest">
+            <Link to={safetyQuestHref}>
               <ShieldCheck className="mr-2 h-5 w-5" aria-hidden="true" />
               Enter Safety Quest
               <ArrowRight className="ml-2 h-5 w-5" aria-hidden="true" />

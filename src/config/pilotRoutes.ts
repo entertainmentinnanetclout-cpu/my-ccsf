@@ -5,6 +5,7 @@ export const PILOT_ROUTES = {
   report: (reportId: string) => `/pilot/report/${reportId}`,
   reviews: '/pilot/reviews',
   resources: '/pilot/resources',
+  safetyQuest: '/pilot/safety-quest',
   campus: '/security/pilot',
   campusReviews: '/security/pilot/reviews',
   admin: '/admin/pilot',
@@ -18,6 +19,7 @@ export function isPilotStudentPath(pathname: string): boolean {
   return pathname === PILOT_ROUTES.landing
     || pathname === PILOT_ROUTES.reviews
     || pathname === PILOT_ROUTES.resources
+    || pathname === PILOT_ROUTES.safetyQuest
     || pathname.startsWith('/pilot/session/')
     || pathname.startsWith('/pilot/report/');
 }

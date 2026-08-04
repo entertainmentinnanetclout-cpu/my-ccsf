@@ -29,6 +29,8 @@ if (artwork.size < 200_000) throw new Error('Safety Quest artwork is unexpectedl
 const app = read('src/App.tsx');
 const dashboard = read('src/pages/Dashboard.tsx');
 const safetyHub = read('src/components/student/SafetyMobilityHub.tsx');
+const pilotDashboard = read('src/components/pilot/PilotStudentDashboard.tsx');
+const launchCard = read('src/components/student/SafetyQuestLaunchCard.tsx');
 const catalog = read('src/features/safety-quest/questCatalog.ts');
 const game = read('src/features/safety-quest/SafetyQuestGame.tsx');
 const styles = read('src/features/safety-quest/safety-quest.css');
@@ -39,6 +41,9 @@ const types = read('src/integrations/supabase/types.ts');
 requireMatch(app, /path="\/safety-quest"[\s\S]*allowedRoles=\{\['student'\]\}/, 'Safety Quest must remain a protected student route.');
 requireMatch(safetyHub, /data-testid="student-safety-tools"[\s\S]*<SafetyQuestLaunchCard\s*\/>/, 'The Safety tab must surface Safety Quest as a primary safety tool.');
 if (dashboard.includes('<SafetyQuestLaunchCard')) throw new Error('Safety Quest must live under the Safety tab instead of the dashboard Home view.');
+requireMatch(app, /path="\/pilot\/safety-quest"[\s\S]*PilotRouteGuard[\s\S]*<SafetyQuest \/>/, 'Pilot must expose Safety Quest through its guarded student route.');
+requireMatch(pilotDashboard, /type View = [^;]*'safety'[\s\S]*view === 'safety'[\s\S]*<SafetyMobilityHub campus=\{participant\.campus\}/, 'Pilot dashboard must keep the shared Safety tab and Safety Mobility hub.');
+if (!launchCard.includes("location.pathname.startsWith('/pilot') ? '/pilot/safety-quest' : '/safety-quest'")) throw new Error('Safety Quest launch must remain Pilot-aware.');
 
 const checkpointCount = (catalog.match(/^\s{4}id: '[a-z0-9-]+',$/gm) ?? []).length;
 if (checkpointCount !== 8) throw new Error(`Expected 8 Safety Quest checkpoints; found ${checkpointCount}.`);
@@ -75,4 +80,4 @@ requireMatch(migration, /revoke all[\s\S]*from anon/i, 'Anonymous Safety Quest t
 requireMatch(migration, /grant select, insert, update[\s\S]*to authenticated/i, 'Authenticated grants must remain least-privilege.');
 requireMatch(types, /safety_quest_progress:\s*\{/, 'Generated Supabase types are missing Safety Quest progress.');
 
-console.log('Safety Quest release verification passed (8 checkpoints, protected route, curriculum, canonical branding, artwork, persistence, and RLS migration).');
+console.log('Safety Quest release verification passed (8 checkpoints, official + Pilot Safety parity, canonical branding, curriculum, artwork, persistence, and RLS migration).');

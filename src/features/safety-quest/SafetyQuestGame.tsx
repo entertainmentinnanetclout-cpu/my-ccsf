@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ComponentType } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import {
   ArrowLeft,
@@ -75,6 +75,8 @@ const ROUTE_POINTS = QUEST_CHECKPOINTS
 type AnswerOutcome = 'correct' | 'wrong' | null;
 
 export function SafetyQuestGame({ userId }: { userId: string | null | undefined }) {
+  const location = useLocation();
+  const returnPath = location.pathname.startsWith('/pilot') ? '/pilot?tab=safety' : '/dashboard?tab=safety';
   const { progress, syncState, recordAnswer, resetQuest } = useSafetyQuestProgress(userId);
   const [selectedCheckpoint, setSelectedCheckpoint] = useState<number | null>(null);
   const [selectedOption, setSelectedOption] = useState('');
@@ -133,7 +135,7 @@ export function SafetyQuestGame({ userId }: { userId: string | null | undefined 
     <div className="safety-quest-shell" data-testid="safety-quest-page">
       <header className="safety-quest-topbar">
         <Button asChild variant="ghost" className="text-white/80 hover:bg-white/10 hover:text-white">
-          <Link to="/dashboard">
+          <Link to={returnPath}>
             <ArrowLeft className="mr-2 h-4 w-4" aria-hidden="true" />
             Dashboard
           </Link>
@@ -319,7 +321,7 @@ export function SafetyQuestGame({ userId }: { userId: string | null | undefined 
               </div>
               <div className="flex shrink-0 flex-col gap-2 sm:flex-row lg:flex-col">
                 <Button asChild className="bg-[#F2A900] font-extrabold text-[#07152A] hover:bg-[#FFD36A]">
-                  <Link to="/dashboard">Return to dashboard <ChevronRight className="ml-2 h-4 w-4" /></Link>
+                  <Link to={returnPath}>Return to dashboard <ChevronRight className="ml-2 h-4 w-4" /></Link>
                 </Button>
                 <Button variant="outline" className="border-white/20 bg-white/5 text-white hover:bg-white/10 hover:text-white" onClick={() => void resetQuest()}>
                   <RefreshCw className="mr-2 h-4 w-4" /> Play again

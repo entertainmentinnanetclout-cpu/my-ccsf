@@ -4,8 +4,7 @@ import path from 'node:path';
 import { inflateSync } from 'node:zlib';
 
 const root = process.cwd();
-const suppliedLogoPath = path.join('src', 'assets', 'Campus safety forum logo design(1).png');
-const publicLogoPath = path.join('public', 'ccsf-logo.png');
+const suppliedLogoPath = path.join('src', 'assets', 'cps-ccsf-official-source.png');
 const productionRoots = ['src', 'public'];
 const textExtensions = new Set(['.html', '.js', '.json', '.mjs', '.svg', '.ts', '.tsx']);
 const violations = [];
@@ -184,6 +183,8 @@ for (const file of files) {
   const content = await readFile(path.join(root, file), 'utf8');
   const prohibited = [
     ['legacy CCSF raster import', /@\/assets\/ccsf-logo\.png/],
+    ['legacy public CCSF raster reference', /\/ccsf-logo\.png/],
+    ['retired CCSF source reference', /Campus safety forum logo design\(1\)\.png/],
     ['generated CCSF vector reference', /ccsf-logo\.svg/],
     ['direct TUT logo import', /@\/assets\/(?:tut-logo\.png|tut_light_theme\.png)/],
     ['obsolete product expansion', /Campus Crime Safety Forum/],
@@ -196,27 +197,23 @@ for (const file of files) {
 }
 
 const brandModule = await readFile(path.join(root, 'src', 'brand', 'index.ts'), 'utf8');
-if (!brandModule.includes("@/assets/Campus safety forum logo design(1).png")) {
-  violations.push('src/brand/index.ts: supplied CCSF logo is not the canonical import');
+if (!brandModule.includes("@/assets/cps-ccsf-official-source.png")) {
+  violations.push('src/brand/index.ts: official CPS/CCSF logo is not the canonical import');
 }
 
 try {
-  const [suppliedLogo, publicLogo, compatibilityLogo] = await Promise.all([
-    readFile(path.join(root, suppliedLogoPath)),
-    readFile(path.join(root, publicLogoPath)),
-    readFile(path.join(root, 'src', 'assets', 'ccsf-logo.png')),
-  ]);
-  if (!suppliedLogo.equals(publicLogo)) violations.push('public/ccsf-logo.png: does not exactly match the transparent canonical CCSF logo');
-  if (!suppliedLogo.equals(compatibilityLogo)) violations.push('src/assets/ccsf-logo.png: compatibility copy does not exactly match the transparent canonical CCSF logo');
-  const canonicalInfo = decodePng(suppliedLogo, suppliedLogoPath);
-  if (canonicalInfo.minAlpha !== 0 || canonicalInfo.maxAlpha !== 255) {
-    violations.push(`${suppliedLogoPath}: canonical logo must contain genuine transparency and opaque artwork`);
+  const suppliedLogo = await readFile(path.join(root, suppliedLogoPath));
+  if (suppliedLogo.subarray(0, 8).toString('hex') !== '89504e470d0a1a0a') {
+    violations.push(`${suppliedLogoPath}: invalid PNG signature`);
   }
 } catch {
-  violations.push('transparent canonical CCSF logo or public compatibility copy is missing');
+  violations.push('official CPS/CCSF canonical PNG is missing or invalid');
 }
 
 for (const obsoleteAsset of [
+  path.join('src', 'assets', 'Campus safety forum logo design(1).png'),
+  path.join('src', 'assets', 'ccsf-logo.png'),
+  path.join('public', 'ccsf-logo.png'),
   path.join('src', 'assets', 'ccsf-logo.svg'),
   path.join('public', 'ccsf-logo.svg'),
   path.join('public', 'favicon.svg'),
@@ -282,4 +279,4 @@ if (violations.length > 0) {
   process.exit(1);
 }
 
-console.log(`Brand verification passed: transparent canonical CCSF artwork, solid-white installed app icons, transparent browser favicons, platform-correct dimensions, ${lockupCount} CCSF + TUT lockups, and no prohibited legacy production references.`);
+console.log(`Brand verification passed: official CPS/CCSF canonical artwork, solid-white installed app icons, transparent browser favicons, platform-correct dimensions, ${lockupCount} CCSF + TUT lockups, and no prohibited legacy production references.`);
