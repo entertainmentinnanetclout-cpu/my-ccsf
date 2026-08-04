@@ -10,6 +10,7 @@ permissions:
 
 jobs:
   migrate-and-verify:
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - name: Check out PR branch
@@ -48,16 +49,44 @@ jobs:
           npm run build
           git diff --check
 
-      - name: Commit verified migration
+      - name: Commit verified migration only
         env:
           HEAD_BRANCH: ${{ github.head_ref }}
         run: |
-          if git diff --quiet; then
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+          git add -- \
+            src/brand/index.ts \
+            scripts/generate-brand-assets.py \
+            scripts/verify-branding.mjs \
+            .github/workflows/phase4-brand-assets.yml \
+            vite.config.ts \
+            src/components/pilot/PilotStudentDashboard.tsx \
+            src/components/student/SafetyQuestLaunchCard.tsx \
+            src/App.tsx \
+            src/config/pilotRoutes.ts \
+            src/features/safety-quest/SafetyQuestGame.tsx \
+            scripts/verify-safety-quest-release.mjs \
+            public/app-icon-1024.png \
+            public/app-icon-512.png \
+            public/app-icon-192.png \
+            public/maskable-icon-512.png \
+            public/apple-touch-icon.png \
+            public/favicon.png \
+            public/favicon-32x32.png \
+            public/favicon-16x16.png \
+            public/favicon.ico
+
+          git add -u -- \
+            'src/assets/Campus safety forum logo design(1).png' \
+            src/assets/ccsf-logo.png \
+            public/ccsf-logo.png
+
+          if git diff --cached --quiet; then
             echo 'Migration already applied.'
             exit 0
           fi
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -A
+
           git commit -m 'fix: canonicalize CPS-CCSF branding and restore Pilot Safety parity'
           git push origin HEAD:${HEAD_BRANCH}
