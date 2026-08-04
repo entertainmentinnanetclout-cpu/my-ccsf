@@ -15,15 +15,11 @@ from pathlib import Path
 from PIL import Image, ImageChops, ImageFilter
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCE = ROOT / "src/assets/Campus safety forum logo design(1).png"
-CANONICAL_COPIES = [
-    SOURCE,
-    ROOT / "src/assets/ccsf-logo.png",
-    ROOT / "public/ccsf-logo.png",
-]
+SOURCE = ROOT / "src/assets/cps-ccsf-official-source.png"
+CANONICAL_COPIES: list[Path] = []
 
-STANDARD_FOOTPRINT = 0.782
-MASKABLE_FOOTPRINT = 0.66
+STANDARD_FOOTPRINT = 0.85
+MASKABLE_FOOTPRINT = 0.72
 BACKGROUND_DISTANCE = 54
 TRANSPARENT = (0, 0, 0, 0)
 WHITE = (255, 255, 255, 255)
@@ -170,8 +166,8 @@ def assert_asset(
         raise RuntimeError(f"{path}: contains no visible logo")
 
 
-original = Image.open(SOURCE)
-transparent_logo = crop_with_padding(remove_edge_background(original))
+original = Image.open(SOURCE).convert("RGBA")
+transparent_logo = crop_with_padding(original)
 
 for destination in CANONICAL_COPIES:
     save_png(transparent_logo, destination)

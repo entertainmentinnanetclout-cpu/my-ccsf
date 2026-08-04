@@ -16,6 +16,7 @@ import {
   MessageSquareText,
   Plus,
   RefreshCw,
+  Radar,
   ShieldCheck,
   Siren,
 } from 'lucide-react';
@@ -25,6 +26,7 @@ import { PilotReportForm } from '@/components/pilot/PilotReportForm';
 import { PilotUserGuideDialog } from '@/components/pilot/PilotUserGuideDialog';
 import { AcademicFraudLaunchCard } from '@/components/shared/AcademicFraudLaunchCard';
 import { StudentDashboardHome } from '@/components/student/StudentDashboardHome';
+import { SafetyMobilityHub } from '@/components/student/SafetyMobilityHub';
 import { MobileBottomNav } from '@/components/shared/MobileBottomNav';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -52,8 +54,8 @@ import { formatCoordinatePair } from '@/lib/reverseGeocode';
 import type { PilotCarouselAction, PilotCarouselSlide, PilotSafetyDocument } from '@/types/pilotExperience';
 import type { PilotNotification, PilotParticipant, PilotProgram, PilotReport, PilotScenario, PilotSession } from '@/types/pilot';
 
-type View = 'home' | 'mycases' | 'report' | 'map' | 'support';
-const PILOT_VIEWS = new Set<View>(['home', 'mycases', 'report', 'map', 'support']);
+type View = 'home' | 'mycases' | 'report' | 'safety' | 'support';
+const PILOT_VIEWS = new Set<View>(['home', 'mycases', 'report', 'safety', 'support']);
 const TERMINAL_STATUSES = new Set(['simulation_completed', 'cancelled', 'withdrawn', 'expired']);
 const ACADEMIC_FRAUD_SCENARIO_PATTERN = /academic fraud|fake admin services/i;
 
@@ -151,7 +153,7 @@ export function PilotStudentDashboard({
     { view: 'home', icon: Home, label: 'Home' },
     { view: 'mycases', icon: FileText, label: 'My Cases' },
     { view: 'report', icon: Plus, label: 'Report' },
-    { view: 'map', icon: MapPin, label: 'Map' },
+    { view: 'safety', icon: Radar, label: 'Safety' },
     { view: 'support', icon: LifeBuoy, label: 'Support' },
   ];
 
@@ -300,7 +302,7 @@ export function PilotStudentDashboard({
 
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
                 <QuickAction icon={FileText} title="Track your cases" description="Open the full case details and timeline." onClick={() => setView('mycases')} />
-                <QuickAction icon={MapPin} title="Test location" description="Use readable address capture and coordinates." onClick={() => setView('map')} />
+                <QuickAction icon={Radar} title="Open Safety hub" description="Use Safety Quest, Campus Radar, travel tools and location testing." onClick={() => setView('safety')} />
                 <QuickAction icon={ShieldCheck} title="Report academic scam" description="Attach proof of fake marks, WIL, records or admin services." onClick={openAcademicFraudReport} />
                 <QuickAction icon={MessageSquareText} title="Submit a review" description="Rate the experience and read staff replies." onClick={() => navigate(PILOT_ROUTES.reviews)} />
                 <QuickAction icon={BookOpen} title="Open document library" description="Campus, building and app user guides." onClick={() => navigate(PILOT_ROUTES.resources)} />
@@ -348,8 +350,9 @@ export function PilotStudentDashboard({
           </div>
         )}
 
-        {view === 'map' && (
+        {view === 'safety' && (
           <div className="space-y-5 px-4 sm:px-6">
+            <SafetyMobilityHub campus={participant.campus} />
             <Card>
               <CardHeader><CardTitle>Location and Tracking</CardTitle><CardDescription>Readable addresses are shown first; coordinates remain secondary technical evidence.</CardDescription></CardHeader>
               <CardContent className="grid gap-4 md:grid-cols-2">
@@ -384,7 +387,7 @@ export function PilotStudentDashboard({
                 <Button className="w-full justify-start" onClick={() => setView('report')}><Plus className="mr-2 h-4 w-4" />Open report workflow</Button>
                 <Button variant="outline" className="w-full justify-start" onClick={openAcademicFraudReport}><ShieldCheck className="mr-2 h-4 w-4" />Report academic fraud</Button>
                 <Button variant="outline" className="w-full justify-start" onClick={() => setView('mycases')}><FileText className="mr-2 h-4 w-4" />Check case status</Button>
-                <Button variant="outline" className="w-full justify-start" onClick={() => setView('map')}><MapPin className="mr-2 h-4 w-4" />Test location workflow</Button>
+                <Button variant="outline" className="w-full justify-start" onClick={() => setView('safety')}><Radar className="mr-2 h-4 w-4" />Open Safety hub & location tools</Button>
                 <Button variant="outline" className="w-full justify-start" onClick={guide.openGuide}><BookOpen className="mr-2 h-4 w-4" />Open Pilot user guide</Button>
                 <Button variant="outline" className="w-full justify-start" asChild><Link to="/dashboard"><ArrowLeftRight className="mr-2 h-4 w-4" />Official student portal</Link></Button>
                 <Button variant="destructive" className="w-full justify-start" onClick={openEmergencySimulation}><Siren className="mr-2 h-4 w-4" />Open emergency test</Button>

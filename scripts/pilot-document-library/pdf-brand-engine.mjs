@@ -110,7 +110,7 @@ function streamObject(dictionary, data) {
 }
 
 export function createBrandedPdf({ outFile, documentTitle, coverTitle, coverSubtitle, version, coverSummary, pages }) {
-  const ccsf = decodePng(path.resolve('src/assets/Campus safety forum logo design(1).png'));
+  const ccsf = decodePng(path.resolve('src/assets/cps-ccsf-official-source.png'));
   const tut = decodePng(path.resolve('src/assets/tut_light_theme.png'));
   const pageStreams = [];
 

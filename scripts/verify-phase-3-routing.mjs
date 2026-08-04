@@ -36,9 +36,11 @@ for (const [role, destination] of Object.entries(expectedDefaults)) {
 
 const preservedPaths = [
   ['student', '/pilot?tab=home', '/pilot?tab=home'],
+  ['student', '/pilot?tab=safety', '/pilot?tab=safety'],
   ['student', '/pilot/session/session-id?step=evidence#upload', '/pilot/session/session-id?step=evidence#upload'],
   ['student', '/pilot/report/report-id?view=timeline#latest', '/pilot/report/report-id?view=timeline#latest'],
   ['student', '/pilot/resources?format=print', '/pilot/resources?format=print'],
+  ['student', '/pilot/safety-quest', '/pilot/safety-quest'],
   ['security', '/security/pilot?queue=open', '/security/pilot?queue=open'],
   ['admin', '/admin/pilot?tab=audit', '/admin/pilot?tab=audit'],
   ['admin', '/security/pilot?campus=mbombela', '/security/pilot?campus=mbombela'],
@@ -82,17 +84,19 @@ assert(
 
 const viteConfig = read('vite.config.ts');
 assert(
-  viteConfig.includes('feature/ccsf-phases-3-8-release-candidate'),
-  'The approved release-candidate Preview branch is explicit.',
+  viteConfig.includes('feature/ccsf-phases-3-8-release-candidate')
+    && viteConfig.includes('agent/safety-quest-game'),
+  'The release-candidate and Safety Quest PR Preview branches are explicitly allow-listed.',
 );
 assert(
-  viteConfig.includes('vercelEnvironment === "preview"')
-    && viteConfig.includes('vercelBranch === APPROVED_PILOT_PREVIEW_BRANCH'),
-  'Automatic Pilot activation requires both Vercel Preview and the exact approved branch.',
+  viteConfig.includes('APPROVED_PILOT_PREVIEW_BRANCHES = new Set(')
+    && viteConfig.includes('vercelEnvironment === "preview"')
+    && viteConfig.includes('APPROVED_PILOT_PREVIEW_BRANCHES.has(vercelBranch)'),
+  'Automatic Pilot activation requires Vercel Preview and exact membership in the approved branch allow-list.',
 );
 assert(
-  viteConfig.includes('explicitPilotFlag === "true" || approvedPreviewBranch'),
-  'Explicit authorisation or the exact approved Preview enables Pilot Mode.',
+  viteConfig.includes('explicitPilotFlag === "true" || approvedPreviewBranch || approvedProductionBranch'),
+  'Explicit authorisation, an approved Preview branch, or the approved production branch enables Pilot Mode.',
 );
 assert(!viteConfig.includes('feature/controlled-pilot-mode'), 'The obsolete Pilot branch is no longer authorised.');
 
@@ -151,7 +155,7 @@ assert(
 );
 
 const app = read('src/App.tsx');
-for (const route of ['/pilot/auth', '/pilot', '/pilot/session/:sessionId', '/pilot/report/:reportId', '/pilot/resources', '/security/pilot', '/admin/pilot']) {
+for (const route of ['/pilot/auth', '/pilot', '/pilot/session/:sessionId', '/pilot/report/:reportId', '/pilot/resources', '/pilot/safety-quest', '/security/pilot', '/admin/pilot']) {
   assert(app.includes(`path="${route}"`), `Direct route ${route} is registered.`);
 }
 assert(

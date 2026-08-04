@@ -1886,6 +1886,50 @@ export type Database = {
           },
         ]
       }
+      safety_quest_progress: {
+        Row: {
+          answers: Json
+          attempts: number
+          completed_at: string | null
+          created_at: string
+          current_checkpoint: number
+          quest_version: string
+          score: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          answers?: Json
+          attempts?: number
+          completed_at?: string | null
+          created_at?: string
+          current_checkpoint?: number
+          quest_version?: string
+          score?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          answers?: Json
+          attempts?: number
+          completed_at?: string | null
+          created_at?: string
+          current_checkpoint?: number
+          quest_version?: string
+          score?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "safety_quest_progress_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       typing_indicators: {
         Row: {
           id: string
