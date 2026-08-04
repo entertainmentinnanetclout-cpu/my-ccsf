@@ -41,7 +41,11 @@ check(hardening.includes('verified_campus is distinct from p_campus'), 'Client-s
 check(hardening.includes('perform private.safety_require_student_campus(p_campus);'), 'Travel, presence and Radar functions enforce campus scope server-side.');
 check(hardening.includes('revoke all on function public.safety_list_campus_radar') && hardening.includes('to authenticated'), 'Safety RPC execution is closed to public/anonymous callers.');
 
-check(dashboard.includes("type StudentView = 'home' | 'report' | 'mycases' | 'safety' | 'messages'"), 'Student dashboard is organised into five clear primary sections.');
+check(
+  dashboard.includes("type StudentView = 'home' | 'report' | 'mycases' | 'safety' | 'community' | 'messages'")
+    && dashboard.includes("{ view: 'community', icon: UsersRound, label: 'Community' }"),
+  'Student dashboard preserves the original five primary sections and adds Community as the sixth section.',
+);
 check(dashboard.includes("{ view: 'safety', icon: Radar, label: 'Safety' }"), 'Safety Mobility has a primary student-navigation destination.');
 check(dashboard.includes('<SafetyMobilityHub campus={campus} />'), 'Official student dashboard renders the Safety Mobility hub.');
 check(dashboard.includes('Open Pilot') && dashboard.includes('StudentDashboardHome'), 'Existing Pilot navigation and student-home carousel remain available.');
