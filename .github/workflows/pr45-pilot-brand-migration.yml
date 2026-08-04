@@ -38,6 +38,19 @@ jobs:
       - name: Apply focused migration
         run: node scripts/pr45-pilot-brand-migration.mjs
 
+      - name: Fit official mark to launcher-safe optical bounds
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('scripts/generate-brand-assets.py')
+          text = path.read_text()
+          source = 'STANDARD_FOOTPRINT = 0.782\nMASKABLE_FOOTPRINT = 0.66'
+          target = 'STANDARD_FOOTPRINT = 0.85\nMASKABLE_FOOTPRINT = 0.72'
+          if source not in text:
+              raise SystemExit('Expected icon footprint constants were not found')
+          path.write_text(text.replace(source, target, 1))
+          PY
+
       - name: Generate app and favicon derivatives from official logo
         run: python scripts/generate-brand-assets.py
 
