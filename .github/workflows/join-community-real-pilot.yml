@@ -4,17 +4,21 @@ on:
   push:
     branches:
       - agent/join-community-real-pilot
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
   contents: write
 
 concurrency:
-  group: join-community-real-pilot-${{ github.ref }}
+  group: join-community-real-pilot-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   integrate-and-verify:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
       - name: Check out community branch
