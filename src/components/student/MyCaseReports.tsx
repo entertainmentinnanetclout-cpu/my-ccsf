@@ -63,9 +63,10 @@ export const MyCaseReports = () => {
           event: '*',
           schema: 'public',
           table: 'incidents',
-          filter: `reporter_id=eq.${user.id}`,
         },
         (payload) => {
+          const record = (payload.new ?? payload.old) as Incident;
+          if (record.reporter_id !== user.id && record.submitted_by !== user.id) return;
           if (payload.eventType === 'UPDATE') {
             const updated = payload.new as Incident;
             setIncidents((prev) =>
@@ -93,7 +94,7 @@ export const MyCaseReports = () => {
       const { data, error } = await supabase
         .from('incidents')
         .select('*')
-        .eq('reporter_id', user.id)
+        .or(`reporter_id.eq.${user.id},submitted_by.eq.${user.id}`)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -304,7 +305,7 @@ export const MyCaseReports = () => {
                 {/* Location Details */}
                 {(selectedIncident.location_description || selectedIncident.location_lat) && (
                   <div>
-                    <h4 className="font-semibold mb-2 text-primary dark:text-[#F2A900]">📍 Location Details</h4>
+                    <h4 className="font-semibold mb-2 text-primary dark:text-[#F2A900]">Location details</h4>
                     <div className="p-4 bg-success/10 border border-success/20 rounded-lg space-y-2">
                       {selectedIncident.location_description && (
                         <p className="text-foreground">{selectedIncident.location_description}</p>
@@ -327,7 +328,7 @@ export const MyCaseReports = () => {
                 {/* Resolution Notes */}
                 {selectedIncident.resolution_notes && (
                   <div>
-                    <h4 className="font-semibold mb-2 text-success">✅ Resolution</h4>
+                    <h4 className="font-semibold mb-2 text-success">Official resolution</h4>
                     <div className="p-4 bg-success/10 border border-success/20 rounded-lg">
                       <p className="text-foreground">{selectedIncident.resolution_notes}</p>
                     </div>

@@ -100,7 +100,8 @@ requireMatch(game, /safety-quest-campus-photo[\s\S]*animate=\{prefersReducedMoti
 requireMatch(game, /x: \[0, -8, 8, -5, 5, 0\]/, 'Wrong-answer feedback must include motion when reduced motion is not requested.');
 requireMatch(game, /opacity: \[0, 1, 0\][\s\S]*y: -42/, 'Correct-answer feedback must include celebratory motion.');
 requireMatch(game, /import \{ InstitutionBrand \} from '@\/components\/shared\/InstitutionBrand';/, 'Safety Quest must use the shared institutional brand lockup.');
-requireMatch(game, /safety-quest-brand-lockup[\s\S]*<InstitutionBrand\b[\s\S]*cpsLogo/, 'TUT/CCSF shared branding and the CPS mark must remain in the game scene.');
+requireMatch(game, /safety-quest-brand-lockup[\s\S]*<InstitutionBrand\b/, 'Safety Quest must use one canonical TUT and CCSF/CPS institutional lockup.');
+if (game.includes('cpsLogo')) throw new Error('Safety Quest must not render a duplicate CPS logo beside the canonical institutional lockup.');
 requireMatch(game, /TUT Pretoria West · Interactive safety route/, 'The board must identify the campus without revealing a quiz-answer building.');
 if (game.includes('safety-quest-location-chip')) throw new Error('Pre-quiz location answer chips must be removed from the game board.');
 if (game.includes('Two destinations to remember')) throw new Error('Pre-quiz destination-answer spoilers must be removed.');

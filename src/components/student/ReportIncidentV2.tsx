@@ -49,7 +49,7 @@ import type { CampusLocation } from '@/types/pilot';
 type IncidentCategory = Database['public']['Enums']['incident_category'];
 
 const MAX_EVIDENCE_FILES = 3;
-const MAX_EVIDENCE_BYTES = 10 * 1024 * 1024;
+const MAX_EVIDENCE_BYTES = 25 * 1024 * 1024;
 const EMERGENCY_CATEGORIES = new Set<IncidentCategory>([
   'Rape', 'Sexual assault', 'Gbv', 'Murder', 'Attempted murder', 'Armed robbery', 'Assault GBH', 'Public violence',
 ]);

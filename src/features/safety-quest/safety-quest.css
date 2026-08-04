@@ -139,7 +139,7 @@
 }
 
 .safety-quest-brand-tut {
-  width: 13.5rem;
+  width: min(22rem, calc(100vw - 2.3rem));
   background: rgba(5, 22, 44, 0.88);
   padding: 0.55rem 0.75rem;
 }

@@ -27,6 +27,7 @@
     "test:admin-visuals": "node scripts/verify-admin-visual-intelligence.mjs",
     "test:safety-mobility": "node scripts/verify-safety-mobility-release.mjs",
     "test:safety-quest": "node scripts/verify-safety-quest-release.mjs",
+    "test:institutional-hardening": "node scripts/verify-institutional-hardening-phase-1.mjs",
     "qa:pilot": "npm run test:phase1-auth && npm run test:phase2-routing && npm run test:phase3-reviews && npm run test:phase4-experience && npm run test:phase5-release && npm run test:pilot-isolation && npm run test:phase3-routing && npm run test:phase4-product && npm run test:phase4-5-parity && npm run test:phase6-parity && npm run test:phase7-consistency && npm run test:mobile-evidence && npm run test:evidence-resilience && npm run test:phase8-release && npm run test:branding && npm run test:student-home && npm run test:admin-visuals && npm run typecheck && npm run lint && npm run build",
     "lint": "eslint .",
     "preview": "vite preview"

@@ -1,10 +1,10 @@
-import { useState, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
-import { Camera, Loader2, User } from 'lucide-react';
-import imageCompression from 'browser-image-compression';
+import { Camera, Loader2 } from 'lucide-react';
+import { prepareEvidenceFile } from '@/lib/evidenceProcessing';
 
 interface AvatarUploadProps {
   userId: string;
@@ -14,147 +14,97 @@ interface AvatarUploadProps {
   size?: 'sm' | 'md' | 'lg';
 }
 
-export const AvatarUpload = ({ 
-  userId, 
-  currentAvatarUrl, 
-  userName,
-  onUploadComplete,
-  size = 'lg'
-}: AvatarUploadProps) => {
+const EXTENSION_BY_MIME: Record<string, string> = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+};
+
+export const AvatarUpload = ({ userId, currentAvatarUrl, userName, onUploadComplete, size = 'lg' }: AvatarUploadProps) => {
   const [isUploading, setIsUploading] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState(currentAvatarUrl);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  const sizeClasses = {
-    sm: 'w-12 h-12',
-    md: 'w-20 h-20',
-    lg: 'w-24 h-24'
-  };
+  useEffect(() => setAvatarUrl(currentAvatarUrl), [currentAvatarUrl]);
 
-  const iconSizes = {
-    sm: 'h-4 w-4',
-    md: 'h-6 w-6',
-    lg: 'h-8 w-8'
-  };
+  const sizeClasses = { sm: 'h-12 w-12', md: 'h-20 w-20', lg: 'h-24 w-24' };
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      toast({ title: 'Invalid file type', description: 'Please select an image file', variant: 'destructive' });
-      return;
-    }
-
-    // Validate file size (max 5MB before compression)
-    if (file.size > 5 * 1024 * 1024) {
-      toast({ title: 'File too large', description: 'Please select an image under 5MB', variant: 'destructive' });
+    const file = event.currentTarget.files?.[0];
+    event.currentTarget.value = '';
+    if (!file || !userId) return;
+    if (file.size > 25 * 1024 * 1024) {
+      toast({ title: 'Photo is too large', description: 'Choose an original image smaller than 25 MB.', variant: 'destructive' });
       return;
     }
 
     setIsUploading(true);
-
     try {
-      // Compress the image
-      const compressedFile = await imageCompression(file, {
-        maxSizeMB: 0.5,
-        maxWidthOrHeight: 400,
-        useWebWorker: true
+      const prepared = await prepareEvidenceFile(file, {
+        maxBytes: 1.8 * 1024 * 1024,
+        maxDimension: 1024,
+        compressAboveBytes: 1,
+        jpegQuality: 0.88,
       });
+      const extension = EXTENSION_BY_MIME[prepared.type];
+      if (!extension) throw new Error('This photo could not be converted to a supported profile-image format.');
 
-      // Generate unique filename
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${userId}/avatar-${Date.now()}.${fileExt}`;
+      const folder = userId;
+      const { data: existing } = await supabase.storage.from('avatars').list(folder, { limit: 20 });
+      const stalePaths = (existing ?? []).map((item) => `${folder}/${item.name}`);
+      if (stalePaths.length) await supabase.storage.from('avatars').remove(stalePaths);
 
-      // Upload to Supabase Storage
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(fileName, compressedFile, {
-          cacheControl: '3600',
-          upsert: true
-        });
-
-      if (uploadError) {
-        throw uploadError;
-      }
-
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(fileName);
-
-      // Update profile with new avatar URL
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ avatar_url: publicUrl })
-        .eq('id', userId);
-
-      if (updateError) {
-        throw updateError;
-      }
-
-      setAvatarUrl(publicUrl);
-      onUploadComplete?.(publicUrl);
-      toast({ title: 'Success', description: 'Profile photo updated' });
-
-    } catch (error: any) {
-      console.error('Error uploading avatar:', error);
-      toast({ 
-        title: 'Upload failed', 
-        description: error.message || 'Failed to upload image', 
-        variant: 'destructive' 
+      const objectPath = `${folder}/avatar.${extension}`;
+      const { error: uploadError } = await supabase.storage.from('avatars').upload(objectPath, prepared, {
+        cacheControl: '3600',
+        contentType: prepared.type,
+        upsert: true,
       });
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(objectPath);
+      const versionedUrl = `${publicUrl}?v=${Date.now()}`;
+      const { error: updateError } = await supabase.from('profiles').update({ avatar_url: versionedUrl }).eq('id', userId);
+      if (updateError) throw updateError;
+
+      setAvatarUrl(versionedUrl);
+      onUploadComplete?.(versionedUrl);
+      toast({ title: 'Profile photo updated', description: 'Your new image is ready across My CCSF.' });
+    } catch (error) {
+      toast({ title: 'Profile photo upload failed', description: error instanceof Error ? error.message : 'Try a JPEG, PNG or WebP image.', variant: 'destructive' });
     } finally {
       setIsUploading(false);
-      // Reset file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
     }
   };
 
-  const getInitials = () => {
-    if (!userName) return 'U';
-    return userName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-  };
+  const initials = userName?.split(/\s+/).filter(Boolean).map((part) => part[0]).join('').toUpperCase().slice(0, 2) || 'U';
 
   return (
     <div className="relative inline-block">
-      <Avatar className={`${sizeClasses[size]} border-2 border-border`}>
-        <AvatarImage src={avatarUrl || undefined} alt={userName || 'User'} />
-        <AvatarFallback className="bg-primary/10 text-primary">
-          {avatarUrl ? (
-            <User className={iconSizes[size]} />
-          ) : (
-            getInitials()
-          )}
-        </AvatarFallback>
+      <Avatar className={`${sizeClasses[size]} border-2 border-border shadow-sm`}>
+        <AvatarImage src={avatarUrl || undefined} alt={userName ? `${userName} profile photo` : 'Student profile photo'} />
+        <AvatarFallback className="bg-primary/10 font-bold text-primary">{initials}</AvatarFallback>
       </Avatar>
-      
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*"
-        onChange={handleFileSelect}
-        className="hidden"
+        accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif"
+        onChange={(event) => void handleFileSelect(event)}
+        className="sr-only"
         disabled={isUploading}
+        aria-label="Choose a profile photo"
       />
-      
       <Button
         type="button"
         variant="secondary"
         size="icon"
-        className="absolute -bottom-1 -right-1 h-8 w-8 rounded-full shadow-md"
+        className="absolute -bottom-2 -right-2 h-11 w-11 touch-manipulation rounded-full border-2 border-background shadow-lg"
         onClick={() => fileInputRef.current?.click()}
         disabled={isUploading}
+        aria-label={isUploading ? 'Uploading profile photo' : 'Upload profile photo'}
       >
-        {isUploading ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          <Camera className="h-4 w-4" />
-        )}
+        {isUploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Camera className="h-5 w-5" />}
       </Button>
     </div>
   );
