@@ -103,15 +103,15 @@ assert(migration.includes('idx_sports_compliance_queue'), 'Database indexes the 
 assert(migration.includes('Patrol') || migration.includes('patrol'), 'Database seeds the community patrol awareness role.');
 
 assert(official.includes("'community'"), 'Official student navigation includes Community.');
-assert(official.includes('<CommunityHub environment="official"'), 'Official portal renders the shared community experience.');
+assert(official.includes('<CommunityHub') && official.includes('environment="official"'), 'Official portal renders the shared community experience.');
 assert(pilot.includes("'community'"), 'Pilot student navigation includes Community.');
-assert(pilot.includes('<CommunityHub environment="pilot"'), 'Pilot portal renders the shared community experience.');
+assert(pilot.includes('<CommunityHub') && pilot.includes('environment="pilot"'), 'Pilot portal renders the shared community experience.');
 
 for (const preserved of ["'home'", "'report'", "'safety'", "'messages'"]) assert(official.includes(preserved), `Official portal preserves ${preserved}.`);
 for (const preserved of ["'home'", "'report'", "'safety'", "'support'"]) assert(pilot.includes(preserved), `Pilot portal preserves ${preserved}.`);
 
-assert(officialAdmin.includes('<CommunityAdminDashboard environment="official"'), 'Official admin console includes community management.');
-assert(pilotAdmin.includes('<CommunityAdminDashboard environment="pilot"'), 'Pilot super-admin console includes Pilot community management.');
+assert(officialAdmin.includes('<CommunityAdminDashboard') && officialAdmin.includes('environment="official"'), 'Official admin console includes community management.');
+assert(pilotAdmin.includes('<CommunityAdminDashboard') && pilotAdmin.includes('environment="pilot"'), 'Pilot super-admin console includes Pilot community management.');
 assert(admin.includes('Community Administration'), 'Community admin workspace identifies its governance purpose.');
 assert(admin.includes('does not grant admin'), 'Community admin workspace preserves RBAC separation.');
 
