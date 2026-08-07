@@ -1,0 +1,1 @@
+-- Migration history compatibility marker. The full Phase 1 Pilot signup/profile-readiness migration remains at its original authored repository timestamp. No SQL is executed here.
