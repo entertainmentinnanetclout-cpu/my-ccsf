@@ -1,0 +1,4 @@
+-- Migration history compatibility marker.
+-- The full sports-team status preflight migration remains in its original authored migration file.
+-- This timestamp matches the version recorded by the existing Supabase project.
+-- No SQL is intentionally executed here.
