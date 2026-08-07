@@ -1,0 +1,1 @@
+-- Migration history compatibility marker. Full migration remains at its original authored repository timestamp. No SQL is executed here.
