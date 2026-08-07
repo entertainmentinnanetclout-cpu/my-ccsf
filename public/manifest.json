@@ -1,8 +1,8 @@
 {
   "id": "/",
-  "name": "My CCSF — Campus Community Safety Forum",
-  "short_name": "My CCSF",
-  "description": "The official Campus Community Safety Forum application for Tshwane University of Technology.",
+  "name": "Campus Safety App — Campus Community Safety Forum",
+  "short_name": "Campus Safety",
+  "description": "The official Campus Safety App for Tshwane University of Technology.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -37,7 +37,7 @@
     {
       "name": "Student Dashboard",
       "short_name": "Dashboard",
-      "description": "Open the CCSF student dashboard.",
+      "description": "Open the Campus Safety App student dashboard.",
       "url": "/dashboard",
       "icons": [{ "src": "/app-icon-192.png", "sizes": "192x192", "type": "image/png" }]
     },
@@ -51,7 +51,7 @@
     {
       "name": "Report an Incident",
       "short_name": "Report",
-      "description": "Open the official CCSF reporting workflow.",
+      "description": "Open the official Campus Safety App reporting workflow.",
       "url": "/dashboard?tab=report",
       "icons": [{ "src": "/app-icon-192.png", "sizes": "192x192", "type": "image/png" }]
     }
