@@ -1,0 +1,4 @@
+-- Migration history compatibility marker.
+-- The full Campus Safety App branding / quiz / Community Safety Games migration remains in its original authored migration file.
+-- This timestamp matches the version recorded by the existing Supabase project.
+-- No SQL is intentionally executed here.
