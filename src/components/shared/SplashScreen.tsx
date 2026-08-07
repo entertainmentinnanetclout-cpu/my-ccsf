@@ -40,7 +40,7 @@ export default function SplashScreen({ onComplete, minDuration = 1200 }: SplashS
       transition={{ duration: reduceMotion ? 0 : 0.28 }}
       role="status"
       aria-live="polite"
-      aria-label="Starting My CCSF"
+      aria-label="Starting Campus Safety App"
       data-testid="institutional-splash"
     >
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(242,169,0,0.22),transparent_34rem),linear-gradient(135deg,rgba(255,255,255,0.06),transparent_42%,rgba(215,25,63,0.12))]" />
@@ -49,7 +49,7 @@ export default function SplashScreen({ onComplete, minDuration = 1200 }: SplashS
           <div className="mx-auto max-w-xl rounded-3xl border border-white/50 bg-white px-5 py-5 text-[#002F6C] shadow-[0_24px_70px_rgba(0,0,0,0.32)] sm:px-8 sm:py-6">
             <InstitutionBrand size="splash" themeOverride="light" className="justify-center" ccsfClassName="max-w-[11rem] sm:max-w-[13rem]" tutClassName="max-w-[10rem] sm:max-w-[13rem]" />
             <div className="mt-4 border-t border-[#002F6C]/15 pt-4">
-              <p className="text-2xl font-black tracking-tight sm:text-3xl">MY CCSF</p>
+              <p className="text-2xl font-black tracking-tight sm:text-3xl">CAMPUS SAFETY APP</p>
               <p className="mt-1 text-xs font-extrabold uppercase tracking-[0.18em] text-[#D7193F]">Campus Community Safety Forum</p>
             </div>
           </div>
@@ -60,7 +60,7 @@ export default function SplashScreen({ onComplete, minDuration = 1200 }: SplashS
         </div>
 
         <h1 className="mt-5 text-3xl font-extrabold tracking-tight sm:text-4xl">{BRAND.productName}</h1>
-        <p className="mt-2 text-sm font-semibold text-white/75 sm:text-base">{BRAND.productLongName} · {BRAND.institutionName}</p>
+        <p className="mt-2 text-sm font-semibold text-white/75 sm:text-base">Campus Community Safety Forum · {BRAND.institutionName}</p>
 
         <div className="mx-auto mt-8 max-w-md">
           <div className="h-1.5 overflow-hidden rounded-full bg-white/15" aria-hidden="true">
