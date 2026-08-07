@@ -25,12 +25,12 @@ const sportsApi = supabase as unknown as {
 
 const FALLBACK_TOURNAMENTS: Record<CommunityEnvironment, SportsTournamentSummary[]> = {
   official: [
-    fallbackTournament('official-soccer-2026', 'My CCSF Soccer Tournament', 'Soccer', 15, true, '2026-08-08T08:00:00+02:00'),
-    fallbackTournament('official-netball-2026', 'My CCSF Netball Tournament', 'Netball', 12, false, '2026-08-08T09:00:00+02:00'),
+    fallbackTournament('official-soccer-2026', 'Campus Safety App Soccer Tournament', 'Soccer', 15, true, '2026-08-08T08:00:00+02:00'),
+    fallbackTournament('official-netball-2026', 'Campus Safety App Netball Tournament', 'Netball', 12, false, '2026-08-08T09:00:00+02:00'),
   ],
   pilot: [
-    fallbackTournament('pilot-soccer-2026', 'My CCSF Pilot Soccer Tournament', 'Soccer', 15, true, '2026-08-08T08:00:00+02:00'),
-    fallbackTournament('pilot-netball-2026', 'My CCSF Pilot Netball Tournament', 'Netball', 12, false, '2026-08-08T09:00:00+02:00'),
+    fallbackTournament('pilot-soccer-2026', 'Campus Safety App Pilot Soccer Tournament', 'Soccer', 15, true, '2026-08-08T08:00:00+02:00'),
+    fallbackTournament('pilot-netball-2026', 'Campus Safety App Pilot Netball Tournament', 'Netball', 12, false, '2026-08-08T09:00:00+02:00'),
   ],
 };
 
@@ -46,8 +46,8 @@ function fallbackTournament(
     id,
     name,
     sport,
-    campus: 'pretoria_west',
-    venue: sport === 'Soccer' ? 'TUT Pretoria West Sports Grounds' : 'TUT Pretoria West Netball Courts',
+    campus: 'pretoria_campus',
+    venue: sport === 'Soccer' ? 'TUT Pretoria Campus Sports Grounds' : 'TUT Pretoria Campus Netball Courts',
     startsAt,
     registrationDeadline: '2026-08-07T12:00:00+02:00',
     drawsPublishAt: '2026-08-07T18:00:00+02:00',
@@ -59,7 +59,7 @@ function fallbackTournament(
     rules: [
       `A minimum of ${requiredPlayerCount} approved players is required.`,
       coachRequired ? 'At least one approved coach is required.' : 'A coach is optional for this tournament.',
-      'Every approved member must use a completed My CCSF student profile.',
+      'Every approved member must use a completed Campus Safety App student profile.',
       'A student may not be approved for more than one team in the same tournament.',
       'The first eight teams to reach the minimum requirements are onboarded.',
     ],
