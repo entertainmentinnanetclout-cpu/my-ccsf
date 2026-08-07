@@ -27,7 +27,7 @@ interface CommunityHubProps {
 const SECTION_ITEMS: Array<{ value: CommunitySection; label: string; icon: typeof Users; live?: boolean }> = [
   { value: 'overview', label: 'Overview', icon: Compass, live: true },
   { value: 'sports', label: 'Sports', icon: Trophy, live: true },
-  { value: 'games', label: 'Games', icon: Gamepad2 },
+  { value: 'games', label: 'Safety Games', icon: Gamepad2 },
   { value: 'join', label: 'Join', icon: HeartHandshake },
   { value: 'media', label: 'Media', icon: Podcast },
   { value: 'participation', label: 'My Participation', icon: Award },
@@ -44,12 +44,12 @@ export function CommunityHub({ environment, identity, onCompleteProfile }: Commu
         <div className="relative grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center">
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <Badge className="border-[#F2A900]/70 bg-[#F2A900] font-extrabold text-[#002F6C]">Official My CCSF {environment === 'pilot' ? 'Pilot ' : ''}Community</Badge>
+              <Badge className="border-[#F2A900]/70 bg-[#F2A900] font-extrabold text-[#002F6C]">Official Campus Safety App {environment === 'pilot' ? 'Pilot ' : ''}Community</Badge>
               <Badge variant="outline" className="border-white/30 text-white">Registered TUT students</Badge>
             </div>
             <h1 className="mt-4 text-3xl font-black tracking-tight sm:text-4xl">Join the Community</h1>
-            <p className="mt-2 text-xl font-extrabold text-[#F2A900]">Play. Participate. Volunteer. Lead. Represent.</p>
-            <p className="mt-4 max-w-3xl text-sm leading-6 text-white/80 sm:text-base">Sports onboarding is now live for the My CCSF soccer and netball tournament. Create a team as a player or coach, find teams created by other students, request to join and watch approved rosters become tournament-ready.</p>
+            <p className="mt-2 text-xl font-extrabold text-[#F2A900]">Play. Participate. Learn Safety. Lead. Represent.</p>
+            <p className="mt-4 max-w-3xl text-sm leading-6 text-white/80 sm:text-base">Sports onboarding is live while Community Safety Games are being prepared. The community layer combines entertainment, campus engagement and practical safety learning inside the Campus Safety App.</p>
             <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
               <Button className="bg-[#F2A900] font-extrabold text-[#002F6C] hover:bg-[#F2A900]/90" onClick={() => setSection('sports')}><Trophy className="mr-2 h-4 w-4" />Open Sports Tournament</Button>
               {!identity.profileCompleted && <Button variant="secondary" className="font-extrabold" onClick={onCompleteProfile}><Users className="mr-2 h-4 w-4" />Complete Student Profile</Button>}
@@ -80,16 +80,16 @@ export function CommunityHub({ environment, identity, onCompleteProfile }: Commu
         <TabsContent value="overview" className="space-y-6">
           <Card className="overflow-hidden border-[#F2A900]/55 shadow-large">
             <CardContent className="grid gap-5 bg-gradient-to-r from-[#F2A900]/20 via-background to-[#D7193F]/10 p-6 lg:grid-cols-[1fr_auto] lg:items-center">
-              <div><div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-[0.16em] text-primary"><Sparkles className="h-4 w-4" />Live now</div><h2 className="mt-2 text-2xl font-black">Soccer and Netball Team Onboarding</h2><p className="mt-2 max-w-3xl text-sm text-muted-foreground">Teams are publicly discoverable inside My CCSF. Students request to join, team creators approve them, approved rosters are visible, and teams activate automatically when they reach the minimum.</p></div>
+              <div><div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-[0.16em] text-primary"><Sparkles className="h-4 w-4" />Live now</div><h2 className="mt-2 text-2xl font-black">Soccer and Netball Team Onboarding</h2><p className="mt-2 max-w-3xl text-sm text-muted-foreground">Teams are publicly discoverable inside the Campus Safety App. Students request to join, team creators approve them, approved rosters are visible, and teams activate automatically when they reach the minimum.</p></div>
               <Button onClick={() => setSection('sports')}><Trophy className="mr-2 h-4 w-4" />Enter Sports</Button>
             </CardContent>
           </Card>
 
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <LaunchCard icon={Trophy} title="Sports and Tournaments" description="Soccer and netball team creation, join requests, approved rosters, activation and draws." live onClick={() => setSection('sports')} />
-            <LaunchCard icon={Gamepad2} title="Community Games" description="Treasure Hunt, Spot the Building, Safety Quiz, check-ins and missions." />
-            <LaunchCard icon={HeartHandshake} title="Student Roles" description="Ambassadors, administration, marketing, media, IT and volunteering." />
-            <LaunchCard icon={Podcast} title="Blogs and Media" description="Podcasts, vlogs, blogs, interviews, stories and community updates." />
+            <LaunchCard icon={Gamepad2} title="Community Safety Games" description="Safety Treasure Hunt, Spot the Safety Building, CPS Service Match, Safety Quiz, reporting-route races and scenario missions." />
+            <LaunchCard icon={HeartHandshake} title="Student Safety Roles" description="Safety ambassadors, crime-prevention awareness, administration support, media, IT and event-safety volunteering." />
+            <LaunchCard icon={Podcast} title="Safety Blogs and Media" description="Safety podcasts, vlogs, interviews, awareness stories, sports updates and verified community notices." />
           </div>
 
           <div className="grid gap-4 md:grid-cols-3">
@@ -103,10 +103,10 @@ export function CommunityHub({ environment, identity, onCompleteProfile }: Commu
           <SportsTournamentHub environment={environment} identity={identity} onCompleteProfile={onCompleteProfile} />
         </TabsContent>
 
-        <TabsContent value="games"><ComingSoonPanel icon={Gamepad2} title="Community Games" description="Campus Treasure Hunt, Spot the Building, Safety Quiz, Safety Scenario Challenge, Check-In Challenge and Community Missions are being prepared." /></TabsContent>
-        <TabsContent value="join"><ComingSoonPanel icon={HeartHandshake} title="Student Roles and Volunteering" description="Campus Ambassadors, Residence Ambassadors, Crime Prevention Awareness, Administration, Marketing, Media, IT and volunteer applications are being prepared." /></TabsContent>
-        <TabsContent value="media"><ComingSoonPanel icon={Podcast} title="Blogs and Media" description="The Campus Community Podcast, vlogs, blogs, interviews, sports updates and moderated student submissions are being prepared." /></TabsContent>
-        <TabsContent value="participation"><ComingSoonPanel icon={Award} title="Community Participation Dashboard" description="Points, badges, activity history, role applications and leaderboard controls will unlock after the sports tournament pilot." /></TabsContent>
+        <TabsContent value="games"><ComingSoonPanel icon={Gamepad2} title="Community Safety Games" description="Safety Treasure Hunt, Spot the Safety Building, CPS Service Match, Campus Safety Quiz, reporting-route challenges and scenario missions are being prepared. Every game will combine entertainment with practical campus-safety knowledge." /></TabsContent>
+        <TabsContent value="join"><ComingSoonPanel icon={HeartHandshake} title="Student Safety Roles and Volunteering" description="Campus Safety Ambassadors, Residence Safety Ambassadors, Crime Prevention Awareness, Administration Support, Safety Media, IT and event-safety volunteer applications are being prepared." /></TabsContent>
+        <TabsContent value="media"><ComingSoonPanel icon={Podcast} title="Safety Blogs and Media" description="The Campus Safety Community Podcast, safety vlogs, awareness blogs, interviews, sports updates and moderated student submissions are being prepared." /></TabsContent>
+        <TabsContent value="participation"><ComingSoonPanel icon={Award} title="Community Safety Participation Dashboard" description="Safety-learning points, verified badges, activity history, role applications and leaderboard controls will unlock after the sports tournament pilot." /></TabsContent>
       </Tabs>
     </div>
   );
