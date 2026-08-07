@@ -1,0 +1,1 @@
+-- Migration history compatibility marker. The full new-user role hardening migration remains at its original authored repository timestamp. No SQL is executed here.
