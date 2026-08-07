@@ -43,7 +43,8 @@ assert(pilotAuth.includes("redirectTo: `${window.location.origin}/auth?reset=tru
 assert(authFrame.includes('BRAND.productLongName') && authFrame.includes('BRAND.institutionName'), 'Authentication preserves the canonical CCSF/TUT hierarchy.');
 assert(authFrame.includes('dark:bg-[#002F6C]/95') && pilotLayout.includes('dark:bg-[#002F6C]/95'), 'Authentication and Pilot shells retain explicit dark-mode hierarchy.');
 
-assert(manifest.name === 'My CCSF — Campus Community Safety Forum', 'PWA manifest uses the full official application name.');
+assert(manifest.name === 'Campus Safety App — Campus Community Safety Forum', 'PWA manifest uses the approved Campus Safety App name.');
+assert(manifest.short_name === 'Campus Safety App', 'PWA short name uses the approved Campus Safety App branding.');
 assert(manifest.theme_color === '#002F6C' && manifest.background_color === '#FFFFFF', 'PWA uses institutional navy with a permanent white icon/startup background.');
 assert(Array.isArray(manifest.icons) && manifest.icons.some((icon) => icon.src === '/maskable-icon-512.png' && icon.purpose === 'maskable'), 'PWA manifest includes the canonical opaque white maskable icon.');
 assert(Array.isArray(manifest.icons) && manifest.icons.some((icon) => icon.src === '/app-icon-512.png' && icon.purpose === 'any'), 'PWA manifest includes the standard opaque white app icon.');
@@ -54,15 +55,16 @@ assert(indexHtml.includes('lang="en-ZA"') && indexHtml.includes('viewport-fit=co
 assert(indexHtml.includes('content="#002F6C"') && !indexHtml.includes('#dc2626'), 'HTML theme metadata uses institutional navy with no legacy red.');
 assert(indexHtml.includes('og:image:alt') && indexHtml.includes('twitter:description'), 'Social metadata includes accessible and complete descriptions.');
 assert(indexHtml.includes('/apple-touch-icon.png') && indexHtml.includes('/favicon-32x32.png') && indexHtml.includes('/favicon-16x16.png'), 'Browser and installation metadata use canonical native-size icons.');
+assert(indexHtml.includes('Campus Safety App'), 'Browser metadata uses Campus Safety App instead of the retired product name.');
 
 assert(serviceWorker.includes("const CACHE_VERSION = 'safety-mobility-2026-07-25-v2'"), 'Service worker uses the Safety Mobility cache namespace.');
-assert(serviceWorker.includes("name.startsWith(`${CACHE_PREFIX}-`)") && serviceWorker.includes('caches.delete(name)'), 'Activation deletes every stale My CCSF cache generation.');
+assert(serviceWorker.includes("name.startsWith(`${CACHE_PREFIX}-`)") && serviceWorker.includes('caches.delete(name)'), 'Activation deletes every stale Campus Safety App cache generation.');
 assert(!serviceWorker.includes('.then(() => self.skipWaiting())'), 'Service-worker installation no longer forces an uncontrolled refresh.');
 assert(serviceWorker.includes("event.data?.type === 'SKIP_WAITING'") && serviceWorker.includes("event.data?.type === 'GET_VERSION'"), 'Service worker supports explicit update activation and version inspection.');
 assert(serviceWorker.includes("cache: 'no-store'") && serviceWorker.includes('navigationPreload.enable'), 'Navigation uses network-first replacement with navigation preload.');
 assert(!serviceWorker.includes('syncPendingIncidents') && !serviceWorker.includes("event.tag === 'sync-incidents'"), 'Unimplemented offline incident background-sync claims are removed.');
 assert(serviceWorker.includes("icon: '/app-icon-192.png'") && serviceWorker.includes("badge: '/favicon-32x32.png'"), 'Push notifications use canonical native-size identity assets.');
-assert(serviceWorker.includes('/campus-guides/pretoria-campus-structure-map.svg'), 'The traced campus structure reference is available offline without replacing live maps.');
+assert(serviceWorker.includes('/campus-guides/pretoria-campus-structure-map.svg'), 'The traced Pretoria Campus structure reference is available offline without replacing live maps.');
 
 assert(main.includes("updateViaCache: 'none'") && main.includes('registration.update()'), 'Application registration bypasses stale service-worker script caches and checks for updates.');
 assert(main.includes('SERVICE_WORKER_UPDATE_INTERVAL') && main.includes("document.visibilityState === 'visible'"), 'PWA updates are checked periodically and when the application returns to view.');
@@ -74,7 +76,7 @@ assert(!installPrompt.includes('Works offline') && installPrompt.includes('contr
 assert(!splash.includes('pixabay.com') && !splash.includes('AudioContext') && !splash.includes('Active Cameras') && !splash.includes('Response Time'), 'Splash screen contains no remote media, automatic audio or fabricated operational statistics.');
 assert(splash.includes('useReducedMotion') && splash.includes('minDuration = 1200'), 'Splash duration is short and respects reduced-motion preferences.');
 assert(splash.includes('<InstitutionBrand size="splash"') && splash.includes('BRAND.productLongName'), 'Splash uses the canonical CCSF/TUT hierarchy.');
-assert(splash.includes('bg-white') && splash.includes('MY CCSF'), 'Splash logo and product text remain visible on a premium white panel.');
+assert(splash.includes('bg-white') && splash.includes('CAMPUS SAFETY APP'), 'Splash logo and product text use the approved Campus Safety App branding on a premium white panel.');
 
 assert(!mobileNav.includes('maxItems = 5') && mobileNav.includes('overflow-x-auto'), 'Mobile navigation preserves every portal section instead of truncating after five.');
 assert(mobileNav.includes('pb-[env(safe-area-inset-bottom)]') && mobileNav.includes('aria-current='), 'Mobile navigation supports device safe areas and active-page semantics.');
