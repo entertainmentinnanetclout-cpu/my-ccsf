@@ -64,7 +64,7 @@ export const PILOT_STATUS_SEQUENCE: PilotReportStatus[] = [
 ];
 
 export const CAMPUS_LABELS: Record<Database['public']['Enums']['campus_location'], string> = {
-  pretoria_west_main: 'Pretoria West (Main Campus)',
+  pretoria_west_main: 'Pretoria Campus',
   arcadia: 'Arcadia',
   arts: 'Arts',
   giyani: 'Giyani',
