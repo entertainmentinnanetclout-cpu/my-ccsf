@@ -1,0 +1,1 @@
+-- Migration history compatibility marker. The full Phase 2 reporting-flow hardening migration remains at its original authored repository timestamp. No SQL is executed here.
