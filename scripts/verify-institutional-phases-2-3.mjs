@@ -44,14 +44,14 @@ check(radar.includes('prefers') || radar.includes('useReducedMotion'), 'Motion r
 check(!radar.includes('google.com') && !radar.includes('<iframe'), 'Campus Radar has no external map redirect or iframe dependency.');
 
 for (const phrase of [
-  'Building 21 Student Administration',
+  'Dinokeng Building (Build-21) Student Administration',
   'Registration assistance',
   'Proof of registration',
   'Academic records',
   'Campus Protection Services office',
   'Building 4',
   'G-51',
-  'CPS Control',
+  'CPS Control Room',
   'G-63',
   'Student Counselling and Student Support',
   'Mental-health support',
