@@ -1,0 +1,1 @@
+-- Migration history compatibility marker. The full scoped Pilot student identity migration remains at its original authored repository timestamp. No SQL is executed here.
