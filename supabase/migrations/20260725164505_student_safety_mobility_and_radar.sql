@@ -1,0 +1,4 @@
+-- Migration history compatibility marker.
+-- The full Student Safety Mobility migration remains in the repository at its original authored migration file.
+-- This version was recorded by the existing MY CCSF / Campus Safety App Supabase project when the migration was applied through the connected project tooling.
+-- No SQL is intentionally executed here; this file reconciles Git migration history with the already-applied remote ledger.
