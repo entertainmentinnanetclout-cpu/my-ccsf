@@ -56,12 +56,12 @@ for (const label of ['In-Transit', 'Night Travel', 'Track This Phone', 'Campus S
 check(hub.includes("import { InstitutionalCampusRadar }") && hub.includes('<InstitutionalCampusRadar'), 'Safety tab renders the first-party institutional Campus Safety Radar.');
 check(hub.includes('<CampusMap campus={campus} />'), 'Safety tab renders the internal campus plan for the verified student campus.');
 check(campusMap.includes('CampusPlanExplorer') && !campusMap.includes('<iframe') && !campusMap.includes('maps.google.com'), 'Legacy external iframe maps and generic Wi-Fi overlays are removed.');
-check(institutionalRadar.includes('LiveRadarMap') && institutionalRadar.includes('CampusPlanExplorer'), 'Campus Radar contains live and campus-plan layers inside My CCSF.');
+check(institutionalRadar.includes('LiveRadarMap') && institutionalRadar.includes('CampusPlanExplorer'), 'Campus Radar contains live and campus-plan layers inside the Campus Safety App.');
 check(institutionalRadar.includes('selfAccuracyRadius') && institutionalRadar.includes('accuracy_meters') && institutionalRadar.includes('Fix quality'), 'Live Radar visualises measured device and student uncertainty.');
 check(institutionalRadar.includes('haversineMeters') && institutionalRadar.includes('bearingDegrees') && institutionalRadar.includes('maxRange'), 'Nearby students are projected from real coordinate distance and bearing.');
 check(institutionalRadar.includes('2.5D view') && institutionalRadar.includes('rotateX') && institutionalRadar.includes('routePath'), 'Campus plan provides controlled depth and internal visual routing.');
 check(!institutionalRadar.includes('google.com/maps') && !institutionalRadar.includes('<iframe'), 'Primary Campus Radar never redirects students to an external map.');
-for (const phrase of ['Building 21', 'G-51', 'G-63', 'Student Counselling', 'Registration assistance', 'Proof of registration', 'Academic records']) {
+for (const phrase of ['Dinokeng Building (Build-21)', 'G-51', 'G-63', 'Student Counselling', 'Registration assistance', 'Proof of registration', 'Academic records']) {
   check(campusCatalog.includes(phrase), `Campus safety directory includes ${phrase}.`);
 }
 check(campusCatalog.includes("confidence: 'verified_service'") && campusCatalog.includes("confidence: 'verified_plan'"), 'Campus destinations distinguish verified service references from plan positions.');
@@ -78,7 +78,7 @@ for (const icon of ['public/app-icon-192.png', 'public/app-icon-512.png', 'publi
 }
 check(manifest.includes('/app-icon-512.png') && manifest.includes('/maskable-icon-512.png') && manifest.includes('/dashboard?tab=safety'), 'PWA manifest uses verified PNG icons and the Safety Mobility shortcut.');
 check(index.includes('sizes="180x180" href="/apple-touch-icon.png"') && index.includes('sizes="32x32" href="/favicon-32x32.png"'), 'Browser and installation metadata use verified native-size icons.');
-check(splash.includes('bg-white') && splash.includes('MY CCSF') && splash.includes('themeOverride="light"'), 'Splash displays the CCSF/TUT brand clearly on white.');
+check(splash.includes('bg-white') && splash.includes('CAMPUS SAFETY APP') && splash.includes('themeOverride="light"'), 'Splash displays the Campus Safety App with the CCSF/TUT brand clearly on white.');
 check(worker.includes('/campus-guides/pretoria-campus-structure-map.svg') && worker.includes("icon: '/app-icon-192.png'"), 'Service worker caches the campus reference and uses the canonical notification icon.');
 
 for (const forbidden of [
