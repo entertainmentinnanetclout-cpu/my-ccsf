@@ -35,14 +35,14 @@ const pilotAdmin = readFileSync('src/components/pilot/PilotSuperAdminDashboard.t
 
 for (const phrase of [
   'Join the Community',
-  'Play. Participate. Volunteer. Lead. Represent.',
-  'Sports onboarding is now live',
+  'Play. Participate. Learn Safety. Lead. Represent.',
+  'Sports onboarding is live',
   'Soccer and Netball Team Onboarding',
   'COMING SOON',
-  'Community Games',
-  'Student Roles and Volunteering',
-  'Blogs and Media',
-  'Community Participation Dashboard',
+  'Community Safety Games',
+  'Student Safety Roles and Volunteering',
+  'Safety Blogs and Media',
+  'Community Safety Participation Dashboard',
 ]) assert(hub.includes(phrase), `Community hub includes ${phrase}.`);
 
 assert(hub.includes('<SportsTournamentHub'), 'Shared Community hub renders the live Sports Tournament hub.');
@@ -91,6 +91,7 @@ assert(service.includes("cacheControl: '31536000'"), 'Stable public team logos u
 assert(service.includes('CACHE_TTL_MS = 15_000'), 'Sports snapshot requests use a short shared cache.');
 assert(service.includes('community_get_sports_hub'), 'Sports hub loads through one aggregated database RPC.');
 assert(service.includes('window.setTimeout') && service.includes('800'), 'Realtime refreshes are debounced to control database calls.');
+assert(service.includes('Campus Safety App') && service.includes('Pretoria Campus'), 'Sports fallback branding uses Campus Safety App and Pretoria Campus.');
 
 for (const typeName of [
   'SportsRole',
