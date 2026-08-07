@@ -147,7 +147,7 @@ export function SafetyQuestGame({ userId }: { userId: string | null | undefined 
         </Button>
         <div className="hidden items-center gap-2 sm:flex">
           <ShieldCheck className="h-5 w-5 text-[#F2A900]" aria-hidden="true" />
-          <span className="font-extrabold tracking-tight text-white">CCSF Safety Quest</span>
+          <span className="font-extrabold tracking-tight text-white">Campus Safety Quiz</span>
         </div>
         <div className="flex items-center gap-2 text-xs font-semibold text-white/70" role="status" aria-live="polite">
           <SyncIcon className={cn('h-4 w-4', syncState === 'saving' && 'animate-pulse')} aria-hidden="true" />
@@ -164,13 +164,13 @@ export function SafetyQuestGame({ userId }: { userId: string | null | undefined 
               className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#F2A900]/35 bg-[#F2A900]/10 px-3 py-1.5 text-xs font-black uppercase tracking-[0.16em] text-[#FFD36A]"
             >
               <Sparkles className="h-4 w-4" aria-hidden="true" />
-              Randomized TUT safety challenge
+              Randomized CPS service challenge
             </motion.div>
             <h1 id="quest-title" className="text-balance text-3xl font-black tracking-tight text-white sm:text-5xl lg:text-6xl">
-              Know the campus. <span className="text-[#F2A900]">Choose under pressure.</span>
+              Know the service. <span className="text-[#F2A900]">Choose the correct route.</span>
             </h1>
             <p className="mt-4 max-w-2xl text-sm leading-6 text-white/70 sm:text-base">
-              Complete eight missions drawn from a larger TUT Pretoria West safety bank. Questions and answer positions vary by student, and some choices are intentionally close—read the scenario carefully before you commit.
+              Complete eight randomized missions based only on the approved CPS service functions and Pretoria Campus building routes used by the Campus Safety App. Questions and answer positions vary by student.
             </p>
           </div>
 
@@ -208,7 +208,7 @@ export function SafetyQuestGame({ userId }: { userId: string | null | undefined 
           </div>
         </section>
 
-        <section className="mt-7" aria-label="Interactive Safety Quest game board">
+        <section className="mt-7" aria-label="Interactive Campus Safety Quiz game board">
           <div className="mb-3 flex items-center justify-between gap-3 px-1">
             <div className="flex items-center gap-2 text-sm font-bold text-white/75">
               <Footprints className="h-4 w-4 text-[#F2A900]" aria-hidden="true" />
@@ -249,7 +249,7 @@ export function SafetyQuestGame({ userId }: { userId: string | null | undefined 
 
                 <div className="safety-quest-scene-caption">
                   <MapPin className="h-4 w-4" aria-hidden="true" />
-                  TUT Pretoria West · Interactive safety route
+                  TUT Pretoria Campus · Interactive safety route
                 </div>
 
                 <svg className="safety-quest-route" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
@@ -335,11 +335,17 @@ export function SafetyQuestGame({ userId }: { userId: string | null | undefined 
                 <Trophy className="h-8 w-8" aria-hidden="true" />
               </motion.div>
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-black uppercase tracking-[0.16em] text-[#F2A900]">Safety Quest complete</p>
-                <h2 id="mission-complete-title" className="mt-1 text-2xl font-black text-white">You completed a personalized TUT safety set.</h2>
-                <p className="mt-2 max-w-3xl text-sm leading-6 text-white/70">
-                  Key routes to retain: student admin such as registration, proof of registration and academic records → Building 21; mental-health support → Student Counselling; CPS office → Building 4, G-51; Control/reporting → Building 4, G-63. CCSF focuses on prevention and safety awareness while CPS provides institutional protection functions.
-                </p>
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-[#F2A900]">Campus Safety Quiz complete</p>
+                <h2 id="mission-complete-title" className="mt-1 text-2xl font-black text-white">You completed a randomized CPS service and routing set.</h2>
+                <div className="mt-3 max-w-3xl space-y-1.5 text-sm leading-6 text-white/70">
+                  <p>Academic/student administration → Dinokeng Building (Build-21)</p>
+                  <p>Crime and safety incidents → Control Room, Building 4 G-63 / Campus Safety App</p>
+                  <p>Traffic cases and enquiries → Traffic Services</p>
+                  <p>Incidents after Control Room intake → Investigation</p>
+                  <p>Fire incidents → Fire and Emergency Services</p>
+                  <p>Event compliance and crime-prevention activities → Events Compliance & Crime Prevention (CCSF)</p>
+                  <p>CPS Office → Building 4 G-51</p>
+                </div>
                 <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold">
                   <span className="rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1.5 text-emerald-200">{progress.attempts} attempts</span>
                   <span className="rounded-full border border-[#F2A900]/25 bg-[#F2A900]/10 px-3 py-1.5 text-[#FFD36A]">{accuracy ?? 100}% accuracy</span>
@@ -376,9 +382,9 @@ export function SafetyQuestGame({ userId }: { userId: string | null | undefined 
               <div className="safety-quest-info-card">
                 <Users className="h-6 w-6 text-[#F2A900]" aria-hidden="true" />
                 <div>
-                  <p className="text-xs font-black uppercase tracking-[0.14em] text-white/50">No answer spoilers</p>
+                  <p className="text-xs font-black uppercase tracking-[0.14em] text-white/50">Approved source only</p>
                   <p className="mt-2 text-sm leading-6 text-white/70">
-                    Your eight questions are selected from a larger bank and answer positions are shuffled. Locations and routing answers are revealed only after you answer correctly.
+                    Your eight questions are selected from the approved CPS service and building-routing bank. Answer positions are shuffled and multi-point routes are displayed vertically for easier reading.
                   </p>
                 </div>
               </div>
@@ -477,7 +483,7 @@ export function SafetyQuestGame({ userId }: { userId: string | null | undefined 
                           >
                             <RadioGroupItem id={`quest-option-${option.id}`} value={option.id} className="border-white/35 text-[#F2A900]" />
                             <span className="safety-quest-answer-letter" aria-hidden="true">{String.fromCharCode(65 + optionIndex)}</span>
-                            <span>{option.label}</span>
+                            <span className="safety-quest-answer-copy">{option.label}</span>
                           </Label>
                         </motion.div>
                       ))}
@@ -496,7 +502,7 @@ export function SafetyQuestGame({ userId }: { userId: string | null | undefined 
                             <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-rose-300" aria-hidden="true" />
                             <div>
                               <p className="text-sm font-black text-rose-200">Not quite — reassess the route</p>
-                              <p className="mt-1 text-xs leading-5 text-white/70">Re-read the scenario and choose the most accurate TUT, CCSF or CPS action. The correct option may appear in any position.</p>
+                              <p className="mt-1 text-xs leading-5 text-white/70">Re-read the scenario and choose the most accurate CPS service or Pretoria Campus route. The correct option may appear in any position.</p>
                             </div>
                           </div>
                         </motion.div>
