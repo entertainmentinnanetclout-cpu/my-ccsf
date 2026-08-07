@@ -1,0 +1,3 @@
+-- Migration history compatibility marker for the second recorded application of Student Safety Mobility.
+-- The executable migration remains in its original authored migration file.
+-- No SQL is intentionally executed here.
