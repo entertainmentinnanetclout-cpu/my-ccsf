@@ -3,6 +3,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRuntimeControl } from '@/contexts/RuntimeControlContext';
 import { InstitutionalAccessError, InstitutionalLoadingState } from '@/components/auth/InstitutionalAccessState';
+import { DeveloperMfaGate } from '@/components/developer/DeveloperMfaGate';
 
 export function DeveloperRoute({ children }: { children: ReactNode }) {
   const location = useLocation();
@@ -33,5 +34,5 @@ export function DeveloperRoute({ children }: { children: ReactNode }) {
     );
   }
 
-  return <>{children}</>;
+  return <DeveloperMfaGate>{children}</DeveloperMfaGate>;
 }
