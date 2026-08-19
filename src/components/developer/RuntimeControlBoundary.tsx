@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Loader2, LockKeyhole, ShieldAlert, Wrench } from 'lucide-react';
-import { useLocation } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRuntimeControl } from '@/contexts/RuntimeControlContext';
 import { Button } from '@/components/ui/button';
@@ -35,6 +35,21 @@ export function RuntimeControlBoundary({ children }: { children: ReactNode }) {
         onSignOut={() => void signOut()}
       />
     );
+  }
+
+  // Developer identities are intentionally exclusive: they do not participate in
+  // Student, CPS/Security, or Admin portal routing. Keep password recovery reachable,
+  // otherwise force every authenticated developer session into the control plane.
+  const isDeveloperPasswordRecovery = location.pathname === '/auth'
+    && new URLSearchParams(location.search).get('reset') === 'true';
+  if (
+    user
+    && access?.allowed
+    && access.is_developer
+    && location.pathname !== '/developer'
+    && !isDeveloperPasswordRecovery
+  ) {
+    return <Navigate to="/developer" replace />;
   }
 
   return <>{children}</>;
