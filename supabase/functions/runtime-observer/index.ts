@@ -189,13 +189,20 @@ Deno.serve(async (req) => {
     }
   }
 
-  if (deviceHash) {
-    let existingQuery = admin.from("device_registry").select("id").eq("device_hash", deviceHash);
-    existingQuery = user ? existingQuery.eq("user_id", user.id) : existingQuery.is("user_id", null);
-    const { data: existingRows } = await existingQuery.order("last_seen_at", { ascending: false }).limit(1);
+  // Anonymous access checks stay stateless. Only authenticated users may create
+  // device/session inventory or health telemetry records.
+  if (user && deviceHash) {
+    const { data: existingRows } = await admin
+      .from("device_registry")
+      .select("id")
+      .eq("device_hash", deviceHash)
+      .eq("user_id", user.id)
+      .order("last_seen_at", { ascending: false })
+      .limit(1);
+
     const deviceData = {
       auth_session_id: authSessionId,
-      user_id: user?.id ?? null,
+      user_id: user.id,
       device_hash: deviceHash,
       device_type: typeof client.device_type === "string" ? client.device_type : ua.deviceType,
       browser_name: typeof client.browser_name === "string" ? client.browser_name : ua.browserName,
@@ -210,6 +217,7 @@ Deno.serve(async (req) => {
       network_type: typeof client.network_type === "string" ? client.network_type.slice(0, 64) : null,
       last_seen_at: new Date().toISOString(),
     };
+
     if (existingRows?.[0]?.id) {
       await admin.from("device_registry").update(deviceData).eq("id", existingRows[0].id);
     } else {
@@ -217,11 +225,11 @@ Deno.serve(async (req) => {
     }
   }
 
-  if (telemetryEnabled && payload.event && typeof payload.event === "object") {
+  if (user && telemetryEnabled && payload.event && typeof payload.event === "object") {
     const event = payload.event as Record<string, unknown>;
     const severity = ["info", "warning", "error", "critical"].includes(String(event.severity)) ? String(event.severity) : "info";
     await admin.from("runtime_events").insert({
-      user_id: user?.id ?? null,
+      user_id: user.id,
       auth_session_id: authSessionId,
       device_hash: deviceHash,
       event_type: typeof event.type === "string" ? event.type.slice(0, 80) : "client_event",
