@@ -251,7 +251,6 @@ export function GeographicCampusMap({
                 className="absolute h-64 w-64 max-w-none select-none"
                 style={{ left: tile.left, top: tile.top }}
                 loading="eager"
-                referrerPolicy="no-referrer"
               />
             ))}
           </div>
@@ -295,9 +294,14 @@ export function GeographicCampusMap({
             <Button size="icon" variant="secondary" className="h-9 w-9 shadow-lg" onClick={() => setZoom((value) => Math.max(MIN_ZOOM, value - 1))} disabled={zoom <= MIN_ZOOM} aria-label="Zoom map out"><ZoomOut className="h-4 w-4" /></Button>
           </div>
 
-          <div className="absolute bottom-2 right-2 z-30 rounded bg-white/90 px-2 py-1 text-[10px] font-semibold text-slate-700 shadow-sm">
+          <a
+            href="https://www.openstreetmap.org/copyright"
+            target="_blank"
+            rel="noreferrer"
+            className="absolute bottom-2 right-2 z-30 rounded bg-white/90 px-2 py-1 text-[10px] font-semibold text-slate-700 shadow-sm hover:underline"
+          >
             © OpenStreetMap contributors
-          </div>
+          </a>
         </div>
 
         <div className="border-t bg-background p-4 sm:p-5">
