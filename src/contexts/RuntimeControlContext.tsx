@@ -31,15 +31,17 @@ export function RuntimeControlProvider({ children }: { children: React.ReactNode
   const [snapshot, setSnapshot] = useState<RuntimeObserverResponse | null>(null);
   const [lastCheckedAt, setLastCheckedAt] = useState<Date | null>(null);
   const activeRequestRef = useRef(0);
+  const hasSnapshotRef = useRef(false);
   const routeRef = useRef(location.pathname);
 
   const refresh = useCallback(async (event?: RuntimeEventInput) => {
     const requestId = ++activeRequestRef.current;
-    if (!snapshot) setLoading(true);
+    if (!hasSnapshotRef.current) setLoading(true);
 
     try {
       const next = await observeRuntime(event);
       if (requestId !== activeRequestRef.current) return null;
+      hasSnapshotRef.current = true;
       setSnapshot(next);
       setError(null);
       setLastCheckedAt(new Date());
@@ -54,7 +56,7 @@ export function RuntimeControlProvider({ children }: { children: React.ReactNode
     } finally {
       if (requestId === activeRequestRef.current) setLoading(false);
     }
-  }, [snapshot]);
+  }, []);
 
   useEffect(() => {
     void refresh({
