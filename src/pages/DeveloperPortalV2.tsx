@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { FunctionsHttpError } from '@supabase/supabase-js';
 import type { LucideIcon } from 'lucide-react';
 import {
   Activity, AlertTriangle, Ban, CheckCircle2, CloudCog, Database, Download, Eye,
@@ -45,6 +46,13 @@ const MODULES: Record<string, string> = {
   pilot_reporting: 'Pilot Reporting', pilot_reviews: 'Pilot Reviews', pilot_resources: 'Pilot Resources', safety_quest: 'Safety Quest',
 };
 const MODES: Mode[] = ['live', 'read_only', 'maintenance', 'locked'];
+const STEP_UP_ACTIONS = new Set([
+  'set_system', 'set_campus_mode', 'create_maintenance', 'cancel_maintenance', 'set_user_access',
+  'block', 'unblock', 'revoke_session', 'revoke_user_sessions', 'toggle_feature', 'set_feature_override',
+  'remove_feature_override', 'create_feature_rule', 'delete_feature_rule', 'add_ip_allow', 'remove_ip_allow',
+  'set_ip_allowlist', 'set_alert_rule', 'ack_alert', 'ack_anomaly', 'create_release_marker', 'export_audit',
+]);
+
 const rows = (value: unknown): Row[] => Array.isArray(value) ? value.filter((item): item is Row => Boolean(item) && typeof item === 'object' && !Array.isArray(item)) : [];
 const obj = (value: unknown): Row => value && typeof value === 'object' && !Array.isArray(value) ? value as Row : {};
 const text = (value: unknown, fallback = '—') => value == null || value === '' ? fallback : String(value);
@@ -54,7 +62,21 @@ const strings = (value: unknown): string[] => Array.isArray(value) ? value.map(S
 
 async function callDeveloper(action: string, payload: Row = {}): Promise<DeveloperResponse> {
   const { data, error } = await supabase.functions.invoke<DeveloperResponse>('developer-control', { body: { action, payload } });
-  if (error) throw error;
+  if (error) {
+    if (error instanceof FunctionsHttpError) {
+      try {
+        const body = await error.context.json() as DeveloperResponse;
+        if (body?.error) {
+          const failure = new Error(body.error) as Error & { code?: string };
+          failure.code = body.code;
+          throw failure;
+        }
+      } catch (caught) {
+        if (caught instanceof Error && 'code' in caught) throw caught;
+      }
+    }
+    throw error;
+  }
   const result = data ?? {};
   if (result.error) {
     const failure = new Error(result.error) as Error & { code?: string };
@@ -133,6 +155,8 @@ export default function DeveloperPortalV2() {
 
   useEffect(() => { void load(true); }, [load]);
 
+  const freshMfaActive = () => Boolean(freshUntil && new Date(freshUntil) > new Date());
+
   const executeControl = async (control: PendingControl, afterFreshMfa = false) => {
     setBusy(control.key);
     try {
@@ -157,7 +181,17 @@ export default function DeveloperPortalV2() {
     }
   };
 
-  const mutate = (key: string, action: string, payload: Row = {}) => executeControl({ key, action, payload });
+  const mutate = async (key: string, action: string, payload: Row = {}) => {
+    const control = { key, action, payload };
+    if (STEP_UP_ACTIONS.has(action) && !freshMfaActive()) {
+      setPendingControl(control);
+      setFreshCode('');
+      setMfaError(null);
+      setFreshMfaOpen(true);
+      return null;
+    }
+    return executeControl(control);
+  };
 
   const unlockFreshMfa = async () => {
     if (!/^\d{6}$/.test(freshCode)) {
@@ -246,7 +280,7 @@ export default function DeveloperPortalV2() {
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Badge variant={freshUntil && new Date(freshUntil) > new Date() ? 'default' : 'outline'}>{freshUntil && new Date(freshUntil) > new Date() ? `Fresh MFA until ${new Date(freshUntil).toLocaleTimeString('en-ZA')}` : 'Sensitive controls locked'}</Badge>
+            <Badge variant={freshMfaActive() ? 'default' : 'outline'}>{freshMfaActive() ? `Fresh MFA until ${new Date(freshUntil!).toLocaleTimeString('en-ZA')}` : 'Sensitive controls locked'}</Badge>
             <Button variant="outline" onClick={() => { setPendingControl(null); setFreshCode(''); setMfaError(null); setFreshMfaOpen(true); }}><KeyRound className="mr-2 h-4 w-4" />Fresh MFA</Button>
             <Button variant="outline" disabled={refreshing} onClick={() => void load(false)}>{refreshing ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}Refresh</Button>
             <Button variant="ghost" onClick={() => void signOut()}><LogOut className="mr-2 h-4 w-4" />Sign out</Button>
@@ -261,7 +295,7 @@ export default function DeveloperPortalV2() {
           <Metric icon={Ban} label="Restrictions" value={text(obj(summary.restrictions).active, '0')} />
           <Metric icon={ShieldAlert} label="Open alerts" value={text(obj(summary.alerts).unacknowledged, '0')} />
           <Metric icon={Activity} label="24h telemetry" value={text(obj(summary.health_24h).total_events, '0')} />
-          <Metric icon={Fingerprint} label="Biometric policy" value={bool(system.developer_biometric_required) ? 'Required' : 'Available'} />
+          <Metric icon={Fingerprint} label="Biometric policy" value={bool(system.developer_biometric_required) ? 'Step-up required' : 'Login available'} />
         </div>
 
         <Tabs defaultValue="overview" className="space-y-5">
