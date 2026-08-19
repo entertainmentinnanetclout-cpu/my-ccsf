@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Fingerprint, KeyRound, Loader2, LockKeyhole, ShieldCheck, Smartphone } from 'lucide-react';
+import { Fingerprint, KeyRound, Loader2, LockKeyhole, Plus, ShieldCheck, Smartphone, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -154,6 +154,7 @@ export function DeveloperBiometricGate({ children }: { children: React.ReactNode
   const [error, setError] = useState<string | null>(null);
   const [freshCode, setFreshCode] = useState('');
   const [needsFreshTotp, setNeedsFreshTotp] = useState(false);
+  const [addThisDevice, setAddThisDevice] = useState(false);
   const [platformAvailable, setPlatformAvailable] = useState<boolean | null>(null);
 
   const webAuthnSupported = useMemo(() => typeof window !== 'undefined'
@@ -191,8 +192,7 @@ export function DeveloperBiometricGate({ children }: { children: React.ReactNode
     try {
       const start = await biometricCall('registration_options');
       if (!start.options || !start.challenge_id) throw new Error('Registration challenge was not returned.');
-      const publicKey = registrationOptionsFromJson(start.options);
-      const credential = await navigator.credentials.create({ publicKey }) as PublicKeyCredential | null;
+      const credential = await navigator.credentials.create({ publicKey: registrationOptionsFromJson(start.options) }) as PublicKeyCredential | null;
       if (!credential) throw new Error('No biometric credential was created.');
       const verified = await biometricCall('registration_verify', {
         challenge_id: start.challenge_id,
@@ -201,13 +201,15 @@ export function DeveloperBiometricGate({ children }: { children: React.ReactNode
       });
       if (!verified.verified) throw new Error('Biometric registration was not verified.');
       setNeedsFreshTotp(false);
+      setAddThisDevice(false);
       setFreshCode('');
       await inspect();
     } catch (caught) {
       const failure = caught as Error & { code?: string; name?: string };
       if (failure.code === 'fresh_totp_required') setNeedsFreshTotp(true);
-      if (failure.name === 'NotAllowedError') setError('Biometric registration was cancelled or timed out.');
-      else setError(failure.message || 'Unable to register this device biometric.');
+      setError(failure.name === 'NotAllowedError'
+        ? 'Biometric registration was cancelled or timed out.'
+        : failure.message || 'Unable to register this device biometric.');
     } finally {
       setWorking(false);
     }
@@ -243,8 +245,7 @@ export function DeveloperBiometricGate({ children }: { children: React.ReactNode
     try {
       const start = await biometricCall('authentication_options');
       if (!start.options || !start.challenge_id) throw new Error('Authentication challenge was not returned.');
-      const publicKey = authenticationOptionsFromJson(start.options);
-      const credential = await navigator.credentials.get({ publicKey }) as PublicKeyCredential | null;
+      const credential = await navigator.credentials.get({ publicKey: authenticationOptionsFromJson(start.options) }) as PublicKeyCredential | null;
       if (!credential) throw new Error('No biometric credential was returned.');
       const verified = await biometricCall('authentication_verify', {
         challenge_id: start.challenge_id,
@@ -280,6 +281,7 @@ export function DeveloperBiometricGate({ children }: { children: React.ReactNode
   if (!status?.biometric_required || status.assertion_active) return <>{children}</>;
 
   const needsEnrollment = status.credential_count === 0;
+  const enrollmentMode = needsEnrollment || addThisDevice;
   const localBiometricUnavailable = !webAuthnSupported || platformAvailable === false;
 
   return (
@@ -287,10 +289,10 @@ export function DeveloperBiometricGate({ children }: { children: React.ReactNode
       <Card className="w-full max-w-xl border-[#F2A900]/50 shadow-large">
         <CardHeader className="items-center text-center">
           <InstitutionBrand size="header" />
-          <div className="mt-4 rounded-full bg-primary/10 p-3">{needsEnrollment ? <Fingerprint className="h-8 w-8 text-primary" /> : <LockKeyhole className="h-8 w-8 text-primary" />}</div>
-          <CardTitle>{needsEnrollment ? 'Register developer biometric security' : 'Developer biometric verification required'}</CardTitle>
+          <div className="mt-4 rounded-full bg-primary/10 p-3">{enrollmentMode ? <Fingerprint className="h-8 w-8 text-primary" /> : <LockKeyhole className="h-8 w-8 text-primary" />}</div>
+          <CardTitle>{enrollmentMode ? 'Register this developer device' : 'Developer biometric verification required'}</CardTitle>
           <CardDescription>
-            AAL2 MFA has already been verified. The Developer Control Plane now requires a device-bound WebAuthn challenge using {platformLabel()} before system intelligence or controls are exposed.
+            AAL2 MFA has already been verified. The Developer Control Plane requires a device-bound WebAuthn challenge using {platformLabel()} before system intelligence or controls are exposed.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -304,31 +306,49 @@ export function DeveloperBiometricGate({ children }: { children: React.ReactNode
             </div>
           )}
 
-          {needsEnrollment && needsFreshTotp && (
+          {enrollmentMode && needsFreshTotp && (
             <div className="space-y-2 rounded-xl border p-4">
               <Label htmlFor="developer-biometric-fresh-totp">Fresh authenticator code</Label>
-              <p className="text-sm text-muted-foreground">Adding a new biometric device requires a TOTP verification from the last five minutes.</p>
+              <p className="text-sm text-muted-foreground">Adding any new biometric device requires a fresh TOTP verification. This protects against somebody adding their own face/fingerprint to an already-open session.</p>
               <Input id="developer-biometric-fresh-totp" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={freshCode} onChange={(event) => setFreshCode(event.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="000000" className="text-center font-mono text-xl tracking-[0.35em]" />
-              <Button className="w-full" disabled={working || freshCode.length !== 6 || localBiometricUnavailable} onClick={() => void refreshTotpAndRegister()}><KeyRound className="mr-2 h-4 w-4" />Verify MFA and register device</Button>
+              <Button className="w-full" disabled={working || freshCode.length !== 6 || localBiometricUnavailable} onClick={() => void refreshTotpAndRegister()}><KeyRound className="mr-2 h-4 w-4" />Verify MFA and register this device</Button>
             </div>
           )}
 
-          {needsEnrollment && !needsFreshTotp && (
+          {enrollmentMode && !needsFreshTotp && (
             <Button className="h-12 w-full font-bold" disabled={working || localBiometricUnavailable} onClick={() => void beginRegistration()}>
               {working ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Fingerprint className="mr-2 h-5 w-5" />}
               Set up {platformLabel()}
             </Button>
           )}
 
-          {!needsEnrollment && (
-            <Button className="h-12 w-full font-bold" disabled={working || !webAuthnSupported} onClick={() => void verifyBiometric()}>
-              {working ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <ShieldCheck className="mr-2 h-5 w-5" />}
-              Verify {platformLabel()}
+          {!enrollmentMode && (
+            <div className="space-y-2">
+              <Button className="h-12 w-full font-bold" disabled={working || !webAuthnSupported} onClick={() => void verifyBiometric()}>
+                {working ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <ShieldCheck className="mr-2 h-5 w-5" />}
+                Verify {platformLabel()}
+              </Button>
+              <Button variant="outline" className="w-full" disabled={working || localBiometricUnavailable} onClick={() => { setAddThisDevice(true); setNeedsFreshTotp(true); setError(null); }}>
+                <Plus className="mr-2 h-4 w-4" /> Register this device instead
+              </Button>
+            </div>
+          )}
+
+          {addThisDevice && !needsEnrollment && (
+            <Button variant="ghost" className="w-full" disabled={working} onClick={() => { setAddThisDevice(false); setNeedsFreshTotp(false); setFreshCode(''); setError(null); }}>
+              <X className="mr-2 h-4 w-4" /> Cancel adding device
             </Button>
           )}
 
+          {status.credentials.length > 0 && (
+            <div className="rounded-xl border p-3 text-xs text-muted-foreground">
+              <p className="font-semibold text-foreground">Registered on this CCSF origin: {status.credentials.length}</p>
+              {status.credentials.slice(0, 3).map((credential) => <p key={credential.id} className="mt-1">• {credential.friendly_name || credential.device_type || 'Developer authenticator'}{credential.last_used_at ? ` · last used ${new Date(credential.last_used_at).toLocaleString('en-ZA')}` : ''}</p>)}
+            </div>
+          )}
+
           {error && <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">{error}</div>}
-          <p className="text-center text-xs text-muted-foreground">Relying party: {status.rp_id}. Biometric assertions expire after {status.assertion_minutes} minutes and are tied to the authenticated developer session.</p>
+          <p className="text-center text-xs text-muted-foreground">Relying party: {status.rp_id}. Biometric assertions expire after {status.assertion_minutes} minutes and are tied to this authenticated developer session.</p>
         </CardContent>
       </Card>
     </main>
