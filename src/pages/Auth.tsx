@@ -1,5 +1,5 @@
 import { type FormEvent, useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, Loader2, MapPin } from 'lucide-react';
+import { ArrowLeft, Fingerprint, Loader2, MapPin, ShieldCheck } from 'lucide-react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
 import { InstitutionalAuthFrame } from '@/components/auth/InstitutionalAuthFrame';
@@ -14,6 +14,12 @@ import { CAMPUS_LABELS, PILOT_CAMPUS_VALUES } from '@/config/pilot';
 import { resolveOfficialDestination } from '@/config/officialRoutes';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import {
+  biometricPlatformLabel,
+  biometricSupported,
+  platformAuthenticatorAvailable,
+  signInWithBiometric,
+} from '@/lib/biometricAuth';
 import type { CampusLocation } from '@/types/pilot';
 
 type AuthView = 'login' | 'signup' | 'forgot-password' | 'update-password';
@@ -22,6 +28,10 @@ type RequestedLocation = string | { pathname?: unknown; search?: unknown; hash?:
 const loginSchema = z.object({
   email: z.string().trim().email('Enter a valid email address.'),
   password: z.string().min(1, 'Password is required.'),
+});
+
+const biometricLoginSchema = z.object({
+  email: z.string().trim().email('Enter your CCSF account email before using biometric sign-in.'),
 });
 
 const signupSchema = z.object({
@@ -61,11 +71,21 @@ export default function Auth() {
   const [studentNumber, setStudentNumber] = useState('');
   const [campus, setCampus] = useState<CampusLocation | ''>('');
   const [loading, setLoading] = useState(false);
+  const [biometricLoading, setBiometricLoading] = useState(false);
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (resetRequested) setView('update-password');
   }, [resetRequested]);
+
+  useEffect(() => {
+    if (!biometricSupported()) {
+      setBiometricAvailable(false);
+      return;
+    }
+    void platformAuthenticatorAvailable().then(setBiometricAvailable);
+  }, []);
 
   useEffect(() => {
     if (!user || !userRole || view === 'update-password') return;
@@ -81,7 +101,7 @@ export default function Auth() {
     if (view === 'signup') return { title: 'Create a student account', description: 'Register for official CCSF student services.' };
     if (view === 'forgot-password') return { title: 'Recover your account', description: 'Receive a secure password-recovery link.' };
     if (view === 'update-password') return { title: 'Set a new password', description: 'Choose a new password for your CCSF account.' };
-    return { title: 'Official portal sign in', description: 'Use your authorised CCSF credentials.' };
+    return { title: 'Official portal sign in', description: 'Use your authorised CCSF credentials or a biometric login you previously enabled.' };
   }, [view]);
 
   const switchView = (next: AuthView) => {
@@ -114,6 +134,41 @@ export default function Auth() {
         setErrors(nextErrors);
       }
       return false;
+    }
+  };
+
+  const handleBiometricLogin = async () => {
+    try {
+      biometricLoginSchema.parse({ email });
+      setErrors((current) => ({ ...current, email: '' }));
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        setErrors((current) => ({ ...current, email: error.errors[0]?.message ?? 'Enter your email address.' }));
+      }
+      return;
+    }
+    if (!biometricAvailable) {
+      toast({ title: 'Biometric sign-in unavailable', description: 'This browser or device does not report a supported user-verifying authenticator. Use your password instead.', variant: 'destructive' });
+      return;
+    }
+    setBiometricLoading(true);
+    try {
+      await signInWithBiometric(email);
+      toast({
+        title: 'Biometric identity verified',
+        description: 'Your CCSF account is signed in. Privileged accounts will still complete mandatory MFA before portal access.',
+      });
+    } catch (error) {
+      const failure = error as Error & { name?: string };
+      toast({
+        title: 'Biometric sign-in failed',
+        description: failure.name === 'NotAllowedError'
+          ? 'Biometric verification was cancelled or timed out. You can try again or use your password.'
+          : failure.message || 'Use your password or try biometric sign-in again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setBiometricLoading(false);
     }
   };
 
@@ -247,14 +302,27 @@ export default function Auth() {
               </Field>
             )}
 
-            <Button type="submit" className="h-12 w-full bg-gradient-to-r from-[#002F6C] to-[#0055A5] text-base font-bold text-white shadow-lg" disabled={loading}>
+            <Button type="submit" className="h-12 w-full bg-gradient-to-r from-[#002F6C] to-[#0055A5] text-base font-bold text-white shadow-lg" disabled={loading || biometricLoading}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
-              {view === 'login' && 'Sign in to CCSF'}
+              {view === 'login' && 'Sign in with password'}
               {view === 'signup' && 'Create student account'}
               {view === 'forgot-password' && 'Send recovery email'}
               {view === 'update-password' && 'Update password'}
             </Button>
           </form>
+
+          {view === 'login' && (
+            <div className="mt-4 space-y-3">
+              <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground"><span className="h-px flex-1 bg-border" />or<span className="h-px flex-1 bg-border" /></div>
+              <Button type="button" variant="outline" className="h-12 w-full border-[#002F6C]/25 font-bold" disabled={!biometricAvailable || loading || biometricLoading} onClick={() => void handleBiometricLogin()}>
+                {biometricLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Fingerprint className="mr-2 h-5 w-5 text-[#002F6C]" />}
+                Sign in with {biometricPlatformLabel()}
+              </Button>
+              <div className="rounded-xl border bg-muted/35 p-3 text-xs leading-5 text-muted-foreground">
+                <div className="flex items-start gap-2"><ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" /><span>Biometric sign-in must first be enabled from your account security settings on a supported device. It replaces the password step only. Admin, CPS/Security and Developer accounts still complete mandatory MFA.</span></div>
+              </div>
+            </div>
+          )}
 
           <div className="mt-4 flex flex-col items-center gap-1 text-sm">
             {view === 'login' && <Button variant="link" onClick={() => switchView('forgot-password')}>Forgot your password?</Button>}

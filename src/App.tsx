@@ -28,6 +28,7 @@ import Admin from './pages/Admin';
 import Office from './pages/Office';
 import Profile from './pages/Profile';
 import ProfileCompletion from './pages/ProfileCompletion';
+import SecuritySettings from './pages/SecuritySettings';
 import Judiciary from './pages/Judiciary';
 import Security from './pages/Security';
 import SafetyQuest from './pages/SafetyQuest';
@@ -60,6 +61,7 @@ const App = () => (
                   <PilotModeProvider>
                     <Routes>
                       <Route path="/developer" element={<DeveloperRoute><DeveloperPortalV2 /></DeveloperRoute>} />
+                      <Route path="/developer/security-settings" element={<DeveloperRoute><SecuritySettings /></DeveloperRoute>} />
                       <Route path="/pilot/auth" element={<PilotEntryIntentBoundary><PilotAuth /></PilotEntryIntentBoundary>} />
 
                       <Route element={<PilotInstitutionalLayout />}>
@@ -85,6 +87,7 @@ const App = () => (
                         <Route path="/admin/*" element={<FeatureRoute feature="admin_portal"><ProtectedRoute allowedRoles={['admin']}><Admin /></ProtectedRoute></FeatureRoute>} />
                         <Route path="/office" element={<FeatureRoute feature="cps_portal"><ProtectedRoute allowedRoles={['security', 'admin']}><Office /></ProtectedRoute></FeatureRoute>} />
                         <Route path="/profile" element={<ProtectedRoute allowedRoles={['student', 'security', 'admin']}><Profile /></ProtectedRoute>} />
+                        <Route path="/settings/security" element={<ProtectedRoute allowedRoles={['student', 'security', 'admin']}><SecuritySettings /></ProtectedRoute>} />
                         <Route path="/profile-completion" element={<ProtectedRoute allowedRoles={['student', 'security', 'admin']}><PilotPostProfileRedirect><ProfileCompletion /></PilotPostProfileRedirect></ProtectedRoute>} />
                         <Route path="/judiciary" element={<FeatureRoute feature="judiciary"><ProtectedRoute allowedRoles={['security', 'admin']}><Judiciary /></ProtectedRoute></FeatureRoute>} />
                         <Route path="*" element={<NotFound />} />

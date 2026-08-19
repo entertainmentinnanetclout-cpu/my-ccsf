@@ -1,6 +1,7 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { InstitutionalAccessError, InstitutionalLoadingState } from '@/components/auth/InstitutionalAccessState';
+import { PrivilegedMfaGate } from '@/components/auth/PrivilegedMfaGate';
 import {
   isApprovedPilotPath,
   isPilotAdminPath,
@@ -45,6 +46,9 @@ export const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) 
   }
 
   if (!allowedRoles || allowedRoles.length === 0 || allowedRoles.includes(userRole)) {
+    if (userRole === 'admin' || userRole === 'security') {
+      return <PrivilegedMfaGate role={userRole}>{children}</PrivilegedMfaGate>;
+    }
     return <>{children}</>;
   }
 
