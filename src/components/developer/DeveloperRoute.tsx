@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRuntimeControl } from '@/contexts/RuntimeControlContext';
 import { InstitutionalAccessError, InstitutionalLoadingState } from '@/components/auth/InstitutionalAccessState';
 import { DeveloperMfaGate } from '@/components/developer/DeveloperMfaGate';
+import { DeveloperBiometricGate } from '@/components/developer/DeveloperBiometricGate';
 
 export function DeveloperRoute({ children }: { children: ReactNode }) {
   const location = useLocation();
@@ -34,5 +35,9 @@ export function DeveloperRoute({ children }: { children: ReactNode }) {
     );
   }
 
-  return <DeveloperMfaGate>{children}</DeveloperMfaGate>;
+  return (
+    <DeveloperMfaGate>
+      <DeveloperBiometricGate>{children}</DeveloperBiometricGate>
+    </DeveloperMfaGate>
+  );
 }
