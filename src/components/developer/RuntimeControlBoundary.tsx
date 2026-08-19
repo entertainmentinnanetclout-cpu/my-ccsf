@@ -23,10 +23,11 @@ export function RuntimeControlBoundary({ children }: { children: ReactNode }) {
   if (error && !access) return <>{children}</>;
 
   if (access && !access.allowed) {
-    const isDeveloperRecoveryPath = !user
-      && access.reason === 'system_paused'
-      && RECOVERY_AUTH_PATHS.has(location.pathname);
-    if (isDeveloperRecoveryPath) return <>{children}</>;
+    // Authentication itself is a recovery surface, not an application entitlement.
+    // Anonymous visitors may always reach sign-in; restrictions are re-evaluated as soon
+    // as identity is known. This prevents an owner from locking themselves out by IP/device.
+    const isAnonymousRecoveryPath = !user && RECOVERY_AUTH_PATHS.has(location.pathname);
+    if (isAnonymousRecoveryPath) return <>{children}</>;
 
     return (
       <RuntimeDeniedState
