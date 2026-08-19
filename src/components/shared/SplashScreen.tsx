@@ -59,7 +59,7 @@ export default function SplashScreen({ onComplete, minDuration = 1200 }: SplashS
           <ShieldCheck className="h-4 w-4" aria-hidden="true" /> Official institutional application
         </div>
 
-        <h1 aria-label="MY CCSF" className="mt-5 text-3xl font-extrabold tracking-tight sm:text-4xl">{BRAND.productName}</h1>
+        <h1 aria-label="MY CCSF" className="mt-5 text-3xl font-extrabold tracking-tight sm:text-4xl">{BRAND.productLongName}</h1>
         <p className="mt-2 text-sm font-semibold text-white/75 sm:text-base">Campus Community Safety Forum · {BRAND.institutionName}</p>
 
         <div className="mx-auto mt-8 max-w-md">
