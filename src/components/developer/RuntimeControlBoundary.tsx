@@ -37,16 +37,17 @@ export function RuntimeControlBoundary({ children }: { children: ReactNode }) {
     );
   }
 
-  // Developer identities are intentionally exclusive: they do not participate in
-  // Student, CPS/Security, or Admin portal routing. Keep password recovery reachable,
-  // otherwise force every authenticated developer session into the control plane.
+  // Developer identities are intentionally exclusive: they cannot enter Student,
+  // CPS/Security, or Admin portals. The complete /developer namespace remains
+  // available for owner-only control-plane and security settings.
   const isDeveloperPasswordRecovery = location.pathname === '/auth'
     && new URLSearchParams(location.search).get('reset') === 'true';
+  const isDeveloperNamespace = location.pathname === '/developer' || location.pathname.startsWith('/developer/');
   if (
     user
     && access?.allowed
     && access.is_developer
-    && location.pathname !== '/developer'
+    && !isDeveloperNamespace
     && !isDeveloperPasswordRecovery
   ) {
     return <Navigate to="/developer" replace />;
