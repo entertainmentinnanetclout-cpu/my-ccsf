@@ -7,7 +7,10 @@ import { ThemeProvider } from 'next-themes';
 import React from 'react';
 import { AuthProvider } from './contexts/AuthContext';
 import { PilotModeProvider } from './contexts/PilotModeContext';
+import { RuntimeControlProvider } from './contexts/RuntimeControlContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { DeveloperRoute } from './components/developer/DeveloperRoute';
+import { FeatureRoute, RuntimeControlBoundary } from './components/developer/RuntimeControlBoundary';
 import { PilotRouteGuard } from './components/pilot/PilotRouteGuard';
 import { PilotPostProfileRedirect } from './components/pilot/PilotPostProfileRedirect';
 import { OfficialEntryIntentBoundary, PilotEntryIntentBoundary } from './components/pilot/PilotIntentBoundary';
@@ -28,6 +31,7 @@ import ProfileCompletion from './pages/ProfileCompletion';
 import Judiciary from './pages/Judiciary';
 import Security from './pages/Security';
 import SafetyQuest from './pages/SafetyQuest';
+import DeveloperPortal from './pages/DeveloperPortal';
 import PilotAuth from './pages/pilot/PilotAuth';
 import PilotLanding from './pages/pilot/PilotLanding';
 import PilotSession from './pages/pilot/PilotSession';
@@ -53,89 +57,114 @@ const App = () => (
           <ConnectivityBanner />
           <BrowserRouter>
             <AuthProvider>
-              <PilotModeProvider>
-                <Routes>
-                  <Route path="/pilot/auth" element={<PilotEntryIntentBoundary><PilotAuth /></PilotEntryIntentBoundary>} />
+              <RuntimeControlProvider>
+                <RuntimeControlBoundary>
+                  <PilotModeProvider>
+                    <Routes>
+                      <Route path="/developer" element={<DeveloperRoute><DeveloperPortal /></DeveloperRoute>} />
+                      <Route path="/pilot/auth" element={<PilotEntryIntentBoundary><PilotAuth /></PilotEntryIntentBoundary>} />
 
-                  <Route element={<PilotInstitutionalLayout />}>
-                    <Route path="/pilot" element={
-                      <ProtectedRoute allowedRoles={['student']}>
-                        <PilotRouteGuard allowedRoles={['student']}><PilotLanding /></PilotRouteGuard>
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/pilot/session/:sessionId" element={
-                      <ProtectedRoute allowedRoles={['student']}>
-                        <PilotRouteGuard allowedRoles={['student']}><PilotSession /></PilotRouteGuard>
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/pilot/report/:reportId" element={
-                      <ProtectedRoute allowedRoles={['student', 'security', 'admin']}>
-                        <PilotRouteGuard allowedRoles={['student', 'security', 'admin']}><PilotReportTracking /></PilotRouteGuard>
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/pilot/reviews" element={
-                      <ProtectedRoute allowedRoles={['student']}>
-                        <PilotRouteGuard allowedRoles={['student']}><PilotReviews /></PilotRouteGuard>
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/pilot/resources" element={
-                      <ProtectedRoute allowedRoles={['student']}>
-                        <PilotRouteGuard allowedRoles={['student']}><PilotResources /></PilotRouteGuard>
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/pilot/safety-quest" element={
-                      <ProtectedRoute allowedRoles={['student']}>
-                        <PilotRouteGuard allowedRoles={['student']}><SafetyQuest /></PilotRouteGuard>
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/security/pilot" element={
-                      <ProtectedRoute allowedRoles={['security', 'admin']}>
-                        <PilotRouteGuard allowedRoles={['security', 'admin']}><CampusPilotPage /></PilotRouteGuard>
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/security/pilot/reviews" element={
-                      <ProtectedRoute allowedRoles={['security', 'admin']}>
-                        <PilotRouteGuard allowedRoles={['security', 'admin']}><PilotReviewManagement /></PilotRouteGuard>
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/admin/pilot" element={
-                      <ProtectedRoute allowedRoles={['admin']}>
-                        <PilotRouteGuard allowedRoles={['admin']}><SuperAdminPilotPage /></PilotRouteGuard>
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/admin/pilot/reviews" element={
-                      <ProtectedRoute allowedRoles={['admin']}>
-                        <PilotRouteGuard allowedRoles={['admin']}><PilotReviewManagement /></PilotRouteGuard>
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/admin/pilot/content" element={
-                      <ProtectedRoute allowedRoles={['admin']}>
-                        <PilotRouteGuard allowedRoles={['admin']}><PilotContentManagement /></PilotRouteGuard>
-                      </ProtectedRoute>
-                    } />
-                  </Route>
+                      <Route element={<PilotInstitutionalLayout />}>
+                        <Route path="/pilot" element={
+                          <ProtectedRoute allowedRoles={['student']}>
+                            <PilotRouteGuard allowedRoles={['student']}><PilotLanding /></PilotRouteGuard>
+                          </ProtectedRoute>
+                        } />
+                        <Route path="/pilot/session/:sessionId" element={
+                          <FeatureRoute feature="pilot_reporting">
+                            <ProtectedRoute allowedRoles={['student']}>
+                              <PilotRouteGuard allowedRoles={['student']}><PilotSession /></PilotRouteGuard>
+                            </ProtectedRoute>
+                          </FeatureRoute>
+                        } />
+                        <Route path="/pilot/report/:reportId" element={
+                          <FeatureRoute feature="pilot_reporting">
+                            <ProtectedRoute allowedRoles={['student', 'security', 'admin']}>
+                              <PilotRouteGuard allowedRoles={['student', 'security', 'admin']}><PilotReportTracking /></PilotRouteGuard>
+                            </ProtectedRoute>
+                          </FeatureRoute>
+                        } />
+                        <Route path="/pilot/reviews" element={
+                          <FeatureRoute feature="pilot_reviews">
+                            <ProtectedRoute allowedRoles={['student']}>
+                              <PilotRouteGuard allowedRoles={['student']}><PilotReviews /></PilotRouteGuard>
+                            </ProtectedRoute>
+                          </FeatureRoute>
+                        } />
+                        <Route path="/pilot/resources" element={
+                          <FeatureRoute feature="pilot_resources">
+                            <ProtectedRoute allowedRoles={['student']}>
+                              <PilotRouteGuard allowedRoles={['student']}><PilotResources /></PilotRouteGuard>
+                            </ProtectedRoute>
+                          </FeatureRoute>
+                        } />
+                        <Route path="/pilot/safety-quest" element={
+                          <FeatureRoute feature="safety_quest">
+                            <ProtectedRoute allowedRoles={['student']}>
+                              <PilotRouteGuard allowedRoles={['student']}><SafetyQuest /></PilotRouteGuard>
+                            </ProtectedRoute>
+                          </FeatureRoute>
+                        } />
+                        <Route path="/security/pilot" element={
+                          <FeatureRoute feature="pilot_reporting">
+                            <ProtectedRoute allowedRoles={['security', 'admin']}>
+                              <PilotRouteGuard allowedRoles={['security', 'admin']}><CampusPilotPage /></PilotRouteGuard>
+                            </ProtectedRoute>
+                          </FeatureRoute>
+                        } />
+                        <Route path="/security/pilot/reviews" element={
+                          <FeatureRoute feature="pilot_reviews">
+                            <ProtectedRoute allowedRoles={['security', 'admin']}>
+                              <PilotRouteGuard allowedRoles={['security', 'admin']}><PilotReviewManagement /></PilotRouteGuard>
+                            </ProtectedRoute>
+                          </FeatureRoute>
+                        } />
+                        <Route path="/admin/pilot" element={
+                          <FeatureRoute feature="pilot_reporting">
+                            <ProtectedRoute allowedRoles={['admin']}>
+                              <PilotRouteGuard allowedRoles={['admin']}><SuperAdminPilotPage /></PilotRouteGuard>
+                            </ProtectedRoute>
+                          </FeatureRoute>
+                        } />
+                        <Route path="/admin/pilot/reviews" element={
+                          <FeatureRoute feature="pilot_reviews">
+                            <ProtectedRoute allowedRoles={['admin']}>
+                              <PilotRouteGuard allowedRoles={['admin']}><PilotReviewManagement /></PilotRouteGuard>
+                            </ProtectedRoute>
+                          </FeatureRoute>
+                        } />
+                        <Route path="/admin/pilot/content" element={
+                          <ProtectedRoute allowedRoles={['admin']}>
+                            <PilotRouteGuard allowedRoles={['admin']}><PilotContentManagement /></PilotRouteGuard>
+                          </ProtectedRoute>
+                        } />
+                      </Route>
 
-                  <Route path="/safety-quest" element={
-                    <ProtectedRoute allowedRoles={['student']}>
-                      <SafetyQuest />
-                    </ProtectedRoute>
-                  } />
-                  <Route element={<Layout />}>
-                    <Route path="/" element={<Index />} />
-                    <Route path="/auth" element={<OfficialEntryIntentBoundary><Auth /></OfficialEntryIntentBoundary>} />
-                    <Route path="/dashboard" element={<ProtectedRoute allowedRoles={['student']}><PilotPostProfileRedirect><Dashboard /></PilotPostProfileRedirect></ProtectedRoute>} />
-                    <Route path="/security/*" element={<ProtectedRoute allowedRoles={['security', 'admin']}><Security /></ProtectedRoute>} />
-                    <Route path="/admin/*" element={<ProtectedRoute allowedRoles={['admin']}><Admin /></ProtectedRoute>} />
-                    <Route path="/office" element={<ProtectedRoute allowedRoles={['security', 'admin']}><Office /></ProtectedRoute>} />
-                    <Route path="/profile" element={<ProtectedRoute allowedRoles={['student', 'security', 'admin']}><Profile /></ProtectedRoute>} />
-                    <Route path="/profile-completion" element={<ProtectedRoute allowedRoles={['student', 'security', 'admin']}><PilotPostProfileRedirect><ProfileCompletion /></PilotPostProfileRedirect></ProtectedRoute>} />
-                    <Route path="/judiciary" element={<ProtectedRoute allowedRoles={['security', 'admin']}><Judiciary /></ProtectedRoute>} />
-                    <Route path="*" element={<NotFound />} />
-                  </Route>
-                </Routes>
-                <PWAInstallPrompt />
-                <PWAUpdatePrompt />
-              </PilotModeProvider>
+                      <Route path="/safety-quest" element={
+                        <FeatureRoute feature="safety_quest">
+                          <ProtectedRoute allowedRoles={['student']}>
+                            <SafetyQuest />
+                          </ProtectedRoute>
+                        </FeatureRoute>
+                      } />
+                      <Route element={<Layout />}>
+                        <Route path="/" element={<Index />} />
+                        <Route path="/auth" element={<OfficialEntryIntentBoundary><Auth /></OfficialEntryIntentBoundary>} />
+                        <Route path="/dashboard" element={<FeatureRoute feature="official_dashboard"><ProtectedRoute allowedRoles={['student']}><PilotPostProfileRedirect><Dashboard /></PilotPostProfileRedirect></ProtectedRoute></FeatureRoute>} />
+                        <Route path="/security/*" element={<ProtectedRoute allowedRoles={['security', 'admin']}><Security /></ProtectedRoute>} />
+                        <Route path="/admin/*" element={<ProtectedRoute allowedRoles={['admin']}><Admin /></ProtectedRoute>} />
+                        <Route path="/office" element={<ProtectedRoute allowedRoles={['security', 'admin']}><Office /></ProtectedRoute>} />
+                        <Route path="/profile" element={<ProtectedRoute allowedRoles={['student', 'security', 'admin']}><Profile /></ProtectedRoute>} />
+                        <Route path="/profile-completion" element={<ProtectedRoute allowedRoles={['student', 'security', 'admin']}><PilotPostProfileRedirect><ProfileCompletion /></PilotPostProfileRedirect></ProtectedRoute>} />
+                        <Route path="/judiciary" element={<ProtectedRoute allowedRoles={['security', 'admin']}><Judiciary /></ProtectedRoute>} />
+                        <Route path="*" element={<NotFound />} />
+                      </Route>
+                    </Routes>
+                    <PWAInstallPrompt />
+                    <PWAUpdatePrompt />
+                  </PilotModeProvider>
+                </RuntimeControlBoundary>
+              </RuntimeControlProvider>
             </AuthProvider>
           </BrowserRouter>
         </TooltipProvider>
