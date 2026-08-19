@@ -1,10 +1,12 @@
 import type { ReactNode } from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { Fingerprint } from 'lucide-react';
+import { Link, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRuntimeControl } from '@/contexts/RuntimeControlContext';
 import { InstitutionalAccessError, InstitutionalLoadingState } from '@/components/auth/InstitutionalAccessState';
 import { DeveloperMfaGate } from '@/components/developer/DeveloperMfaGate';
 import { DeveloperBiometricGate } from '@/components/developer/DeveloperBiometricGate';
+import { Button } from '@/components/ui/button';
 
 export function DeveloperRoute({ children }: { children: ReactNode }) {
   const location = useLocation();
@@ -37,7 +39,14 @@ export function DeveloperRoute({ children }: { children: ReactNode }) {
 
   return (
     <DeveloperMfaGate>
-      <DeveloperBiometricGate>{children}</DeveloperBiometricGate>
+      <DeveloperBiometricGate>
+        {children}
+        {location.pathname === '/developer' && (
+          <Button asChild className="fixed bottom-5 right-5 z-[80] min-h-12 rounded-full px-5 shadow-xl">
+            <Link to="/developer/security-settings"><Fingerprint className="mr-2 h-5 w-5" />Login security</Link>
+          </Button>
+        )}
+      </DeveloperBiometricGate>
     </DeveloperMfaGate>
   );
 }
