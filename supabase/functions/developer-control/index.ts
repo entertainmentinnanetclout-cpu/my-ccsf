@@ -72,23 +72,24 @@ Deno.serve(async (req) => {
   let body: Record<string, unknown>;
   try { body = await req.json(); } catch { return json({ error: "Invalid JSON body" }, 400); }
   const action = asString(body.action, 80);
-  const payload = typeof body.payload === "object" && body.payload ? body.payload as Record<string, unknown> : {};
+  const payload = typeof body.payload === "object" && body.payload ? payloadObject(body.payload) : {};
 
-  const audit = async (auditAction: string, targetType?: string, targetId?: string, details: Record<string, unknown> = {}) => {
-    await admin.from("developer_audit_logs").insert({
+  async function audit(auditAction: string, targetType?: string, targetId?: string, details: Record<string, unknown> = {}) {
+    const { error } = await admin.from("developer_audit_logs").insert({
       developer_id: user.id,
       action: auditAction,
       target_type: targetType ?? null,
       target_id: targetId ?? null,
       details,
     });
-  };
+    if (error) console.error("Developer audit insert failed", error);
+  }
 
   if (action === "summary") {
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const [users, sessions, events, controls, restrictions] = await Promise.all([
-      caller.rpc("developer_user_overview"),
-      caller.rpc("developer_session_overview"),
+      admin.rpc("developer_user_overview"),
+      admin.rpc("developer_session_overview"),
       admin.from("runtime_events").select("severity,event_type,created_at").gte("created_at", since),
       admin.from("runtime_controls").select("key,config").eq("key", "system").maybeSingle(),
       admin.from("access_restrictions").select("id", { count: "exact", head: true }).eq("active", true),
@@ -98,8 +99,8 @@ Deno.serve(async (req) => {
     const sessionRows = sessions.data ?? [];
     const eventRows = events.data ?? [];
     const byStatus: Record<string, number> = {};
-    for (const row of userRows) byStatus[row.access_status] = (byStatus[row.access_status] ?? 0) + 1;
     const bySeverity: Record<string, number> = {};
+    for (const row of userRows) byStatus[row.access_status] = (byStatus[row.access_status] ?? 0) + 1;
     for (const row of eventRows) bySeverity[row.severity] = (bySeverity[row.severity] ?? 0) + 1;
     return json({
       users: { total: userRows.length, by_status: byStatus },
@@ -112,19 +113,17 @@ Deno.serve(async (req) => {
   }
 
   if (action === "list_users") {
-    const { data, error } = await caller.rpc("developer_user_overview");
+    const { data, error } = await admin.rpc("developer_user_overview");
     if (error) return json({ error: error.message }, 500);
     const query = asString(payload.query, 120).toLowerCase();
     let rows = data ?? [];
-    if (query) {
-      rows = rows.filter((row: Record<string, unknown>) => [row.email, row.full_name, row.first_name, row.last_name, row.campus]
-        .some((value) => typeof value === "string" && value.toLowerCase().includes(query)));
-    }
+    if (query) rows = rows.filter((row: Record<string, unknown>) => [row.email,row.full_name,row.first_name,row.last_name,row.campus]
+      .some((value) => typeof value === "string" && value.toLowerCase().includes(query)));
     return json({ users: rows.slice(0, 500) });
   }
 
   if (action === "list_sessions") {
-    const { data, error } = await caller.rpc("developer_session_overview");
+    const { data, error } = await admin.rpc("developer_session_overview");
     if (error) return json({ error: error.message }, 500);
     const rows = (data ?? []).map((row: Record<string, unknown>) => {
       const parsed = parseUserAgent(typeof row.user_agent === "string" ? row.user_agent : null);
@@ -160,8 +159,7 @@ Deno.serve(async (req) => {
   if (action === "list_health") {
     const hours = Math.max(1, Math.min(168, Number(payload.hours) || 24));
     const since = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
-    const { data, error } = await admin
-      .from("runtime_events")
+    const { data, error } = await admin.from("runtime_events")
       .select("id,user_id,auth_session_id,device_hash,event_type,severity,route,message,duration_ms,status_code,metadata,created_at")
       .gte("created_at", since)
       .order("created_at", { ascending: false })
@@ -198,7 +196,7 @@ Deno.serve(async (req) => {
   if (action === "set_system") {
     const { data: current, error: currentError } = await admin.from("runtime_controls").select("config").eq("key", "system").single();
     if (currentError) return json({ error: currentError.message }, 500);
-    const patch = typeof payload.config === "object" && payload.config ? payload.config as Record<string, unknown> : {};
+    const patch = typeof payload.config === "object" && payload.config ? payloadObject(payload.config) : {};
     const next = { ...(current.config ?? {}), ...patch };
     if (next.mode && !["live", "maintenance", "locked"].includes(String(next.mode))) return json({ error: "Invalid system mode" }, 400);
     const { error } = await admin.from("runtime_controls").update({ config: next, updated_by: user.id, updated_at: new Date().toISOString() }).eq("key", "system");
@@ -211,14 +209,15 @@ Deno.serve(async (req) => {
     const userId = asString(payload.user_id, 64);
     const status = asString(payload.status, 32);
     const reason = asString(payload.reason, 1000);
-    if (!userId || !["pending", "approved", "suspended", "blocked"].includes(status)) return json({ error: "Invalid user access request" }, 400);
+    if (!userId || !["pending","approved","suspended","blocked"].includes(status)) return json({ error: "Invalid user access request" }, 400);
     const values: Record<string, unknown> = { status, reason: reason || null, updated_at: new Date().toISOString() };
     if (status === "approved") { values.approved_by = user.id; values.approved_at = new Date().toISOString(); }
     const { error } = await admin.from("user_access").upsert({ user_id: userId, ...values }, { onConflict: "user_id" });
     if (error) return json({ error: error.message }, 500);
     let revoked = 0;
-    if (["blocked", "suspended"].includes(status)) {
-      const result = await caller.rpc("developer_revoke_user_sessions", { target_user_id: userId, revoke_reason: reason || `Access ${status}` });
+    if (["blocked","suspended"].includes(status)) {
+      const result = await admin.rpc("developer_revoke_user_sessions", { target_user_id: userId, revoke_reason: reason || `Access ${status}` });
+      if (result.error) return json({ error: result.error.message }, 500);
       revoked = result.data ?? 0;
     }
     await audit("set_user_access", "user", userId, { status, reason, revoked_sessions: revoked });
@@ -229,7 +228,7 @@ Deno.serve(async (req) => {
     const kind = asString(payload.kind, 20);
     const value = asString(payload.value, 500);
     const reason = asString(payload.reason, 1000) || "Developer restriction";
-    if (!["user", "email", "ip", "device", "session"].includes(kind) || !value) return json({ error: "Invalid restriction" }, 400);
+    if (!["user","email","ip","device","session"].includes(kind) || !value) return json({ error: "Invalid restriction" }, 400);
     const record: Record<string, unknown> = { restriction_kind: kind, reason, created_by: user.id, active: true };
     if (kind === "user") record.target_user_id = value;
     if (kind === "email") record.target_email = value.toLowerCase();
@@ -240,9 +239,13 @@ Deno.serve(async (req) => {
     if (error) return json({ error: error.message }, 500);
     if (kind === "user") {
       await admin.from("user_access").upsert({ user_id: value, status: "blocked", reason, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
-      await caller.rpc("developer_revoke_user_sessions", { target_user_id: value, revoke_reason: reason });
+      const revoke = await admin.rpc("developer_revoke_user_sessions", { target_user_id: value, revoke_reason: reason });
+      if (revoke.error) return json({ error: revoke.error.message }, 500);
     }
-    if (kind === "session") await caller.rpc("developer_revoke_session", { target_session_id: value, revoke_reason: reason });
+    if (kind === "session") {
+      const revoke = await admin.rpc("developer_revoke_session", { target_session_id: value, revoke_reason: reason });
+      if (revoke.error) return json({ error: revoke.error.message }, 500);
+    }
     await audit("block", kind, value, { restriction_id: data.id, reason });
     return json({ success: true, restriction: data });
   }
@@ -265,8 +268,9 @@ Deno.serve(async (req) => {
     const sessionId = asString(payload.session_id, 64);
     const reason = asString(payload.reason, 1000) || "Revoked by developer";
     if (!sessionId) return json({ error: "Session ID required" }, 400);
-    const { data, error } = await caller.rpc("developer_revoke_session", { target_session_id: sessionId, revoke_reason: reason });
+    const { data, error } = await admin.rpc("developer_revoke_session", { target_session_id: sessionId, revoke_reason: reason });
     if (error) return json({ error: error.message }, 500);
+    await audit("revoke_session", "session", sessionId, { reason });
     return json({ success: Boolean(data) });
   }
 
@@ -274,8 +278,9 @@ Deno.serve(async (req) => {
     const userId = asString(payload.user_id, 64);
     const reason = asString(payload.reason, 1000) || "Revoked by developer";
     if (!userId) return json({ error: "User ID required" }, 400);
-    const { data, error } = await caller.rpc("developer_revoke_user_sessions", { target_user_id: userId, revoke_reason: reason });
+    const { data, error } = await admin.rpc("developer_revoke_user_sessions", { target_user_id: userId, revoke_reason: reason });
     if (error) return json({ error: error.message }, 500);
+    await audit("revoke_user_sessions", "user", userId, { reason, session_count: data ?? 0 });
     return json({ success: true, revoked_sessions: data ?? 0 });
   }
 
@@ -313,3 +318,7 @@ Deno.serve(async (req) => {
 
   return json({ error: "Unknown action" }, 400);
 });
+
+function payloadObject(value: object): Record<string, unknown> {
+  return value as Record<string, unknown>;
+}
