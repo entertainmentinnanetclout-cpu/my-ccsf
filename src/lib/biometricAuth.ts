@@ -26,6 +26,13 @@ export type PreparedBiometricRegistration = {
   prepared_at: number;
 };
 
+export type PreparedBiometricSignIn = {
+  email: string;
+  challenge_id: string;
+  publicKey: PublicKeyCredentialRequestOptions;
+  prepared_at: number;
+};
+
 type BiometricResponse = {
   error?: string;
   code?: string;
@@ -176,14 +183,29 @@ export function biometricPlatformLabel() {
   return 'device biometric / passkey';
 }
 
-export async function signInWithBiometric(email: string) {
+export async function prepareBiometricSignIn(email: string): Promise<PreparedBiometricSignIn> {
   if (!biometricSupported()) throw new Error('This browser does not support biometric WebAuthn sign-in.');
-  const start = await biometricCall('authentication_options', { email: email.trim().toLowerCase() });
+  const normalizedEmail = email.trim().toLowerCase();
+  const start = await biometricCall('authentication_options', { email: normalizedEmail });
   if (!start.options || !start.challenge_id) throw new Error('Biometric authentication challenge was not returned.');
-  const credential = await navigator.credentials.get({ publicKey: authenticationOptionsFromJson(start.options) }) as PublicKeyCredential | null;
+  return {
+    email: normalizedEmail,
+    challenge_id: start.challenge_id,
+    publicKey: authenticationOptionsFromJson(start.options),
+    prepared_at: Date.now(),
+  };
+}
+
+export async function completeBiometricSignIn(prepared: PreparedBiometricSignIn) {
+  if (!biometricSupported()) throw new Error('This browser does not support biometric WebAuthn sign-in.');
+  if (Date.now() - prepared.prepared_at > 4 * 60_000) {
+    throw codedError('The biometric sign-in request expired. Prepare a new request and try again.', 'challenge_stale');
+  }
+
+  const credential = await navigator.credentials.get({ publicKey: prepared.publicKey }) as PublicKeyCredential | null;
   if (!credential) throw new Error('No biometric credential was returned.');
   const verified = await biometricCall('authentication_verify', {
-    challenge_id: start.challenge_id,
+    challenge_id: prepared.challenge_id,
     response: serializeAuthentication(credential),
   });
   if (!verified.verified || !verified.token_hash) throw new Error('Biometric verification succeeded but no CCSF sign-in token was returned.');
@@ -191,6 +213,11 @@ export async function signInWithBiometric(email: string) {
   if (error) throw error;
   if (!data.session || !data.user) throw new Error('CCSF could not create an authenticated session after biometric verification.');
   return data;
+}
+
+export async function signInWithBiometric(email: string) {
+  const prepared = await prepareBiometricSignIn(email);
+  return completeBiometricSignIn(prepared);
 }
 
 export async function getBiometricStatus(): Promise<BiometricStatus> {
@@ -204,11 +231,6 @@ export async function getBiometricStatus(): Promise<BiometricStatus> {
   };
 }
 
-/**
- * Stage one of registration. This intentionally performs all network work before
- * the browser biometric prompt. Safari/iOS can then invoke WebAuthn from a fresh,
- * direct user tap in completeBiometricRegistration().
- */
 export async function prepareBiometricRegistration(): Promise<PreparedBiometricRegistration> {
   if (!biometricSupported()) throw new Error('This browser does not support biometric WebAuthn registration.');
   const start = await biometricCall('registration_options');
@@ -220,10 +242,6 @@ export async function prepareBiometricRegistration(): Promise<PreparedBiometricR
   };
 }
 
-/**
- * Stage two. Call this directly from the click/tap handler. No network request is
- * made before navigator.credentials.create(), preserving Safari user activation.
- */
 export async function completeBiometricRegistration(prepared: PreparedBiometricRegistration) {
   if (!biometricSupported()) throw new Error('This browser does not support biometric WebAuthn registration.');
   if (Date.now() - prepared.prepared_at > 4 * 60_000) {
