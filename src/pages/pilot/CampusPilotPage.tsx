@@ -1,3 +1,4 @@
+import { PilotCampusGeographicMap } from '@/components/pilot/PilotCampusGeographicMap';
 import { PilotCampusSecurityDashboard } from '@/components/pilot/PilotCampusSecurityDashboard';
 import { PilotCsvExportPanel } from '@/components/pilot/PilotCsvExportPanel';
 import { Card, CardContent } from '@/components/ui/card';
@@ -23,6 +24,7 @@ export default function CampusPilotPage() {
 
   return (
     <div className="w-full space-y-6 px-4 py-6 pb-24 sm:px-6 lg:px-8" data-testid="ready-pilot-campus">
+      <PilotCampusGeographicMap campus={campus} />
       <PilotCampusSecurityDashboard campus={campus} />
       <PilotCsvExportPanel campus={campus} />
     </div>
