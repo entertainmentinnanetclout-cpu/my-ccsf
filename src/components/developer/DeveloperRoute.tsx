@@ -37,16 +37,17 @@ export function DeveloperRoute({ children }: { children: ReactNode }) {
     );
   }
 
+  const securitySettings = location.pathname === '/developer/security-settings';
+  const content = securitySettings ? children : <DeveloperBiometricGate>{children}</DeveloperBiometricGate>;
+
   return (
     <DeveloperMfaGate>
-      <DeveloperBiometricGate>
-        {children}
-        {location.pathname === '/developer' && (
-          <Button asChild className="fixed bottom-5 right-5 z-[80] min-h-12 rounded-full px-5 shadow-xl">
-            <Link to="/developer/security-settings"><Fingerprint className="mr-2 h-5 w-5" />Login security</Link>
-          </Button>
-        )}
-      </DeveloperBiometricGate>
+      {content}
+      {location.pathname === '/developer' && (
+        <Button asChild className="fixed bottom-5 right-5 z-[80] min-h-12 rounded-full px-5 shadow-xl">
+          <Link to="/developer/security-settings"><Fingerprint className="mr-2 h-5 w-5" />Login security</Link>
+        </Button>
+      )}
     </DeveloperMfaGate>
   );
 }
