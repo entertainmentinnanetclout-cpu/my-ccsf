@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { CampusCarousel } from '@/components/student/CampusCarousel';
+import { GeographicCampusMap } from '@/components/maps/GeographicCampusMap';
 import { NewsFeed } from '@/components/student/NewsFeed';
 import { supabase } from '@/integrations/supabase/client';
+import type { CampusLocation } from '@/types/pilot';
 
 const DEFAULT_WELCOME_MESSAGE = 'Welcome | Re a le amogela | Nemukelekile';
 
-export function StudentDashboardHome({ campus, showCarousel = true }: { campus?: string; showCarousel?: boolean }) {
+export function StudentDashboardHome({ campus, showCarousel = true }: { campus?: CampusLocation; showCarousel?: boolean }) {
   const [welcomeMessage, setWelcomeMessage] = useState(DEFAULT_WELCOME_MESSAGE);
 
   useEffect(() => {
@@ -52,6 +54,12 @@ export function StudentDashboardHome({ campus, showCarousel = true }: { campus?:
           </h2>
         </div>
       </motion.div>
+
+      {campus && (
+        <div className="px-4" data-testid="student-home-real-campus-map">
+          <GeographicCampusMap campus={campus} />
+        </div>
+      )}
 
       <div className="px-4">
         <NewsFeed />

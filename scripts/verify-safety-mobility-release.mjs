@@ -15,6 +15,7 @@ const hub = read('src/components/student/SafetyMobilityHub.tsx');
 const hook = read('src/hooks/useSafetyMobility.ts');
 const service = read('src/services/safetyMobilityService.ts');
 const campusMap = read('src/components/student/CampusMap.tsx');
+const geographicCampusMap = read('src/components/maps/GeographicCampusMap.tsx');
 const institutionalRadar = read('src/components/student/InstitutionalCampusRadar.tsx');
 const campusCatalog = read('src/data/campusSafetyCatalog.ts');
 const manifest = read('public/manifest.json');
@@ -54,9 +55,17 @@ for (const label of ['In-Transit', 'Night Travel', 'Track This Phone', 'Campus S
   check(hub.includes(label), `Safety hub includes ${label}.`);
 }
 check(hub.includes("import { InstitutionalCampusRadar }") && hub.includes('<InstitutionalCampusRadar'), 'Safety tab renders the first-party institutional Campus Safety Radar.');
-check(hub.includes('<CampusMap campus={campus} />'), 'Safety tab renders the internal campus plan for the verified student campus.');
-check(campusMap.includes('CampusPlanExplorer') && !campusMap.includes('<iframe') && !campusMap.includes('maps.google.com'), 'Legacy external iframe maps and generic Wi-Fi overlays are removed.');
-check(institutionalRadar.includes('LiveRadarMap') && institutionalRadar.includes('CampusPlanExplorer'), 'Campus Radar contains live and campus-plan layers inside the Campus Safety App.');
+check(hub.includes('<CampusMap campus={campus} />'), 'Safety tab renders the internal campus map for the verified student campus.');
+check(
+  campusMap.includes('GeographicCampusMap')
+    && geographicCampusMap.includes('tile.openstreetmap.org')
+    && !campusMap.includes('<iframe')
+    && !campusMap.includes('maps.google.com')
+    && !geographicCampusMap.includes('<iframe')
+    && !geographicCampusMap.includes('maps.google.com'),
+  'Campus navigation uses the first-party geographic map without legacy iframe or Google-map embeds.',
+);
+check(institutionalRadar.includes('LiveRadarMap') && institutionalRadar.includes('CampusPlanExplorer'), 'Campus Radar retains live Radar and the controlled campus-plan layer inside the Campus Safety App.');
 check(institutionalRadar.includes('selfAccuracyRadius') && institutionalRadar.includes('accuracy_meters') && institutionalRadar.includes('Fix quality'), 'Live Radar visualises measured device and student uncertainty.');
 check(institutionalRadar.includes('haversineMeters') && institutionalRadar.includes('bearingDegrees') && institutionalRadar.includes('maxRange'), 'Nearby students are projected from real coordinate distance and bearing.');
 check(institutionalRadar.includes('2.5D view') && institutionalRadar.includes('rotateX') && institutionalRadar.includes('routePath'), 'Campus plan provides controlled depth and internal visual routing.');

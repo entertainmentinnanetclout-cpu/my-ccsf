@@ -1,10 +1,6 @@
-import { CampusPlanExplorer } from '@/components/student/InstitutionalCampusRadar';
+import { GeographicCampusMap } from '@/components/maps/GeographicCampusMap';
 import type { CampusLocation } from '@/types/pilot';
 
-interface CampusMapProps {
-  campus?: CampusLocation;
-}
-
-export const CampusMap = ({ campus = 'pretoria_west_main' }: CampusMapProps) => (
-  <CampusPlanExplorer campus={campus} />
+export const CampusMap = ({ campus = 'pretoria_west_main' }: { campus?: CampusLocation }) => (
+  <GeographicCampusMap campus={campus} />
 );

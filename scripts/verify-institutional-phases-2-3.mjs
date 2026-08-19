@@ -10,6 +10,8 @@ const check = (condition, message) => condition ? passes.push(message) : failure
 
 const required = [
   'src/components/student/InstitutionalCampusRadar.tsx',
+  'src/components/maps/GeographicCampusMap.tsx',
+  'src/data/campusGeography.ts',
   'src/data/campusSafetyCatalog.ts',
   'src/components/student/InstitutionalCaseReports.tsx',
   'src/pages/InstitutionalProfile.tsx',
@@ -22,6 +24,8 @@ const required = [
 required.forEach((file) => check(exists(file), `Institutional release file exists: ${file}.`));
 
 const radar = read('src/components/student/InstitutionalCampusRadar.tsx');
+const geographicMap = read('src/components/maps/GeographicCampusMap.tsx');
+const geography = read('src/data/campusGeography.ts');
 const catalog = read('src/data/campusSafetyCatalog.ts');
 const hub = read('src/components/student/SafetyMobilityHub.tsx');
 const campusMap = read('src/components/student/CampusMap.tsx');
@@ -34,7 +38,14 @@ const avatar = read('src/components/shared/PremiumAvatarUpload.tsx');
 check(hub.includes('<InstitutionalCampusRadar') && hub.includes('onSelectStudent={setSelectedStudent}'), 'Safety tab uses the new internal Campus Safety Radar while preserving student selection.');
 check(hub.includes('<CampusMap campus={campus} />'), 'Campus Maps tab receives the authenticated student campus.');
 check(!hub.includes('mapsUrl') && !hub.includes('maps.google.com') && !hub.includes('plottedStudents'), 'Legacy external map and generic radial plotting code are removed from the hub.');
-check(campusMap.includes('CampusPlanExplorer') && !campusMap.includes('iframe'), 'CampusMap is a first-party institutional plan wrapper.');
+check(
+  campusMap.includes('GeographicCampusMap')
+    && geographicMap.includes('tile.openstreetmap.org')
+    && geographicMap.includes('navigator.geolocation.getCurrentPosition')
+    && geography.includes('pretoria_west_main')
+    && !campusMap.includes('iframe'),
+  'CampusMap is a first-party geographic institutional map wrapper with measured device-location support.',
+);
 check(radar.includes('LiveRadarMap') && radar.includes('CampusPlanExplorer'), 'Radar has both measured live-position and campus-plan modes.');
 check(radar.includes('haversineMeters') && radar.includes('bearingDegrees'), 'Live student placement uses coordinate distance and bearing.');
 check(radar.includes('selfAccuracyRadius') && radar.includes('accuracy_meters'), 'Radar renders location-accuracy uncertainty for the device and opted-in students.');
