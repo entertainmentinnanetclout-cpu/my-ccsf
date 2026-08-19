@@ -32,6 +32,14 @@ export async function authenticatePilotRequest(req: Request): Promise<PilotAuthC
   const { data: { user }, error: userError } = await callerClient.auth.getUser();
   if (userError || !user) throw new PilotHttpError(401, 'Invalid or expired authentication.', 'unauthorized');
 
+  // The developer control plane can revoke a CCSF session before its access token expires.
+  // This RPC is deliberately evaluated with the caller JWT (never the service role), so
+  // system lock, approval state, user/email/IP/device/session restrictions and revoked
+  // session records remain authoritative for direct Edge Function calls as well as RLS.
+  const { data: appAccessAllowed, error: appAccessError } = await callerClient.rpc('current_app_access_allowed');
+  if (appAccessError) throw new PilotHttpError(503, 'Unable to verify CCSF developer access controls.', 'access_control_unavailable');
+  if (appAccessAllowed !== true) throw new PilotHttpError(403, 'CCSF access has been restricted by the developer control plane.', 'developer_access_denied');
+
   const [{ data: roleRows, error: roleError }, { data: profile, error: profileError }] = await Promise.all([
     adminClient.from('user_roles').select('role').eq('user_id', user.id),
     adminClient.from('profiles').select('campus').eq('id', user.id).maybeSingle(),
