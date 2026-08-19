@@ -7,12 +7,14 @@ import { useToast } from '@/hooks/use-toast';
 import {
   biometricPlatformLabel,
   biometricSupported,
+  completeBiometricRegistration,
   getBiometricStatus,
   platformAuthenticatorAvailable,
-  registerBiometricDevice,
+  prepareBiometricRegistration,
   removeBiometricCredential,
   setBiometricLoginEnabled,
   type BiometricStatus,
+  type PreparedBiometricRegistration,
 } from '@/lib/biometricAuth';
 
 export function BiometricLoginSettings() {
@@ -21,6 +23,7 @@ export function BiometricLoginSettings() {
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState<string | null>(null);
   const [platformAvailable, setPlatformAvailable] = useState<boolean | null>(null);
+  const [preparedRegistration, setPreparedRegistration] = useState<PreparedBiometricRegistration | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -42,17 +45,49 @@ export function BiometricLoginSettings() {
     void platformAuthenticatorAvailable().then(setPlatformAvailable);
   }, [load]);
 
-  const register = async () => {
+  const prepareRegistration = async () => {
+    setWorking('prepare');
+    try {
+      const prepared = await prepareBiometricRegistration();
+      setPreparedRegistration(prepared);
+      toast({
+        title: `${biometricPlatformLabel()} is ready`,
+        description: `Tap “Continue with ${biometricPlatformLabel()}” to open the secure device prompt.`,
+      });
+    } catch (error) {
+      const failure = error as Error & { code?: string };
+      toast({
+        title: 'Could not prepare biometric registration',
+        description: failure.message || 'Unable to prepare biometric registration.',
+        variant: 'destructive',
+      });
+    } finally {
+      setWorking(null);
+    }
+  };
+
+  const completeRegistration = async () => {
+    if (!preparedRegistration) return;
+
+    // IMPORTANT: no awaited network call happens before this function invokes
+    // navigator.credentials.create(). This keeps iOS/Safari's user gesture alive.
     setWorking('register');
     try {
-      await registerBiometricDevice();
-      toast({ title: 'Biometric login enabled', description: `${biometricPlatformLabel()} is now registered for passwordless CCSF sign-in on this site.` });
+      await completeBiometricRegistration(preparedRegistration);
+      setPreparedRegistration(null);
+      toast({
+        title: 'Biometric login enabled',
+        description: `${biometricPlatformLabel()} is now registered for passwordless CCSF sign-in on this site.`,
+      });
       await load();
     } catch (error) {
-      const failure = error as Error & { name?: string };
+      const failure = error as Error & { name?: string; code?: string };
+      if (failure.code === 'challenge_stale' || failure.code === 'challenge_expired') setPreparedRegistration(null);
       toast({
         title: 'Biometric registration failed',
-        description: failure.name === 'NotAllowedError' ? 'Registration was cancelled or timed out.' : failure.message,
+        description: failure.name === 'NotAllowedError'
+          ? `${biometricPlatformLabel()} did not complete. Tap Continue again and finish the device prompt; if no prompt appears, keep this page open in Safari rather than an in-app browser.`
+          : failure.message || 'Unable to register this biometric device.',
         variant: 'destructive',
       });
     } finally {
@@ -62,7 +97,7 @@ export function BiometricLoginSettings() {
 
   const toggle = async (enabled: boolean) => {
     if (enabled && (status?.credential_count ?? 0) === 0) {
-      await register();
+      if (!preparedRegistration) await prepareRegistration();
       return;
     }
     setWorking('toggle');
@@ -95,6 +130,7 @@ export function BiometricLoginSettings() {
   }
 
   const unavailable = !biometricSupported() || platformAvailable === false;
+  const label = biometricPlatformLabel();
 
   return (
     <div className="space-y-5">
@@ -103,7 +139,7 @@ export function BiometricLoginSettings() {
           <div className="flex items-start justify-between gap-4">
             <div>
               <CardTitle className="flex items-center gap-2"><Fingerprint className="h-5 w-5 text-primary" />Biometric sign-in</CardTitle>
-              <CardDescription className="mt-1">Use {biometricPlatformLabel()} as an alternative to your password when signing in to an active CCSF profile.</CardDescription>
+              <CardDescription className="mt-1">Use {label} as an alternative to your password when signing in to an active CCSF profile.</CardDescription>
             </div>
             <Switch aria-label="Enable biometric login" checked={status?.login_enabled === true} disabled={working !== null || unavailable} onCheckedChange={(enabled) => void toggle(enabled)} />
           </div>
@@ -125,7 +161,24 @@ export function BiometricLoginSettings() {
             <div className="flex items-start gap-3"><ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-primary" /><div><p className="font-semibold">What CCSF stores</p><p className="mt-1 text-muted-foreground">Your device performs the face/fingerprint check locally. CCSF stores only a WebAuthn public credential, verification counter and device label. Your face image and fingerprint template never leave the device.</p></div></div>
           </div>
 
-          <Button variant="outline" className="w-full sm:w-auto" disabled={working !== null || unavailable} onClick={() => void register()}>{working === 'register' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}Register this device</Button>
+          {preparedRegistration ? (
+            <div className="space-y-3 rounded-xl border border-[#F2A900]/45 bg-[#F2A900]/5 p-4">
+              <div>
+                <p className="font-semibold">Registration request prepared</p>
+                <p className="mt-1 text-sm text-muted-foreground">The secure server challenge is ready. The next tap goes directly to {label} with no network request in between.</p>
+              </div>
+              <Button className="h-12 w-full sm:w-auto" disabled={working !== null || unavailable} onClick={() => void completeRegistration()}>
+                {working === 'register' ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Fingerprint className="mr-2 h-5 w-5" />}
+                Continue with {label}
+              </Button>
+              <Button variant="ghost" size="sm" disabled={working !== null} onClick={() => setPreparedRegistration(null)}>Cancel prepared request</Button>
+            </div>
+          ) : (
+            <Button variant="outline" className="w-full sm:w-auto" disabled={working !== null || unavailable} onClick={() => void prepareRegistration()}>
+              {working === 'prepare' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
+              Prepare {label}
+            </Button>
+          )}
         </CardContent>
       </Card>
 
