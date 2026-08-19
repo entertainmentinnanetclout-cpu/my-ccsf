@@ -20,6 +20,19 @@ export type BiometricStatus = {
   privileged: boolean;
 };
 
+export type PreparedBiometricRegistration = {
+  challenge_id: string;
+  publicKey: PublicKeyCredentialCreationOptions;
+  prepared_at: number;
+};
+
+export type PreparedBiometricSignIn = {
+  email: string;
+  challenge_id: string;
+  publicKey: PublicKeyCredentialRequestOptions;
+  prepared_at: number;
+};
+
 type BiometricResponse = {
   error?: string;
   code?: string;
@@ -30,6 +43,8 @@ type BiometricResponse = {
   token_type?: string;
   success?: boolean;
 } & Partial<BiometricStatus>;
+
+type CodedError = Error & { code?: string };
 
 function base64urlToBytes(value: string): Uint8Array {
   const normalized = value.replace(/-/g, '+').replace(/_/g, '/');
@@ -111,15 +126,33 @@ function serializeAuthentication(credential: PublicKeyCredential) {
   };
 }
 
+function codedError(message: string, code?: string): CodedError {
+  const failure = new Error(message) as CodedError;
+  failure.code = code;
+  return failure;
+}
+
+async function normalizeFunctionError(error: unknown): Promise<CodedError> {
+  const fallback = error instanceof Error ? error.message : 'The biometric service could not complete the request.';
+  const context = (error as { context?: unknown } | null)?.context;
+  if (context && typeof (context as Response).clone === 'function') {
+    try {
+      const body = await (context as Response).clone().json() as { error?: unknown; code?: unknown };
+      if (typeof body?.error === 'string' && body.error.trim()) {
+        return codedError(body.error.trim(), typeof body.code === 'string' ? body.code : undefined);
+      }
+    } catch {
+      // Fall through to the connector error below.
+    }
+  }
+  return codedError(fallback, (error as { code?: string } | null)?.code);
+}
+
 async function biometricCall(action: string, payload: Record<string, unknown> = {}): Promise<BiometricResponse> {
   const { data, error } = await supabase.functions.invoke<BiometricResponse>('biometric-auth', { body: { action, payload } });
-  if (error) throw error;
+  if (error) throw await normalizeFunctionError(error);
   const result = data ?? {};
-  if (result.error) {
-    const failure = new Error(result.error) as Error & { code?: string };
-    failure.code = result.code;
-    throw failure;
-  }
+  if (result.error) throw codedError(result.error, result.code);
   return result;
 }
 
@@ -150,14 +183,29 @@ export function biometricPlatformLabel() {
   return 'device biometric / passkey';
 }
 
-export async function signInWithBiometric(email: string) {
+export async function prepareBiometricSignIn(email: string): Promise<PreparedBiometricSignIn> {
   if (!biometricSupported()) throw new Error('This browser does not support biometric WebAuthn sign-in.');
-  const start = await biometricCall('authentication_options', { email: email.trim().toLowerCase() });
+  const normalizedEmail = email.trim().toLowerCase();
+  const start = await biometricCall('authentication_options', { email: normalizedEmail });
   if (!start.options || !start.challenge_id) throw new Error('Biometric authentication challenge was not returned.');
-  const credential = await navigator.credentials.get({ publicKey: authenticationOptionsFromJson(start.options) }) as PublicKeyCredential | null;
+  return {
+    email: normalizedEmail,
+    challenge_id: start.challenge_id,
+    publicKey: authenticationOptionsFromJson(start.options),
+    prepared_at: Date.now(),
+  };
+}
+
+export async function completeBiometricSignIn(prepared: PreparedBiometricSignIn) {
+  if (!biometricSupported()) throw new Error('This browser does not support biometric WebAuthn sign-in.');
+  if (Date.now() - prepared.prepared_at > 4 * 60_000) {
+    throw codedError('The biometric sign-in request expired. Prepare a new request and try again.', 'challenge_stale');
+  }
+
+  const credential = await navigator.credentials.get({ publicKey: prepared.publicKey }) as PublicKeyCredential | null;
   if (!credential) throw new Error('No biometric credential was returned.');
   const verified = await biometricCall('authentication_verify', {
-    challenge_id: start.challenge_id,
+    challenge_id: prepared.challenge_id,
     response: serializeAuthentication(credential),
   });
   if (!verified.verified || !verified.token_hash) throw new Error('Biometric verification succeeded but no CCSF sign-in token was returned.');
@@ -165,6 +213,11 @@ export async function signInWithBiometric(email: string) {
   if (error) throw error;
   if (!data.session || !data.user) throw new Error('CCSF could not create an authenticated session after biometric verification.');
   return data;
+}
+
+export async function signInWithBiometric(email: string) {
+  const prepared = await prepareBiometricSignIn(email);
+  return completeBiometricSignIn(prepared);
 }
 
 export async function getBiometricStatus(): Promise<BiometricStatus> {
@@ -178,19 +231,38 @@ export async function getBiometricStatus(): Promise<BiometricStatus> {
   };
 }
 
-export async function registerBiometricDevice() {
+export async function prepareBiometricRegistration(): Promise<PreparedBiometricRegistration> {
   if (!biometricSupported()) throw new Error('This browser does not support biometric WebAuthn registration.');
   const start = await biometricCall('registration_options');
   if (!start.options || !start.challenge_id) throw new Error('Biometric registration challenge was not returned.');
-  const credential = await navigator.credentials.create({ publicKey: registrationOptionsFromJson(start.options) }) as PublicKeyCredential | null;
-  if (!credential) throw new Error('No biometric credential was created.');
-  const verified = await biometricCall('registration_verify', {
+  return {
     challenge_id: start.challenge_id,
+    publicKey: registrationOptionsFromJson(start.options),
+    prepared_at: Date.now(),
+  };
+}
+
+export async function completeBiometricRegistration(prepared: PreparedBiometricRegistration) {
+  if (!biometricSupported()) throw new Error('This browser does not support biometric WebAuthn registration.');
+  if (Date.now() - prepared.prepared_at > 4 * 60_000) {
+    throw codedError('The Face ID registration request expired. Prepare a new request and try again.', 'challenge_stale');
+  }
+
+  const credential = await navigator.credentials.create({ publicKey: prepared.publicKey }) as PublicKeyCredential | null;
+  if (!credential) throw new Error('No biometric credential was created.');
+
+  const verified = await biometricCall('registration_verify', {
+    challenge_id: prepared.challenge_id,
     response: serializeRegistration(credential),
     friendly_name: `${biometricPlatformLabel()} · ${new Date().toLocaleDateString('en-ZA')}`,
   });
   if (!verified.verified) throw new Error('Biometric registration could not be verified.');
   return verified;
+}
+
+export async function registerBiometricDevice() {
+  const prepared = await prepareBiometricRegistration();
+  return completeBiometricRegistration(prepared);
 }
 
 export async function setBiometricLoginEnabled(enabled: boolean) {

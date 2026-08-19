@@ -17,8 +17,10 @@ import { supabase } from '@/integrations/supabase/client';
 import {
   biometricPlatformLabel,
   biometricSupported,
+  completeBiometricSignIn,
   platformAuthenticatorAvailable,
-  signInWithBiometric,
+  prepareBiometricSignIn,
+  type PreparedBiometricSignIn,
 } from '@/lib/biometricAuth';
 import type { CampusLocation } from '@/types/pilot';
 
@@ -73,6 +75,7 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [biometricLoading, setBiometricLoading] = useState(false);
   const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [preparedBiometricSignIn, setPreparedBiometricSignIn] = useState<PreparedBiometricSignIn | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -109,6 +112,7 @@ export default function Auth() {
     setErrors({});
     setPassword('');
     setConfirmPassword('');
+    setPreparedBiometricSignIn(null);
     if (next !== 'update-password' && resetRequested) {
       const nextParams = new URLSearchParams(searchParams);
       nextParams.delete('reset');
@@ -138,8 +142,9 @@ export default function Auth() {
   };
 
   const handleBiometricLogin = async () => {
+    const normalizedEmail = email.trim().toLowerCase();
     try {
-      biometricLoginSchema.parse({ email });
+      biometricLoginSchema.parse({ email: normalizedEmail });
       setErrors((current) => ({ ...current, email: '' }));
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -147,23 +152,40 @@ export default function Auth() {
       }
       return;
     }
+
     if (!biometricAvailable) {
       toast({ title: 'Biometric sign-in unavailable', description: 'This browser or device does not report a supported user-verifying authenticator. Use your password instead.', variant: 'destructive' });
       return;
     }
+
+    const prepared = preparedBiometricSignIn?.email === normalizedEmail ? preparedBiometricSignIn : null;
     setBiometricLoading(true);
     try {
-      await signInWithBiometric(email);
+      if (!prepared) {
+        const next = await prepareBiometricSignIn(normalizedEmail);
+        setPreparedBiometricSignIn(next);
+        toast({
+          title: `${biometricPlatformLabel()} is ready`,
+          description: `Tap “Continue with ${biometricPlatformLabel()}” to open the secure device prompt.`,
+        });
+        return;
+      }
+
+      // The prepared challenge means this tap reaches navigator.credentials.get()
+      // directly, without an awaited network request before the device prompt.
+      await completeBiometricSignIn(prepared);
+      setPreparedBiometricSignIn(null);
       toast({
         title: 'Biometric identity verified',
         description: 'Your CCSF account is signed in. Privileged accounts will still complete mandatory MFA before portal access.',
       });
     } catch (error) {
-      const failure = error as Error & { name?: string };
+      const failure = error as Error & { name?: string; code?: string };
+      if (failure.code === 'challenge_stale' || failure.code === 'challenge_expired') setPreparedBiometricSignIn(null);
       toast({
         title: 'Biometric sign-in failed',
         description: failure.name === 'NotAllowedError'
-          ? 'Biometric verification was cancelled or timed out. You can try again or use your password.'
+          ? `${biometricPlatformLabel()} did not complete. Tap Continue again and finish the device prompt, or use your password.`
           : failure.message || 'Use your password or try biometric sign-in again.',
         variant: 'destructive',
       });
@@ -248,6 +270,8 @@ export default function Auth() {
 
   if (authLoading) return <InstitutionalLoadingState label="Restoring your CCSF session…" />;
 
+  const biometricPrepared = preparedBiometricSignIn?.email === email.trim().toLowerCase();
+
   return (
     <InstitutionalAuthFrame
       mode="official"
@@ -286,7 +310,7 @@ export default function Auth() {
 
             {view !== 'update-password' && (
               <Field label="Email address" error={errors.email}>
-                <Input id="official-email" type="email" inputMode="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} className="h-12" aria-invalid={Boolean(errors.email)} />
+                <Input id="official-email" type="email" inputMode="email" autoComplete="email" value={email} onChange={(event) => { setEmail(event.target.value); setPreparedBiometricSignIn(null); }} className="h-12" aria-invalid={Boolean(errors.email)} />
               </Field>
             )}
 
@@ -314,9 +338,9 @@ export default function Auth() {
           {view === 'login' && (
             <div className="mt-4 space-y-3">
               <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground"><span className="h-px flex-1 bg-border" />or<span className="h-px flex-1 bg-border" /></div>
-              <Button type="button" variant="outline" className="h-12 w-full border-[#002F6C]/25 font-bold" disabled={!biometricAvailable || loading || biometricLoading} onClick={() => void handleBiometricLogin()}>
-                {biometricLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Fingerprint className="mr-2 h-5 w-5 text-[#002F6C]" />}
-                Sign in with {biometricPlatformLabel()}
+              <Button type="button" variant={biometricPrepared ? 'default' : 'outline'} className="h-12 w-full border-[#002F6C]/25 font-bold" disabled={!biometricAvailable || loading || biometricLoading} onClick={() => void handleBiometricLogin()}>
+                {biometricLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Fingerprint className="mr-2 h-5 w-5" />}
+                {biometricPrepared ? `Continue with ${biometricPlatformLabel()}` : `Prepare ${biometricPlatformLabel()} sign-in`}
               </Button>
               <div className="rounded-xl border bg-muted/35 p-3 text-xs leading-5 text-muted-foreground">
                 <div className="flex items-start gap-2"><ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" /><span>Biometric sign-in must first be enabled from your account security settings on a supported device. It replaces the password step only. Admin, CPS/Security and Developer accounts still complete mandatory MFA.</span></div>
