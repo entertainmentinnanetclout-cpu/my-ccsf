@@ -9,7 +9,7 @@ const exists = (file) => fs.existsSync(path.join(root, file));
 const check = (condition, message) => condition ? passes.push(message) : failures.push(message);
 
 const requiredFiles = [
-  'src/App.tsx','src/pages/Dashboard.tsx','src/components/student/SafetyMobilityHub.tsx','src/components/student/InstitutionalCampusRadar.tsx','src/data/campusSafetyCatalog.ts','src/hooks/useSafetyMobility.ts','src/services/safetyMobilityService.ts',
+  'src/App.tsx','src/pages/Dashboard.tsx','src/components/student/SafetyMobilityHub.tsx','src/components/student/InstitutionalCampusRadar.tsx','src/components/maps/GeographicCampusMap.tsx','src/data/campusSafetyCatalog.ts','src/data/campusGeography.ts','src/hooks/useSafetyMobility.ts','src/services/safetyMobilityService.ts',
   'src/components/student/ReportIncident.tsx','src/components/student/ReportIncidentV2.tsx','src/components/student/InstitutionalCaseReports.tsx','src/pages/InstitutionalProfile.tsx','src/components/shared/PremiumAvatarUpload.tsx','src/components/shared/SplashScreen.tsx',
   'supabase/migrations/20260725103000_student_safety_mobility_and_radar.sql','supabase/migrations/20260725104500_student_safety_mobility_campus_scope_hardening.sql',
   'supabase/migrations/20260804160000_institutional_hardening_phase_1.sql','public/campus-guides/pretoria-campus-structure-map.svg',
@@ -21,6 +21,8 @@ const dashboard = read('src/pages/Dashboard.tsx');
 const hub = read('src/components/student/SafetyMobilityHub.tsx');
 const radar = read('src/components/student/InstitutionalCampusRadar.tsx');
 const campusMap = read('src/components/student/CampusMap.tsx');
+const geographicMap = read('src/components/maps/GeographicCampusMap.tsx');
+const campusGeography = read('src/data/campusGeography.ts');
 const caseReports = read('src/components/student/InstitutionalCaseReports.tsx');
 const profile = read('src/pages/InstitutionalProfile.tsx');
 const avatar = read('src/components/shared/PremiumAvatarUpload.tsx');
@@ -42,7 +44,14 @@ for (const marker of ['In-Transit', 'Night Travel', 'Track This Phone', 'Campus 
 check(hub.includes('Live location is consent-based and can be stopped at any time.'), 'Location sharing has an explicit consent boundary.');
 check(hub.includes('campus_approximate') && hub.includes('campus_exact'), 'Radar supports approximate and explicitly consented exact visibility.');
 check(radar.includes('INTERNAL MAP') && radar.includes('No external redirect') && !radar.includes('google.com/maps') && !radar.includes('<iframe'), 'Campus Safety Radar stays inside My CCSF.');
-check(campusMap.includes('CampusPlanExplorer') && !campusMap.includes('defaultWifiAccessPoints'), 'Campus map uses the institutional plan instead of generic Wi-Fi placeholders.');
+check(
+  campusMap.includes('GeographicCampusMap')
+    && geographicMap.includes('tile.openstreetmap.org')
+    && geographicMap.includes('navigator.geolocation.getCurrentPosition')
+    && campusGeography.includes('pretoria_west_main')
+    && !campusMap.includes('defaultWifiAccessPoints'),
+  'Campus map uses the first-party geographic campus registry instead of generic Wi-Fi placeholders.',
+);
 check(radar.includes('selfAccuracyRadius') && radar.includes('The app will not invent a location'), 'Radar exposes measured uncertainty and refuses fabricated locations.');
 check(hook.includes('watchPosition') && hook.includes('clearWatch'), 'Live tracking starts and stops through browser geolocation controls.');
 for (const rpc of ['safety_start_mobility_session','safety_update_mobility_location','safety_end_mobility_session','safety_trigger_mobility_alert','safety_set_student_presence','safety_list_campus_radar']) check(service.includes(`'${rpc}'`), `Safety client invokes ${rpc}.`);
@@ -64,7 +73,7 @@ check(splash.includes('InstitutionBrand') && splash.includes('bg-white') && spla
 check(manifest.icons.some((icon) => icon.src === '/app-icon-512.png'), 'Manifest references the opaque app icon.');
 check(manifest.icons.some((icon) => icon.src === '/maskable-icon-512.png'), 'Manifest references the maskable app icon.');
 check(manifest.shortcuts.some((shortcut) => shortcut.url === '/dashboard?tab=safety'), 'Manifest includes the Safety Mobility shortcut.');
-const protectedFiles = [dashboard, hub, radar, caseReports, profile, hook, service, report];
+const protectedFiles = [dashboard, hub, radar, campusMap, geographicMap, caseReports, profile, hook, service, report];
 for (const [label, pattern] of [['empty click handler', /onClick=\{\(\) => \{\s*\}\}/], ['dead hash link', /href=["']#["']/], ['javascript pseudo-link', /javascript:void/]]) check(!protectedFiles.some((source) => pattern.test(source)), `Core student workflows contain no ${label}.`);
 
 if (failures.length) {
