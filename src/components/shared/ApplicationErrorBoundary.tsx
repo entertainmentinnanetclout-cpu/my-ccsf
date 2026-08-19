@@ -3,6 +3,7 @@ import { AlertTriangle, Home, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { InstitutionBrand } from '@/components/shared/InstitutionBrand';
+import { reportRuntimeEvent } from '@/lib/runtimeControl';
 
 type Props = { children: ReactNode };
 type State = { hasError: boolean; reference: string };
@@ -23,6 +24,16 @@ export class ApplicationErrorBoundary extends Component<Props, State> {
       reference: this.state.reference,
       error,
       componentStack: info.componentStack,
+    });
+    void reportRuntimeEvent({
+      type: 'react_render_error',
+      severity: 'critical',
+      message: error.message,
+      stack: error.stack,
+      metadata: {
+        reference: this.state.reference,
+        component_stack: info.componentStack,
+      },
     });
   }
 
