@@ -2,6 +2,7 @@ import type { PilotRole } from '@/config/pilotRoutes';
 
 export const OFFICIAL_ROUTES = {
   auth: '/auth',
+  traffic: '/traffic',
   student: '/dashboard',
   security: '/security',
   admin: '/admin',
@@ -30,18 +31,21 @@ export function officialDefaultDestination(role: PilotRole): string {
 export function isOfficialPathAllowedForRole(pathname: string, role: PilotRole): boolean {
   if (role === 'student') {
     return pathname.startsWith(OFFICIAL_ROUTES.student)
+      || pathname === OFFICIAL_ROUTES.traffic
       || pathname === OFFICIAL_ROUTES.profile
       || pathname === OFFICIAL_ROUTES.profileCompletion;
   }
 
   if (role === 'security') {
     return pathname.startsWith(OFFICIAL_ROUTES.security)
+      || pathname === OFFICIAL_ROUTES.traffic
       || pathname === OFFICIAL_ROUTES.profile
       || pathname === OFFICIAL_ROUTES.office
       || pathname === OFFICIAL_ROUTES.judiciary;
   }
 
   return pathname.startsWith(OFFICIAL_ROUTES.admin)
+    || pathname === OFFICIAL_ROUTES.traffic
     || pathname.startsWith(OFFICIAL_ROUTES.security)
     || pathname === OFFICIAL_ROUTES.profile
     || pathname === OFFICIAL_ROUTES.office

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { motion } from 'framer-motion';
 import { Shield, LayoutDashboard, AlertCircle, Megaphone, MessageSquare, BarChart3, Images, Users, Siren, Building2, Wifi, HeartHandshake } from 'lucide-react';
+import { CarFront } from 'lucide-react';
 import { InstitutionBrand } from '@/components/shared/InstitutionBrand';
 import { AdminOverview } from '@/components/admin/AdminOverview';
 import { AdminIncidents } from '@/components/admin/AdminIncidents';
@@ -23,10 +24,12 @@ import { MasterSyncButton } from '@/components/admin/MasterSyncButton';
 import { OfficeView } from '@/components/admin/OfficeView';
 import { WifiAccessPointManager } from '@/components/admin/WifiAccessPointManager';
 import { CommunityAdminDashboard } from '@/components/community/CommunityAdminDashboard';
+import { TrafficOperations } from '@/components/admin/TrafficOperations';
 
 const Admin = () => {
   const navigate = useNavigate();
   const [activeView, setActiveView] = useState<'overview' | 'incidents' | 'analytics' | 'announcements' | 'communication' | 'carousel' | 'admins' | 'community' | 'escalation' | 'office' | 'wifi'>('overview');
+  const TRAFFIC_ADMIN_VIEW = 'traffic' as typeof activeView;
   const navItems = [{
     view: 'overview',
     icon: LayoutDashboard,
@@ -63,6 +66,10 @@ const Admin = () => {
     view: 'community',
     icon: HeartHandshake,
     label: 'Community'
+  }, {
+    view: TRAFFIC_ADMIN_VIEW,
+    icon: CarFront,
+    label: 'Traffic'
   }, {
     view: 'wifi',
     icon: Wifi,
@@ -194,6 +201,7 @@ const Admin = () => {
             {activeView === 'admins' && <CampusAdminManager />}
             {activeView === 'community' && <CommunityAdminDashboard environment="official" />}
             {activeView === 'wifi' && <WifiAccessPointManager />}
+            {activeView === TRAFFIC_ADMIN_VIEW && <TrafficOperations />}
             {activeView === 'office' && <OfficeView />}
           </motion.div>
 
