@@ -396,3 +396,9 @@ All colors MUST be HSL.
     @apply col-span-1 lg:col-span-2 row-span-1 lg:row-span-2;
   }
 }
+
+@media (min-width: 768px) {
+  [role='tablist'][aria-label='Student portal sections'] {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
+}

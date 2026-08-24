@@ -1959,6 +1959,306 @@ export type Database = {
           },
         ]
       }
+      traffic_gate_events: {
+        Row: {
+          created_at: string
+          event_type: Database["public"]["Enums"]["traffic_pass_status"]
+          gate_name: string | null
+          id: number
+          notes: string | null
+          recorded_by: string
+          visitor_pass_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_type: Database["public"]["Enums"]["traffic_pass_status"]
+          gate_name?: string | null
+          id?: number
+          notes?: string | null
+          recorded_by: string
+          visitor_pass_id: string
+        }
+        Update: {
+          created_at?: string
+          event_type?: Database["public"]["Enums"]["traffic_pass_status"]
+          gate_name?: string | null
+          id?: number
+          notes?: string | null
+          recorded_by?: string
+          visitor_pass_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "traffic_gate_events_recorded_by_fkey"
+            columns: ["recorded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "traffic_gate_events_visitor_pass_id_fkey"
+            columns: ["visitor_pass_id"]
+            isOneToOne: false
+            referencedRelation: "traffic_visitor_passes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      traffic_permit_templates: {
+        Row: {
+          activated_at: string | null
+          campus: Database["public"]["Enums"]["campus_location"] | null
+          created_at: string
+          created_by: string
+          id: string
+          name: string
+          notes: string | null
+          permit_kind: Database["public"]["Enums"]["traffic_permit_kind"]
+          status: Database["public"]["Enums"]["traffic_template_status"]
+          storage_path: string
+          updated_at: string
+        }
+        Insert: {
+          activated_at?: string | null
+          campus?: Database["public"]["Enums"]["campus_location"] | null
+          created_at?: string
+          created_by: string
+          id?: string
+          name: string
+          notes?: string | null
+          permit_kind: Database["public"]["Enums"]["traffic_permit_kind"]
+          status?: Database["public"]["Enums"]["traffic_template_status"]
+          storage_path: string
+          updated_at?: string
+        }
+        Update: {
+          activated_at?: string | null
+          campus?: Database["public"]["Enums"]["campus_location"] | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          permit_kind?: Database["public"]["Enums"]["traffic_permit_kind"]
+          status?: Database["public"]["Enums"]["traffic_template_status"]
+          storage_path?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "traffic_permit_templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      traffic_road_safety_notices: {
+        Row: {
+          campus: Database["public"]["Enums"]["campus_location"] | null
+          created_at: string
+          created_by: string | null
+          ends_at: string | null
+          id: string
+          is_published: boolean
+          severity: string
+          starts_at: string
+          summary: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          campus?: Database["public"]["Enums"]["campus_location"] | null
+          created_at?: string
+          created_by?: string | null
+          ends_at?: string | null
+          id?: string
+          is_published?: boolean
+          severity?: string
+          starts_at?: string
+          summary: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          campus?: Database["public"]["Enums"]["campus_location"] | null
+          created_at?: string
+          created_by?: string | null
+          ends_at?: string | null
+          id?: string
+          is_published?: boolean
+          severity?: string
+          starts_at?: string
+          summary?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "traffic_road_safety_notices_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      traffic_student_permits: {
+        Row: {
+          campus: Database["public"]["Enums"]["campus_location"]
+          created_at: string
+          decision_notes: string | null
+          id: string
+          issued_by: string | null
+          permit_number: string | null
+          status: Database["public"]["Enums"]["traffic_student_permit_status"]
+          student_id: string
+          updated_at: string
+          valid_from: string | null
+          valid_until: string | null
+          vehicle_colour: string | null
+          vehicle_make: string | null
+          vehicle_registration: string
+        }
+        Insert: {
+          campus: Database["public"]["Enums"]["campus_location"]
+          created_at?: string
+          decision_notes?: string | null
+          id?: string
+          issued_by?: string | null
+          permit_number?: string | null
+          status?: Database["public"]["Enums"]["traffic_student_permit_status"]
+          student_id: string
+          updated_at?: string
+          valid_from?: string | null
+          valid_until?: string | null
+          vehicle_colour?: string | null
+          vehicle_make?: string | null
+          vehicle_registration: string
+        }
+        Update: {
+          campus?: Database["public"]["Enums"]["campus_location"]
+          created_at?: string
+          decision_notes?: string | null
+          id?: string
+          issued_by?: string | null
+          permit_number?: string | null
+          status?: Database["public"]["Enums"]["traffic_student_permit_status"]
+          student_id?: string
+          updated_at?: string
+          valid_from?: string | null
+          valid_until?: string | null
+          vehicle_colour?: string | null
+          vehicle_make?: string | null
+          vehicle_registration?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "traffic_student_permits_issued_by_fkey"
+            columns: ["issued_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "traffic_student_permits_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      traffic_visitor_passes: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          campus: Database["public"]["Enums"]["campus_location"]
+          checked_in_at: string | null
+          checked_out_at: string | null
+          contact_fingerprint: string
+          created_at: string
+          decision_notes: string | null
+          expected_arrival: string
+          host_department: string | null
+          host_name: string
+          id: string
+          reference_code: string
+          status: Database["public"]["Enums"]["traffic_pass_status"]
+          tracking_token_hash: string
+          updated_at: string
+          vehicle_colour: string | null
+          vehicle_make: string | null
+          vehicle_registration: string
+          visit_date: string
+          visit_purpose: string
+          visitor_email: string | null
+          visitor_name: string
+          visitor_phone: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          campus: Database["public"]["Enums"]["campus_location"]
+          checked_in_at?: string | null
+          checked_out_at?: string | null
+          contact_fingerprint: string
+          created_at?: string
+          decision_notes?: string | null
+          expected_arrival: string
+          host_department?: string | null
+          host_name: string
+          id?: string
+          reference_code: string
+          status?: Database["public"]["Enums"]["traffic_pass_status"]
+          tracking_token_hash: string
+          updated_at?: string
+          vehicle_colour?: string | null
+          vehicle_make?: string | null
+          vehicle_registration: string
+          visit_date: string
+          visit_purpose: string
+          visitor_email?: string | null
+          visitor_name: string
+          visitor_phone: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          campus?: Database["public"]["Enums"]["campus_location"]
+          checked_in_at?: string | null
+          checked_out_at?: string | null
+          contact_fingerprint?: string
+          created_at?: string
+          decision_notes?: string | null
+          expected_arrival?: string
+          host_department?: string | null
+          host_name?: string
+          id?: string
+          reference_code?: string
+          status?: Database["public"]["Enums"]["traffic_pass_status"]
+          tracking_token_hash?: string
+          updated_at?: string
+          vehicle_colour?: string | null
+          vehicle_make?: string | null
+          vehicle_registration?: string
+          visit_date?: string
+          visit_purpose?: string
+          visitor_email?: string | null
+          visitor_name?: string
+          visitor_phone?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "traffic_visitor_passes_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -2047,6 +2347,77 @@ export type Database = {
       }
     }
     Functions: {
+      traffic_create_visitor_pass: {
+        Args: {
+          p_campus: Database["public"]["Enums"]["campus_location"]
+          p_expected_arrival: string
+          p_host_department: string
+          p_host_name: string
+          p_vehicle_colour: string
+          p_vehicle_make: string
+          p_vehicle_registration: string
+          p_visit_date: string
+          p_visit_purpose: string
+          p_visitor_email: string
+          p_visitor_name: string
+          p_visitor_phone: string
+        }
+        Returns: {
+          pass_id: string
+          pass_status: Database["public"]["Enums"]["traffic_pass_status"]
+          reference_code: string
+          submitted_at: string
+          tracking_token: string
+        }[]
+      }
+      traffic_request_student_permit: {
+        Args: {
+          p_campus: Database["public"]["Enums"]["campus_location"]
+          p_vehicle_colour: string
+          p_vehicle_make: string
+          p_vehicle_registration: string
+        }
+        Returns: Database["public"]["Tables"]["traffic_student_permits"]["Row"]
+      }
+      traffic_track_visitor_pass: {
+        Args: {
+          p_reference_code: string
+          p_tracking_token: string
+        }
+        Returns: {
+          approved_at: string | null
+          campus: Database["public"]["Enums"]["campus_location"]
+          checked_in_at: string | null
+          checked_out_at: string | null
+          decision_notes: string | null
+          expected_arrival: string
+          pass_id: string
+          pass_status: Database["public"]["Enums"]["traffic_pass_status"]
+          reference_code: string
+          submitted_at: string
+          vehicle_registration: string
+          visit_date: string
+          visitor_name: string
+        }[]
+      }
+      traffic_update_student_permit_status: {
+        Args: {
+          p_notes?: string
+          p_permit_id: string
+          p_status: Database["public"]["Enums"]["traffic_student_permit_status"]
+          p_valid_until?: string
+        }
+        Returns: undefined
+      }
+      traffic_update_visitor_pass_status: {
+        Args: {
+          p_gate_name?: string
+          p_notes?: string
+          p_pass_id: string
+          p_status: Database["public"]["Enums"]["traffic_pass_status"]
+        }
+        Returns: undefined
+      }
       assign_campus_admin: {
         Args: {
           p_campus: Database["public"]["Enums"]["campus_location"]
@@ -2280,6 +2651,17 @@ export type Database = {
         | "denise"
         | "marabastaad"
         | "astra"
+      traffic_pass_status:
+        | "pending"
+        | "approved"
+        | "rejected"
+        | "checked_in"
+        | "checked_out"
+        | "expired"
+        | "cancelled"
+      traffic_permit_kind: "student" | "visitor"
+      traffic_student_permit_status: "pending" | "active" | "suspended" | "expired" | "rejected"
+      traffic_template_status: "draft" | "active" | "archived"
       user_role: "student" | "admin" | "security"
     }
     CompositeTypes: {
@@ -2480,6 +2862,18 @@ export const Constants = {
         "marabastaad",
         "astra",
       ],
+      traffic_pass_status: [
+        "pending",
+        "approved",
+        "rejected",
+        "checked_in",
+        "checked_out",
+        "expired",
+        "cancelled",
+      ],
+      traffic_permit_kind: ["student", "visitor"],
+      traffic_student_permit_status: ["pending", "active", "suspended", "expired", "rejected"],
+      traffic_template_status: ["draft", "active", "archived"],
       user_role: ["student", "admin", "security"],
     },
   },

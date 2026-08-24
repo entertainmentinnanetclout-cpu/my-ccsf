@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { motion } from 'framer-motion';
 import { Shield, LayoutDashboard, AlertCircle, Megaphone, MessageSquare, MapPin, Users, BarChart3, Settings, Wifi } from 'lucide-react';
+import { CarFront } from 'lucide-react';
 import { InstitutionBrand } from '@/components/shared/InstitutionBrand';
 import { CampusDashboard } from '@/components/admin/CampusDashboard';
 import { CampusAdminVisuals } from '@/components/admin/visualizations/CampusAdminVisuals';
@@ -16,6 +17,7 @@ import { RealTimeIncidents } from '@/components/admin/RealTimeIncidents';
 import { CampusAnalytics } from '@/components/admin/CampusAnalytics';
 import { OfficerSettings } from '@/components/admin/OfficerSettings';
 import { WifiAccessPointManager } from '@/components/admin/WifiAccessPointManager';
+import { TrafficOperations } from '@/components/admin/TrafficOperations';
 import { MasterSyncProvider, useMasterSync } from '@/contexts/MasterSyncContext';
 import { CasesProvider } from '@/contexts/CasesContext';
 import { MasterSyncButton } from '@/components/admin/MasterSyncButton';
@@ -44,6 +46,7 @@ const Security = () => {
     signOut
   } = useAuth();
   const [activeView, setActiveView] = useState<'overview' | 'incidents' | 'announcements' | 'communication' | 'students' | 'analytics' | 'wifi' | 'settings'>('overview');
+  const TRAFFIC_SECURITY_VIEW = 'traffic' as typeof activeView;
   const [campusStudentCount, setCampusStudentCount] = useState(0);
   const [campusIncidentCount, setCampusIncidentCount] = useState(0);
   const navItems = [{
@@ -70,6 +73,10 @@ const Security = () => {
     view: 'communication',
     icon: MessageSquare,
     label: 'Comms'
+  }, {
+    view: TRAFFIC_SECURITY_VIEW,
+    icon: CarFront,
+    label: 'Traffic'
   }, {
     view: 'wifi',
     icon: Wifi,
@@ -233,6 +240,7 @@ const Security = () => {
             {activeView === 'announcements' && <AdminAnnouncements />}
             {activeView === 'communication' && <StaffCommunication />}
             {activeView === 'wifi' && <WifiAccessPointManager campusFilter={userProfile?.campus || undefined} />}
+            {activeView === TRAFFIC_SECURITY_VIEW && <TrafficOperations campus={userProfile?.campus as CampusLocation | undefined} />}
             {activeView === 'settings' && <OfficerSettings />}
           </motion.div>
 

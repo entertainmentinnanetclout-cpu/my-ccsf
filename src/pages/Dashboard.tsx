@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FileText, FlaskConical, Home, LifeBuoy, LogOut, MapPin, Plus, Radar, Settings, Shield, ShieldCheck, UsersRound } from 'lucide-react';
+import { CarFront, FileText, FlaskConical, Home, LifeBuoy, LogOut, MapPin, Plus, Radar, Settings, Shield, ShieldCheck, UsersRound } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -14,6 +14,7 @@ import { CommunityHub } from '@/components/community/CommunityHub';
 import { ReportIncident } from '@/components/student/ReportIncident';
 import { EmergencyReport } from '@/components/student/EmergencyReport';
 import { SafetyMobilityHub } from '@/components/student/SafetyMobilityHub';
+import { StudentTrafficHub } from '@/components/student/StudentTrafficHub';
 import { StudentDashboardHome } from '@/components/student/StudentDashboardHome';
 import { StudentChat } from '@/components/student/StudentChat';
 import { MyCaseReports } from '@/components/student/MyCaseReports';
@@ -25,6 +26,8 @@ import type { CampusLocation } from '@/types/pilot';
 
 type StudentView = 'home' | 'report' | 'mycases' | 'safety' | 'community' | 'messages' | 'settings';
 const STUDENT_VIEWS = new Set<StudentView>(['home', 'report', 'mycases', 'safety', 'community', 'messages', 'settings']);
+const TRAFFIC_STUDENT_VIEW = 'traffic' as StudentView;
+STUDENT_VIEWS.add(TRAFFIC_STUDENT_VIEW);
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -70,6 +73,7 @@ const Dashboard = () => {
     { view: 'mycases', icon: FileText, label: 'My Cases' },
     { view: 'report', icon: Plus, label: 'Report' },
     { view: 'safety', icon: Radar, label: 'Safety' },
+    { view: TRAFFIC_STUDENT_VIEW, icon: CarFront, label: 'Traffic' },
     { view: 'community', icon: UsersRound, label: 'Community' },
     { view: 'messages', icon: LifeBuoy, label: 'Support' },
   ];
@@ -127,6 +131,7 @@ const Dashboard = () => {
             {activeView === 'report' && <><AcademicFraudLaunchCard pilotHref="/pilot?open=academic-fraud" /><ReportIncident /></>}
             {activeView === 'safety' && campus && <SafetyMobilityHub campus={campus} />}
             {activeView === 'safety' && !campus && <Card><CardContent className="p-8 text-center"><Radar className="mx-auto h-10 w-10 text-primary" /><h2 className="mt-4 text-xl font-bold">Complete your campus profile first</h2><p className="mt-2 text-sm text-muted-foreground">Safety Mobility needs your verified campus for routing, Radar and campus-specific support.</p><Button asChild className="mt-5"><Link to="/profile-completion">Complete profile</Link></Button></CardContent></Card>}
+            {activeView === TRAFFIC_STUDENT_VIEW && <StudentTrafficHub />}
             {activeView === 'community' && userProfile && <CommunityHub environment="official" identity={{ userId: userProfile.id, fullName: userProfile.full_name ?? 'TUT Student', email: userProfile.email, campus: userProfile.campus, profileCompleted: userProfile.profile_completed }} onCompleteProfile={() => navigate('/profile-completion')} />}
             {activeView === 'messages' && <StudentChat onNavigate={changeView} />}
             {activeView === 'settings' && <div className="mx-auto max-w-3xl"><BiometricSettingsCard /></div>}
