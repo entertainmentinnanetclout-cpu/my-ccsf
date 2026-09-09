@@ -1,7 +1,7 @@
-// My CCSF service worker — institutional PWA shell and push notifications.
+// TUT Campus Safety service worker — institutional PWA shell and push notifications.
 
 const CACHE_PREFIX = 'my-ccsf';
-const CACHE_VERSION = 'safety-mobility-2026-07-25-v2';
+const CACHE_VERSION = 'tut-ci-release-2026-09-09-v1';
 const STATIC_CACHE = `${CACHE_PREFIX}-static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${CACHE_VERSION}`;
 const OFFLINE_SHELL = '/index.html';
@@ -73,7 +73,7 @@ async function networkFirstNavigation(event) {
   } catch {
     return (await caches.match(OFFLINE_SHELL))
       || (await caches.match('/'))
-      || new Response('My CCSF is temporarily offline. Reconnect and retry.', {
+      || new Response('Campus Safety App is temporarily offline. Reconnect and retry.', {
         status: 503,
         headers: { 'Content-Type': 'text/plain; charset=utf-8' },
       });
@@ -127,7 +127,7 @@ self.addEventListener('fetch', (event) => {
 });
 
 self.addEventListener('push', (event) => {
-  let data = { title: 'My CCSF Alert', body: 'A new CCSF notification is available.', data: {} };
+  let data = { title: 'Campus Safety Alert', body: 'A new campus safety notification is available.', data: {} };
   try {
     if (event.data) data = { ...data, ...event.data.json() };
   } catch {
@@ -141,10 +141,10 @@ self.addEventListener('push', (event) => {
     vibrate: [100, 50, 100],
     data: data.data || {},
     actions: [
-      { action: 'view', title: 'Open My CCSF' },
+      { action: 'view', title: 'Open Campus Safety' },
       { action: 'dismiss', title: 'Dismiss' },
     ],
-    tag: data.tag || 'ccsf-notification',
+    tag: data.tag || 'campus-safety-notification',
     renotify: true,
   };
 

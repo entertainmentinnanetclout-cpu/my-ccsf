@@ -8,6 +8,14 @@ const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 const exists = (file) => fs.existsSync(path.join(root, file));
 const check = (condition, message) => condition ? passes.push(message) : failures.push(message);
 
+function hasExpectedPngDimensions(file, expectedWidth, expectedHeight) {
+  if (!exists(file)) return false;
+  const buffer = fs.readFileSync(path.join(root, file));
+  if (buffer.length < 24) return false;
+  if (buffer.subarray(0, 8).toString('hex') !== '89504e470d0a1a0a') return false;
+  return buffer.readUInt32BE(16) === expectedWidth && buffer.readUInt32BE(20) === expectedHeight;
+}
+
 const migration = read('supabase/migrations/20260725103000_student_safety_mobility_and_radar.sql');
 const hardening = read('supabase/migrations/20260725104500_student_safety_mobility_campus_scope_hardening.sql');
 const dashboard = read('src/pages/Dashboard.tsx');
@@ -82,12 +90,17 @@ check(!hook.includes('browser tracking works'), 'Hook contains no misleading gua
 check(hub.includes('cannot locate a powered-off phone') && hub.includes('does not guarantee continuous background tracking when the browser is fully closed'), 'UI states phone and browser background-tracking limitations accurately.');
 check(institutionalRadar.includes('Only voluntary, non-stale Radar sharing is shown') && institutionalRadar.includes('The app will not invent a location'), 'Radar explains privacy and refuses fabricated position data.');
 
-for (const icon of ['public/app-icon-192.png', 'public/app-icon-512.png', 'public/maskable-icon-512.png', 'public/apple-touch-icon.png']) {
-  check(exists(icon) && fs.statSync(path.join(root, icon)).size > 5_000, `${icon} exists as a substantive institutional PNG.`);
+for (const [icon, width, height] of [
+  ['public/app-icon-192.png', 192, 192],
+  ['public/app-icon-512.png', 512, 512],
+  ['public/maskable-icon-512.png', 512, 512],
+  ['public/apple-touch-icon.png', 180, 180],
+]) {
+  check(hasExpectedPngDimensions(icon, width, height), `${icon} is a valid institutional PNG with the required native dimensions.`);
 }
 check(manifest.includes('/app-icon-512.png') && manifest.includes('/maskable-icon-512.png') && manifest.includes('/dashboard?tab=safety'), 'PWA manifest uses verified PNG icons and the Safety Mobility shortcut.');
 check(index.includes('sizes="180x180" href="/apple-touch-icon.png"') && index.includes('sizes="32x32" href="/favicon-32x32.png"'), 'Browser and installation metadata use verified native-size icons.');
-check(splash.includes('bg-white') && splash.includes('CAMPUS SAFETY APP') && splash.includes('themeOverride="light"'), 'Splash displays the Campus Safety App with the CCSF/TUT brand clearly on white.');
+check(splash.includes('bg-white') && splash.includes('CAMPUS SAFETY APP') && splash.includes('themeOverride="light"'), 'Splash displays the Campus Safety App with the TUT institutional identity clearly on white.');
 check(worker.includes('/campus-guides/pretoria-campus-structure-map.svg') && worker.includes("icon: '/app-icon-192.png'"), 'Service worker caches the campus reference and uses the canonical notification icon.');
 
 for (const forbidden of [

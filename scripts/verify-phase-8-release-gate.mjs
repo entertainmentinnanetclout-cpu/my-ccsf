@@ -114,10 +114,10 @@ for (const [name, source] of [['student', student], ['campus', campus], ['super-
 check([student,campus,superAdmin].every((x) => x.includes('role="tablist"') && x.includes('aria-selected=')), 'All role navigation exposes accessible tab state.');
 check(mobile.includes("typeof maxItems === 'number' ? items.slice(0, maxItems) : items") && mobile.includes('overflow-x-auto') && mobile.includes('safe-area-inset-bottom'), 'Mobile navigation shows every section by default and remains safe-area aware.');
 check(!student.includes('maxItems=') && !campus.includes('maxItems=') && !superAdmin.includes('maxItems='), 'Student, campus and super-admin portals do not opt into mobile truncation.');
-check(brand.includes('getTutLogo(activeTheme)') && brand.includes('BRAND.assets.ccsfLogo'), 'Canonical CPS/CCSF and separate TUT theme logos remain paired.');
+check(brand.includes('getTutLogo(activeTheme)') && !brand.includes('BRAND.assets.ccsfLogo'), 'Canonical shared institutional branding is TUT-only with no CPS/CCSF sub-logo slot.');
 check(splash.includes('useReducedMotion') && splash.includes('InstitutionBrand'), 'Splash remains institutional and reduced-motion aware.');
 check(manifest.theme_color === '#002F6C' && manifest.lang === 'en-ZA' && manifest.icons.some((x) => String(x.purpose).includes('maskable')), 'PWA identity, locale and maskable icon remain correct.');
-check(sw.includes("CACHE_VERSION = 'safety-mobility-2026-07-25-v2'") && sw.includes("type === 'SKIP_WAITING'"), 'PWA cache replacement remains controlled.');
+check(sw.includes("CACHE_VERSION = 'tut-ci-release-2026-09-09-v1'") && sw.includes("type === 'SKIP_WAITING'"), 'PWA cache replacement remains controlled under the TUT-only release generation.');
 
 check(evidence.includes('Student → campus-security → super-admin lifecycle') && evidence.includes('Post-test residue verification'), 'UAT evidence records lifecycle and rollback residue.');
 check(rollback.includes('READY FOR EXPLICIT APPROVAL') && rollback.includes('Approval to merge is not automatically approval to publish'), 'Rollback package preserves the explicit approval gate.');
