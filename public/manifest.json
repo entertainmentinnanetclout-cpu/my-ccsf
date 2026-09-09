@@ -1,8 +1,8 @@
 {
   "id": "/",
-  "name": "Campus Safety App — Campus Community Safety Forum",
+  "name": "Campus Safety App — Tshwane University of Technology",
   "short_name": "Campus Safety App",
-  "description": "The official Campus Safety App for Tshwane University of Technology.",
+  "description": "Official campus safety services for Tshwane University of Technology.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
