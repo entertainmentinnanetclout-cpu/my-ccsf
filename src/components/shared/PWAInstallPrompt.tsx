@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Download, RefreshCw, ShieldCheck, Smartphone, X, Zap } from 'lucide-react';
+import { useTheme } from 'next-themes';
 import { useLocation } from 'react-router-dom';
-import { BRAND } from '@/brand';
+import { BRAND, getTutLogo } from '@/brand';
 import { Button } from '@/components/ui/button';
 
 interface BeforeInstallPromptEvent extends Event {
@@ -10,7 +11,7 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
-const DISMISS_KEY = 'ccsf-pwa-install-dismissed-at';
+const DISMISS_KEY = 'tut-campus-safety-pwa-install-dismissed-at';
 const DISMISS_DAYS = 7;
 
 function isStandalone() {
@@ -25,6 +26,7 @@ function isIOSDevice() {
 
 export default function PWAInstallPrompt() {
   const location = useLocation();
+  const { resolvedTheme, theme } = useTheme();
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showPrompt, setShowPrompt] = useState(false);
   const [installed, setInstalled] = useState(() => isStandalone());
@@ -86,8 +88,9 @@ export default function PWAInstallPrompt() {
   const features = [
     { icon: Zap, text: 'Faster launch' },
     { icon: RefreshCw, text: 'Update ready' },
-    { icon: ShieldCheck, text: 'CCSF identity' },
+    { icon: ShieldCheck, text: 'TUT identity' },
   ];
+  const tutLogo = getTutLogo(resolvedTheme ?? theme);
 
   return (
     <AnimatePresence>
@@ -107,15 +110,15 @@ export default function PWAInstallPrompt() {
             <X className="h-4 w-4" aria-hidden="true" />
           </button>
 
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#002F6C] shadow-lg">
-            <img src={BRAND.assets.ccsfLogo} alt="" aria-hidden="true" className="h-11 w-11 object-contain" />
+          <div className="flex h-14 w-20 items-center justify-center rounded-xl border border-border bg-white p-2 shadow-sm">
+            <img src={tutLogo} alt="Tshwane University of Technology" className="h-full w-full object-contain" />
           </div>
 
           <h2 id="pwa-install-title" className="mt-4 text-lg font-bold">Install {BRAND.productName}</h2>
           <p className="mt-1 text-sm leading-6 text-muted-foreground">
             {isIOS
-              ? 'Add the official CCSF application to your Home Screen using the browser Share menu.'
-              : 'Install the official CCSF application for faster access and controlled cache updates.'}
+              ? 'Add the official TUT campus safety application to your Home Screen using the browser Share menu.'
+              : 'Install the official TUT campus safety application for faster access and controlled cache updates.'}
           </p>
 
           <div className="mt-4 grid grid-cols-3 gap-2">
@@ -130,7 +133,7 @@ export default function PWAInstallPrompt() {
           {isIOS ? (
             <div className="mt-5 flex items-start gap-3 rounded-xl border border-border bg-muted/45 p-4">
               <Smartphone className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
-              <p className="text-xs leading-5 text-muted-foreground">Open Share, choose <strong>Add to Home Screen</strong>, confirm the My CCSF name and select Add.</p>
+              <p className="text-xs leading-5 text-muted-foreground">Open Share, choose <strong>Add to Home Screen</strong>, confirm the Campus Safety App name and select Add.</p>
             </div>
           ) : (
             <div className="mt-5 flex gap-3">
