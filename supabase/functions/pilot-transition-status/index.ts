@@ -98,8 +98,8 @@ Deno.serve(async (req) => {
       },
     });
 
-    return jsonResponse({ report: data });
+    return jsonResponse(req, { report: data });
   } catch (error) {
-    return handleError(error);
+    return handleError(req, error);
   }
 });
