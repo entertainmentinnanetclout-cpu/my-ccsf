@@ -163,3 +163,78 @@ $$;
 
 revoke all on function public.record_institutional_consent(text,text,text,text,jsonb) from public, anon;
 grant execute on function public.record_institutional_consent(text,text,text,text,jsonb) to authenticated;
+
+
+-- ---------------------------------------------------------------------------
+-- Location minimisation hardening
+-- Visible Campus Radar sessions must have a finite approved sharing window.
+-- This release deliberately avoids an indefinite exact-location state.
+-- ---------------------------------------------------------------------------
+create or replace function public.safety_set_student_presence(
+  p_campus public.campus_location,
+  p_visibility text,
+  p_latitude double precision default null,
+  p_longitude double precision default null,
+  p_accuracy_meters double precision default null,
+  p_zone_label text default null,
+  p_status_message text default null,
+  p_sharing_until timestamptz default null,
+  p_confirm_exact boolean default false
+)
+returns public.student_safety_presence
+language plpgsql
+security definer
+set search_path = public, auth
+as $$
+declare
+  presence_row public.student_safety_presence;
+  v_campus public.campus_location;
+begin
+  if auth.uid() is null then raise exception 'Authentication required'; end if;
+  v_campus := public.get_user_campus(auth.uid());
+  if v_campus is null then raise exception 'A verified campus profile is required'; end if;
+  if p_campus is distinct from v_campus then raise exception 'Campus scope mismatch'; end if;
+  if p_visibility not in ('off', 'campus_approximate', 'campus_exact') then raise exception 'Unsupported visibility'; end if;
+  if p_visibility = 'campus_exact' and not p_confirm_exact then raise exception 'Exact-location consent is required'; end if;
+  if (p_latitude is null) <> (p_longitude is null) then raise exception 'Latitude and longitude must be supplied together'; end if;
+
+  if p_visibility <> 'off' then
+    if p_sharing_until is null then raise exception 'A finite Radar sharing period is required'; end if;
+    if p_sharing_until <= now() then raise exception 'Radar sharing period has already expired'; end if;
+    if p_sharing_until > now() + interval '24 hours' then raise exception 'Radar sharing may not exceed 24 hours'; end if;
+  end if;
+
+  insert into public.student_safety_presence (
+    user_id, campus, visibility, latitude, longitude, accuracy_meters,
+    zone_label, status_message, sharing_until, exact_location_consent_at, last_seen_at
+  ) values (
+    auth.uid(), v_campus, p_visibility,
+    case when p_visibility = 'off' then null else p_latitude end,
+    case when p_visibility = 'off' then null else p_longitude end,
+    case when p_visibility = 'off' then null else p_accuracy_meters end,
+    case when p_visibility = 'off' then null else nullif(btrim(p_zone_label), '') end,
+    case when p_visibility = 'off' then null else nullif(btrim(p_status_message), '') end,
+    case when p_visibility = 'off' then null else p_sharing_until end,
+    case when p_visibility = 'campus_exact' then now() else null end,
+    case when p_visibility = 'off' then null else now() end
+  )
+  on conflict (user_id) do update set
+    campus = excluded.campus,
+    visibility = excluded.visibility,
+    latitude = excluded.latitude,
+    longitude = excluded.longitude,
+    accuracy_meters = excluded.accuracy_meters,
+    zone_label = excluded.zone_label,
+    status_message = excluded.status_message,
+    sharing_until = excluded.sharing_until,
+    exact_location_consent_at = excluded.exact_location_consent_at,
+    last_seen_at = excluded.last_seen_at,
+    updated_at = now()
+  returning * into presence_row;
+
+  return presence_row;
+end;
+$$;
+
+revoke all on function public.safety_set_student_presence(public.campus_location, text, double precision, double precision, double precision, text, text, timestamptz, boolean) from public, anon;
+grant execute on function public.safety_set_student_presence(public.campus_location, text, double precision, double precision, double precision, text, text, timestamptz, boolean) to authenticated;
