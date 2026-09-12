@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
     if (planError || !plan) throw planError ?? new Error('Deletion planning returned no result.');
 
     const status = typeof plan === 'object' && plan ? String((plan as Record<string, unknown>).status ?? '') : '';
-    if (status === 'deleted' || status === 'already_deleted') return jsonResponse({ result: plan });
+    if (status === 'deleted' || status === 'already_deleted') return jsonResponse(req, { result: plan });
     if (status !== 'storage_cleanup_required') {
       throw new PilotHttpError(409, 'The Pilot report is not ready for deletion.', 'deletion_not_ready');
     }
@@ -35,8 +35,8 @@ Deno.serve(async (req) => {
     });
     if (finaliseError || !result) throw finaliseError ?? new Error('Deletion finalisation returned no result.');
 
-    return jsonResponse({ result });
+    return jsonResponse(req, { result });
   } catch (error) {
-    return handleError(error);
+    return handleError(req, error);
   }
 });
