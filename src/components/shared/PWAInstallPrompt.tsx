@@ -117,8 +117,8 @@ export default function PWAInstallPrompt() {
           <h2 id="pwa-install-title" className="mt-4 text-lg font-bold">Install {BRAND.productName}</h2>
           <p className="mt-1 text-sm leading-6 text-muted-foreground">
             {isIOS
-              ? 'Add the official TUT campus safety application to your Home Screen using the browser Share menu.'
-              : 'Install the official TUT campus safety application for faster access and controlled cache updates.'}
+              ? 'Add the TUT Campus Safety App to your Home Screen using the browser Share menu.'
+              : 'Install the TUT Campus Safety App for faster access and controlled cache updates.'}
           </p>
 
           <div className="mt-4 grid grid-cols-3 gap-2">
