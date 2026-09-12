@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import type { LucideIcon } from 'lucide-react';
 import {
   AlertTriangle,
@@ -43,6 +43,7 @@ import { formatCoordinatePair } from '@/lib/reverseGeocode';
 import { loadCampusRadar } from '@/services/safetyMobilityService';
 import type { CampusLocation } from '@/types/pilot';
 import type { SafetyMobilityMode, SafetyPresenceVisibility, SafetyRadarStudent, SafetyShareScope } from '@/types/safetyMobility';
+import { recordGovernanceConsent } from '@/services/institutionalGovernanceService';
 
 const MODE_CONTENT: Record<SafetyMobilityMode, { title: string; description: string; icon: LucideIcon }> = {
   in_transit: { title: 'In-Transit', description: 'Use while travelling in an Uber, Bolt, taxi, bus or private vehicle.', icon: Car },
@@ -71,6 +72,7 @@ export function SafetyMobilityHub({ campus }: { campus: CampusLocation }) {
   const [durationMinutes, setDurationMinutes] = useState('60');
   const [shareScope, setShareScope] = useState<SafetyShareScope>('trusted_circle');
   const [travelConsent, setTravelConsent] = useState(false);
+  const [phoneConsent, setPhoneConsent] = useState(false);
   const [alertReason, setAlertReason] = useState('I do not feel safe and need campus-security follow-up.');
   const [radarVisibility, setRadarVisibility] = useState<SafetyPresenceVisibility>(mobility.radarPreference.visibility);
   const [radarDuration, setRadarDuration] = useState('120');
@@ -109,6 +111,11 @@ export function SafetyMobilityHub({ campus }: { campus: CampusLocation }) {
       return;
     }
     try {
+      await recordGovernanceConsent('safety_mobility', 'granted', {
+        mode,
+        share_scope: shareScope,
+        expected_duration_minutes: Number(durationMinutes),
+      });
       await mobility.start({
         mode,
         transportType: mode === 'find_my_phone' ? 'This device' : transportType,
@@ -147,8 +154,20 @@ export function SafetyMobilityHub({ campus }: { campus: CampusLocation }) {
       toast({ title: 'Exact-location consent required', description: 'Confirm that other opted-in campus users may see your exact live position.', variant: 'destructive' });
       return;
     }
-    const sharingUntil = radarDuration === 'until_off' ? null : toExpectedEnd(Number(radarDuration));
+    const sharingUntil = toExpectedEnd(Number(radarDuration));
     try {
+      if (radarVisibility === 'off') {
+        const previousFeature = mobility.radarPreference.visibility === 'campus_exact' ? 'campus_radar_exact' : 'campus_radar_approximate';
+        if (mobility.radarPreference.visibility !== 'off') {
+          await recordGovernanceConsent(previousFeature, 'withdrawn', { previous_visibility: mobility.radarPreference.visibility });
+        }
+      } else {
+        await recordGovernanceConsent(
+          radarVisibility === 'campus_exact' ? 'campus_radar_exact' : 'campus_radar_approximate',
+          'granted',
+          { visibility: radarVisibility, sharing_until: sharingUntil },
+        );
+      }
       await mobility.setRadar({
         visibility: radarVisibility,
         statusMessage: radarMessage.trim() || null,
@@ -248,7 +267,7 @@ export function SafetyMobilityHub({ campus }: { campus: CampusLocation }) {
                   {mode !== 'find_my_phone' && <div className="grid gap-4 sm:grid-cols-2"><div className="space-y-2"><Label>Transport</Label><Select value={transportType} onValueChange={setTransportType}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Uber / Bolt">Uber / Bolt</SelectItem><SelectItem value="Taxi">Taxi</SelectItem><SelectItem value="Bus">Bus</SelectItem><SelectItem value="Private vehicle">Private vehicle</SelectItem><SelectItem value="Walking">Walking</SelectItem><SelectItem value="Other">Other</SelectItem></SelectContent></Select></div><div className="space-y-2"><Label htmlFor="vehicle-details">Vehicle / driver details</Label><Input id="vehicle-details" value={vehicleDetails} onChange={(event) => setVehicleDetails(event.target.value)} placeholder="Registration, driver name or route" maxLength={300} /></div></div>}
                   <div className="grid gap-4 sm:grid-cols-2"><div className="space-y-2"><Label htmlFor="destination">Destination or check-in point</Label><Input id="destination" value={destination} onChange={(event) => setDestination(event.target.value)} placeholder="Residence, campus gate or address" maxLength={300} /></div><div className="space-y-2"><Label>Expected duration</Label><Select value={durationMinutes} onValueChange={setDurationMinutes}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="30">30 minutes</SelectItem><SelectItem value="60">1 hour</SelectItem><SelectItem value="120">2 hours</SelectItem><SelectItem value="240">4 hours</SelectItem><SelectItem value="480">8 hours</SelectItem></SelectContent></Select></div></div>
                   <div className="space-y-2"><Label>Safety sharing</Label><Select value={shareScope} onValueChange={(value) => setShareScope(value as SafetyShareScope)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="private">Private - only my account</SelectItem><SelectItem value="trusted_circle">Trusted circle / account safety tools</SelectItem><SelectItem value="campus_security">Campus security can monitor this session</SelectItem></SelectContent></Select></div>
-                  <div className="flex items-start gap-3 rounded-xl border bg-muted/35 p-4"><Checkbox id="travel-consent" checked={travelConsent} onCheckedChange={(checked) => setTravelConsent(checked === true)} /><Label htmlFor="travel-consent" className="leading-6">I consent to live location collection for this safety session. I understand browser tracking works while the device grants location permission and may pause when the app is fully closed or the operating system restricts background access.</Label></div>
+                  <div className="flex items-start gap-3 rounded-xl border bg-muted/35 p-4"><Checkbox id="travel-consent" checked={travelConsent} onCheckedChange={(checked) => setTravelConsent(checked === true)} /><Label htmlFor="travel-consent" className="leading-6">I consent to live location collection for this safety session for the selected sharing purpose and limited duration. I understand browser tracking works only while the device grants location permission and may pause when the app is closed or the operating system restricts background access. See the <Link to="/governance" className="font-bold text-primary underline underline-offset-2">information-governance notice</Link>.</Label></div>
                   <Button className="h-12 w-full bg-gradient-to-r from-[#D7193F] to-[#A70F30] text-base font-extrabold text-white" onClick={() => void startTravel()} disabled={mobility.loading || mobility.locating}>{mobility.locating ? <RefreshCw className="mr-2 h-5 w-5 animate-spin" /> : <Navigation className="mr-2 h-5 w-5" />}Start {MODE_CONTENT[mode].title}</Button>
                 </CardContent>
               </Card>
@@ -272,7 +291,7 @@ export function SafetyMobilityHub({ campus }: { campus: CampusLocation }) {
               <CardHeader className="border-b bg-muted/25"><CardTitle>My Radar visibility</CardTitle><CardDescription>Visibility is voluntary, time-controlled and can be disabled immediately.</CardDescription></CardHeader>
               <CardContent className="space-y-5 p-5">
                 <div className="space-y-2"><Label>Who can locate me?</Label><Select value={radarVisibility} onValueChange={(value) => setRadarVisibility(value as SafetyPresenceVisibility)}><SelectTrigger className="min-h-11"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="off"><span className="flex items-center gap-2"><EyeOff className="h-4 w-4" />Invisible</span></SelectItem><SelectItem value="campus_approximate"><span className="flex items-center gap-2"><Eye className="h-4 w-4" />Campus approximate</span></SelectItem><SelectItem value="campus_exact"><span className="flex items-center gap-2"><LocateFixed className="h-4 w-4" />Campus exact location</span></SelectItem></SelectContent></Select></div>
-                <div className="space-y-2"><Label>Sharing duration</Label><Select value={radarDuration} onValueChange={setRadarDuration}><SelectTrigger className="min-h-11"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="60">1 hour</SelectItem><SelectItem value="120">2 hours</SelectItem><SelectItem value="480">8 hours</SelectItem><SelectItem value="until_off">Until I turn it off</SelectItem></SelectContent></Select></div>
+                <div className="space-y-2"><Label>Sharing duration</Label><Select value={radarDuration} onValueChange={setRadarDuration}><SelectTrigger className="min-h-11"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="60">1 hour</SelectItem><SelectItem value="120">2 hours</SelectItem><SelectItem value="480">8 hours</SelectItem></SelectContent></Select></div>
                 <div className="space-y-2"><Label htmlFor="radar-status">Status message</Label><Input id="radar-status" value={radarMessage} onChange={(event) => setRadarMessage(event.target.value)} maxLength={100} placeholder="At the library / walking to residence" /></div>
                 {radarVisibility === 'campus_exact' && <div className="flex items-start gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-900 dark:bg-blue-950/25"><Checkbox id="exact-location-consent" checked={exactConsent} onCheckedChange={(checked) => setExactConsent(checked === true)} /><Label htmlFor="exact-location-consent" className="leading-6">I understand that opted-in campus users may see my exact live position until the selected time or until I switch it off.</Label></div>}
                 <Button className="min-h-12 w-full touch-manipulation font-extrabold" onClick={() => void updateRadar()}>{radarVisibility === 'off' ? <EyeOff className="mr-2 h-4 w-4" /> : <Radar className="mr-2 h-4 w-4" />}{radarVisibility === 'off' ? 'Turn off Radar visibility' : 'Activate Radar visibility'}</Button>
@@ -284,7 +303,7 @@ export function SafetyMobilityHub({ campus }: { campus: CampusLocation }) {
 
         <TabsContent value="phone" className="space-y-5">
           <div className="grid gap-5 lg:grid-cols-2">
-            <Card className="shadow-large"><CardHeader><CardTitle className="flex items-center gap-2"><Smartphone className="h-5 w-5 text-primary" />Track This Phone</CardTitle><CardDescription>Store and refresh this device's last-known location under your signed-in My CCSF account.</CardDescription></CardHeader><CardContent className="space-y-4"><div className="rounded-2xl border bg-gradient-to-br from-primary/10 to-[#F2A900]/10 p-5"><p className="text-xs font-extrabold uppercase tracking-[0.16em] text-primary">Last known location</p><p className="mt-3 font-bold">{mobility.location?.readableLocation ?? 'No location captured in this session.'}</p>{mobility.location && <p className="mt-2 font-mono text-xs text-muted-foreground">{formatCoordinatePair(mobility.location.latitude, mobility.location.longitude)}</p>}</div><div className="grid gap-3 sm:grid-cols-2"><Button variant="outline" className="min-h-11" onClick={() => void mobility.captureNow()} disabled={mobility.locating}><LocateFixed className="mr-2 h-4 w-4" />Refresh phone location</Button><Button variant="outline" className="min-h-11" disabled={!mobility.location} onClick={() => { if (!mobility.location) return; void navigator.clipboard.writeText(`${mobility.location.latitude},${mobility.location.longitude}`).then(() => toast({ title: 'Coordinates copied', description: 'The measured phone location is ready to paste.' })).catch(() => toast({ title: 'Copy unavailable', description: 'Your browser blocked clipboard access.', variant: 'destructive' })); }}><Compass className="mr-2 h-4 w-4" />Copy coordinates</Button></div>{!mobility.session && <Button className="w-full" onClick={() => { setMode('find_my_phone'); void mobility.start({ mode: 'find_my_phone', transportType: 'This device', expectedEndAt: toExpectedEnd(480), shareScope: 'private' }).then(() => toast({ title: 'Track This Phone started', description: 'The last-known device position will update while location access remains available.' })).catch((caught) => toast({ title: 'Tracking did not start', description: caught instanceof Error ? caught.message : 'Try again.', variant: 'destructive' })); }}><Smartphone className="mr-2 h-4 w-4" />Start 8-hour phone tracking</Button>}</CardContent></Card>
+            <Card className="shadow-large"><CardHeader><CardTitle className="flex items-center gap-2"><Smartphone className="h-5 w-5 text-primary" />Track This Phone</CardTitle><CardDescription>Store and refresh this device's last-known location under your signed-in Campus Safety App account.</CardDescription></CardHeader><CardContent className="space-y-4"><div className="rounded-2xl border bg-gradient-to-br from-primary/10 to-[#F2A900]/10 p-5"><p className="text-xs font-extrabold uppercase tracking-[0.16em] text-primary">Last known location</p><p className="mt-3 font-bold">{mobility.location?.readableLocation ?? 'No location captured in this session.'}</p>{mobility.location && <p className="mt-2 font-mono text-xs text-muted-foreground">{formatCoordinatePair(mobility.location.latitude, mobility.location.longitude)}</p>}</div><div className="grid gap-3 sm:grid-cols-2"><Button variant="outline" className="min-h-11" onClick={() => void mobility.captureNow()} disabled={mobility.locating}><LocateFixed className="mr-2 h-4 w-4" />Refresh phone location</Button><Button variant="outline" className="min-h-11" disabled={!mobility.location} onClick={() => { if (!mobility.location) return; void navigator.clipboard.writeText(`${mobility.location.latitude},${mobility.location.longitude}`).then(() => toast({ title: 'Coordinates copied', description: 'The measured phone location is ready to paste.' })).catch(() => toast({ title: 'Copy unavailable', description: 'Your browser blocked clipboard access.', variant: 'destructive' })); }}><Compass className="mr-2 h-4 w-4" />Copy coordinates</Button></div>{!mobility.session && <Button className="w-full" onClick={() => { setMode('find_my_phone'); void mobility.start({ mode: 'find_my_phone', transportType: 'This device', expectedEndAt: toExpectedEnd(480), shareScope: 'private' }).then(() => toast({ title: 'Track This Phone started', description: 'The last-known device position will update while location access remains available.' })).catch((caught) => toast({ title: 'Tracking did not start', description: caught instanceof Error ? caught.message : 'Try again.', variant: 'destructive' })); }}><Smartphone className="mr-2 h-4 w-4" />Start 8-hour phone tracking</Button>}</CardContent></Card>
             <SafetyBoundaryCard phone />
           </div>
         </TabsContent>
