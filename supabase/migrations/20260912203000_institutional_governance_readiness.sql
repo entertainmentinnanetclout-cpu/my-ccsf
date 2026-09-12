@@ -196,6 +196,12 @@ begin
   if p_campus is distinct from v_campus then raise exception 'Campus scope mismatch'; end if;
   if p_visibility not in ('off', 'campus_approximate', 'campus_exact') then raise exception 'Unsupported visibility'; end if;
   if p_visibility = 'campus_exact' and not p_confirm_exact then raise exception 'Exact-location consent is required'; end if;
+  if p_visibility = 'campus_exact' and private.latest_institutional_consent_action(auth.uid(), 'campus_radar_exact') is distinct from 'granted' then
+    raise exception 'Current exact Campus Radar consent is required';
+  end if;
+  if p_visibility = 'campus_approximate' and private.latest_institutional_consent_action(auth.uid(), 'campus_radar_approximate') is distinct from 'granted' then
+    raise exception 'Current approximate Campus Radar consent is required';
+  end if;
   if (p_latitude is null) <> (p_longitude is null) then raise exception 'Latitude and longitude must be supplied together'; end if;
 
   if p_visibility <> 'off' then
@@ -312,7 +318,7 @@ revoke all on function public.guard_official_submission_consent() from public, a
 
 drop trigger if exists evidence_submission_governance_consent on public.evidence_submission_drafts;
 create trigger evidence_submission_governance_consent
-before insert or update on public.evidence_submission_drafts
+before insert on public.evidence_submission_drafts
 for each row execute function public.guard_official_submission_consent();
 
 create or replace function public.guard_incident_creation_consent()
@@ -338,6 +344,10 @@ begin
       interval '10 minutes'
     ) then
       raise exception 'Current emergency identity/location consent is required';
+    end if;
+  elsif new.title in ('In-transit safety alert', 'Night-travel safety alert', 'Device-location safety alert') then
+    if private.latest_institutional_consent_action(v_user, 'safety_mobility') is distinct from 'granted' then
+      raise exception 'Active Safety Mobility consent is required';
     end if;
   else
     if not private.has_recent_institutional_consent(
