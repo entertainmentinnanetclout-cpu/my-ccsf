@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { motion } from 'framer-motion';
@@ -205,8 +205,9 @@ const Admin = () => {
             {activeView === 'office' && <OfficeView />}
           </motion.div>
 
-          <footer className="mt-12 pb-6 text-center text-sm text-muted-foreground">
-            <p className="font-bold text-primary">Powered By Campus Protection Service</p>
+          <footer className="mt-12 space-y-2 pb-6 text-center text-sm text-muted-foreground">
+            <p className="font-bold text-primary">TUT Campus Protection Services · Campus Community Safety Forum</p>
+            <Link to="/governance" className="font-semibold text-primary underline-offset-4 hover:underline">Institutional privacy, PAIA & governance</Link>
           </footer>
         </main>
         <MobileBottomNav
