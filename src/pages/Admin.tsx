@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { motion } from 'framer-motion';
-import { Shield, LayoutDashboard, AlertCircle, Megaphone, MessageSquare, BarChart3, Images, Users, Siren, Building2, Wifi, HeartHandshake } from 'lucide-react';
+import { Shield, LayoutDashboard, AlertCircle, Megaphone, MessageSquare, BarChart3, Images, Users, Siren, Building2, Wifi, HeartHandshake, FileCheck2 } from 'lucide-react';
 import { CarFront } from 'lucide-react';
 import { InstitutionBrand } from '@/components/shared/InstitutionBrand';
 import { AdminOverview } from '@/components/admin/AdminOverview';
@@ -25,10 +25,11 @@ import { OfficeView } from '@/components/admin/OfficeView';
 import { WifiAccessPointManager } from '@/components/admin/WifiAccessPointManager';
 import { CommunityAdminDashboard } from '@/components/community/CommunityAdminDashboard';
 import { TrafficOperations } from '@/components/admin/TrafficOperations';
+import { InstitutionalGovernanceDashboard } from '@/components/admin/InstitutionalGovernanceDashboard';
 
 const Admin = () => {
   const navigate = useNavigate();
-  const [activeView, setActiveView] = useState<'overview' | 'incidents' | 'analytics' | 'announcements' | 'communication' | 'carousel' | 'admins' | 'community' | 'escalation' | 'office' | 'wifi'>('overview');
+  const [activeView, setActiveView] = useState<'overview' | 'incidents' | 'analytics' | 'announcements' | 'communication' | 'carousel' | 'admins' | 'community' | 'escalation' | 'office' | 'wifi' | 'governance'>('overview');
   const TRAFFIC_ADMIN_VIEW = 'traffic' as typeof activeView;
   const navItems = [{
     view: 'overview',
@@ -78,6 +79,10 @@ const Admin = () => {
     view: 'office',
     icon: Building2,
     label: 'Campus Office'
+  }, {
+    view: 'governance',
+    icon: FileCheck2,
+    label: 'Governance'
   }];
   return <CasesProvider>
     <MasterSyncProvider>
@@ -203,6 +208,7 @@ const Admin = () => {
             {activeView === 'wifi' && <WifiAccessPointManager />}
             {activeView === TRAFFIC_ADMIN_VIEW && <TrafficOperations />}
             {activeView === 'office' && <OfficeView />}
+            {activeView === 'governance' && <InstitutionalGovernanceDashboard />}
           </motion.div>
 
           <footer className="mt-12 space-y-2 pb-6 text-center text-sm text-muted-foreground">
