@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -244,8 +245,9 @@ const Security = () => {
             {activeView === 'settings' && <OfficerSettings />}
           </motion.div>
 
-          <footer className="mt-12 pb-6 text-center text-sm text-muted-foreground">
-            <p className="text-sm font-bold text-primary">Powered By Campus Protection Service</p>
+          <footer className="mt-12 space-y-2 pb-6 text-center text-sm text-muted-foreground">
+            <p className="text-sm font-bold text-primary">TUT Campus Protection Services · Campus Community Safety Forum</p>
+            <Link to="/governance" className="font-semibold text-primary underline-offset-4 hover:underline">Institutional privacy, PAIA & governance</Link>
           </footer>
         </main>
         <MobileBottomNav
