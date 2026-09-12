@@ -1,10 +1,10 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.87.1";
-
-const corsHeaders = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type", "Access-Control-Allow-Methods": "POST, OPTIONS" };
-const CAMPUSES = ["pretoria_west_main", "arcadia", "arts", "giyani", "mbombela", "polokwane", "garankuwa", "soshanguve_south", "soshanguve_north", "emalahleni"];
-const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "no-store" } });
+import { corsPreflight, jsonResponse, rejectUnapprovedBrowserOrigin } from '../_shared/cors.ts';
 
 Deno.serve(async (req) => {
+  const preflight = corsPreflight(req); if (preflight) return preflight;
+  const originRejection = rejectUnapprovedBrowserOrigin(req); if (originRejection) return originRejection;
+  const json = (body: unknown, status = 200) => jsonResponse(req, body, status);
   const started = Date.now();
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
