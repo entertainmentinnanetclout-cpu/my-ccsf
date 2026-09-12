@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
       .limit(1)
       .maybeSingle();
     if (existingError) throw existingError;
-    if (existing) return jsonResponse({ session: existing, resumed: true });
+    if (existing) return jsonResponse(req, { session: existing, resumed: true });
 
     const device = body.device && typeof body.device === 'object' && !Array.isArray(body.device)
       ? body.device as Record<string, unknown>
@@ -91,8 +91,8 @@ Deno.serve(async (req) => {
       metadata: { edge_function: 'pilot-create-session' },
     });
 
-    return jsonResponse({ session, resumed: false }, 201);
+    return jsonResponse(req, { session, resumed: false }, 201);
   } catch (error) {
-    return handleError(error);
+    return handleError(req, error);
   }
 });
