@@ -30,7 +30,7 @@ Deno.serve(async (req) => {
       });
       if (error || !plan) throw error ?? new Error('Campus purge planning returned no result.');
       const status = String((plan as Record<string, unknown>).status ?? '');
-      if (status === 'deleted' || status === 'already_deleted') return jsonResponse({ result: plan });
+      if (status === 'deleted' || status === 'already_deleted') return jsonResponse(req, { result: plan });
       if (status !== 'storage_cleanup_required' && status !== 'ready_for_finalisation') {
         throw new PilotHttpError(409, 'Campus Pilot data is not ready for purge.', 'purge_not_ready');
       }
@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
         p_actor_id: context.user.id,
       });
       if (finaliseError || !result) throw finaliseError ?? new Error('Campus purge finalisation returned no result.');
-      return jsonResponse({ result });
+      return jsonResponse(req, { result });
     }
 
     requireSuperAdmin(context);
@@ -57,7 +57,7 @@ Deno.serve(async (req) => {
       if (error || !plan) throw error ?? new Error('Programme purge planning returned no result.');
       const status = String((plan as Record<string, unknown>).status ?? '');
       if (status !== 'storage_cleanup_required' && status !== 'ready_for_finalisation') {
-        if (status === 'already_deleted') return jsonResponse({ result: plan });
+        if (status === 'already_deleted') return jsonResponse(req, { result: plan });
         throw new PilotHttpError(409, 'Pilot programme is not ready for purge.', 'purge_not_ready');
       }
       await removePilotStoragePaths(context.adminClient, storagePathsFromPlan(plan));
@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
         p_actor_id: context.user.id,
       });
       if (finaliseError || !result) throw finaliseError ?? new Error('Programme purge finalisation returned no result.');
-      return jsonResponse({ result });
+      return jsonResponse(req, { result });
     }
 
     const { data: plan, error } = await context.callerClient.rpc('pilot_purge_expired');
@@ -81,8 +81,8 @@ Deno.serve(async (req) => {
       p_actor_id: context.user.id,
     });
     if (finaliseError || !result) throw finaliseError ?? new Error('Retention purge finalisation returned no result.');
-    return jsonResponse({ result });
+    return jsonResponse(req, { result });
   } catch (error) {
-    return handleError(error);
+    return handleError(req, error);
   }
 });
