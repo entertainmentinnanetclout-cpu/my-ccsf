@@ -108,6 +108,16 @@ export const CURRENT_TECHNICAL_PROVIDERS = [
     role: 'Current web application delivery and preview/deployment platform.',
     status: 'Technical provider in the current implementation; institutional production approval, service terms and hosting requirements remain subject to TUT review.',
   },
+  {
+    name: 'OpenStreetMap tile service',
+    role: 'Optional external geographic basemap layer.',
+    status: 'Disabled by default in the institutional-readiness release. It must remain disabled until TUT approves the external mapping service and associated data-flow implications.',
+  },
+  {
+    name: 'Nominatim reverse geocoding',
+    role: 'Optional conversion of coordinates into a street-address label.',
+    status: 'Disabled by default because a reverse-geocoding request transmits coordinates to an external service. Enable only after TUT ICT / Privacy approval.',
+  },
 ] as const;
 
 export const INSTITUTIONAL_GOVERNANCE_VERSION = '2026-09-12';
