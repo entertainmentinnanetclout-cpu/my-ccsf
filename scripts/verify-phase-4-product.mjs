@@ -69,7 +69,7 @@ check(report.includes('Emergency report not delivered'), 'Offline emergency repo
 check(caseReports.includes('caseReference') && caseReports.includes('CaseProgress') && caseReports.includes("from('incident_media')") && caseReports.includes('Download case receipt'), 'My Cases uses institutional references, progress, evidence counts and receipts.');
 check(profile.includes('PremiumAvatarUpload') && profile.includes('Emergency ready') && profile.includes('Save profile securely'), 'Profile uses the premium institutional identity and readiness workspace.');
 check(avatar.includes('ReactCrop') && avatar.includes('1024') && avatar.includes('touch-manipulation'), 'Avatar uploads support crop, high-quality normalisation and mobile controls.');
-check(splash.includes('InstitutionBrand') && splash.includes('bg-white') && splash.includes('MY CCSF'), 'Splash screen presents readable CCSF/TUT branding on white.');
+check(splash.includes('InstitutionBrand') && splash.includes('bg-white') && splash.includes('BRAND.productLongName'), 'Splash screen presents readable TUT institutional branding and the Campus Safety App product name on white.');
 check(manifest.icons.some((icon) => icon.src === '/app-icon-512.png'), 'Manifest references the opaque app icon.');
 check(manifest.icons.some((icon) => icon.src === '/maskable-icon-512.png'), 'Manifest references the maskable app icon.');
 check(manifest.shortcuts.some((shortcut) => shortcut.url === '/dashboard?tab=safety'), 'Manifest includes the Safety Mobility shortcut.');
