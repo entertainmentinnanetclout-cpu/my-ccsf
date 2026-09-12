@@ -8,7 +8,7 @@
     "dev": "vite",
     "test:traffic": "node scripts/verify-traffic-release.mjs",
     "prebuild": "node scripts/generate-tut-brand-assets.mjs",
-    "build": "npm run typecheck && npm run test:mobile-evidence && npm run test:evidence-resilience && node scripts/verify-safety-mobility-release.mjs && node scripts/verify-safety-quest-release.mjs && node scripts/verify-institutional-phases-2-3.mjs && node scripts/verify-community-release.mjs && node scripts/generate-pilot-document-library.mjs && vite build",
+    "build": "npm run typecheck && npm run test:mobile-evidence && npm run test:evidence-resilience && node scripts/verify-safety-mobility-release.mjs && node scripts/verify-safety-quest-release.mjs && node scripts/verify-institutional-phases-2-3.mjs && node scripts/verify-community-release.mjs && npm run test:institutional-governance && node scripts/generate-pilot-document-library.mjs && vite build",
     "build:dev": "node scripts/generate-tut-brand-assets.mjs && npm run typecheck && npm run test:mobile-evidence && npm run test:evidence-resilience && node scripts/verify-safety-mobility-release.mjs && node scripts/verify-safety-quest-release.mjs && node scripts/verify-institutional-phases-2-3.mjs && node scripts/verify-community-release.mjs && npm run test:institutional-governance && node scripts/generate-pilot-document-library.mjs && vite build --mode development",
     "typecheck": "tsc -p tsconfig.app.json --noEmit",
     "test:phase1-auth": "node scripts/verify-phase-1-pilot-auth-navigation.mjs",
