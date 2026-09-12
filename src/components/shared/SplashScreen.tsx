@@ -56,10 +56,10 @@ export default function SplashScreen({ onComplete, minDuration = 1200 }: SplashS
         </motion.div>
 
         <div className="mx-auto mt-6 inline-flex items-center gap-2 rounded-full border border-[#F2A900]/45 bg-[#F2A900]/10 px-4 py-2 text-xs font-extrabold uppercase tracking-[0.16em] text-[#F2A900]">
-          <ShieldCheck className="h-4 w-4" aria-hidden="true" /> Official institutional application
+          <ShieldCheck className="h-4 w-4" aria-hidden="true" /> Institutional safety application
         </div>
 
-        <h1 aria-label="MY CCSF" className="mt-5 text-3xl font-extrabold tracking-tight sm:text-4xl">{BRAND.productLongName}</h1>
+        <h1 aria-label="Campus Safety App" className="mt-5 text-3xl font-extrabold tracking-tight sm:text-4xl">{BRAND.productLongName}</h1>
         <p className="mt-2 text-sm font-semibold text-white/75 sm:text-base">Campus Community Safety Forum · {BRAND.institutionName}</p>
 
         <div className="mx-auto mt-8 max-w-md">
