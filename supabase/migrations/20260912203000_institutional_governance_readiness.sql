@@ -238,3 +238,154 @@ $$;
 
 revoke all on function public.safety_set_student_presence(public.campus_location, text, double precision, double precision, double precision, text, text, timestamptz, boolean) from public, anon;
 grant execute on function public.safety_set_student_presence(public.campus_location, text, double precision, double precision, double precision, text, text, timestamptz, boolean) to authenticated;
+
+
+-- ---------------------------------------------------------------------------
+-- Fail-closed server-side consent gates
+-- UI checkboxes alone are not treated as an institutional control.
+-- ---------------------------------------------------------------------------
+create or replace function private.latest_institutional_consent_action(
+  p_user uuid,
+  p_feature text
+) returns text
+language sql
+security definer
+stable
+set search_path = public, private
+as $$
+  select e.action
+  from public.institutional_consent_events e
+  where e.user_id = p_user and e.feature = p_feature
+  order by e.created_at desc
+  limit 1;
+$$;
+
+revoke all on function private.latest_institutional_consent_action(uuid,text) from public, anon, authenticated;
+
+create or replace function private.has_recent_institutional_consent(
+  p_user uuid,
+  p_feature text,
+  p_actions text[],
+  p_max_age interval default interval '10 minutes'
+) returns boolean
+language sql
+security definer
+stable
+set search_path = public, private
+as $$
+  select exists (
+    select 1
+    from public.institutional_consent_events e
+    where e.user_id = p_user
+      and e.feature = p_feature
+      and e.action = any(p_actions)
+      and e.created_at >= now() - p_max_age
+  );
+$$;
+
+revoke all on function private.has_recent_institutional_consent(uuid,text,text[],interval) from public, anon, authenticated;
+
+create or replace function public.guard_official_submission_consent()
+returns trigger
+language plpgsql
+security definer
+set search_path = public, private, auth
+as $$
+declare
+  v_user uuid := auth.uid();
+begin
+  if new.scope <> 'official' then return new; end if;
+  if v_user is null then raise exception 'Authentication required'; end if;
+  if not private.has_recent_institutional_consent(
+    v_user,
+    'incident_report',
+    array['granted','acknowledged']::text[],
+    interval '10 minutes'
+  ) then
+    raise exception 'A current institutional report notice acknowledgement is required before creating an official submission';
+  end if;
+  return new;
+end;
+$$;
+
+revoke all on function public.guard_official_submission_consent() from public, anon, authenticated;
+
+drop trigger if exists evidence_submission_governance_consent on public.evidence_submission_drafts;
+create trigger evidence_submission_governance_consent
+before insert or update on public.evidence_submission_drafts
+for each row execute function public.guard_official_submission_consent();
+
+create or replace function public.guard_incident_creation_consent()
+returns trigger
+language plpgsql
+security definer
+set search_path = public, private, auth
+as $$
+declare
+  v_user uuid := auth.uid();
+  v_staff boolean := false;
+begin
+  if v_user is null then return new; end if;
+
+  v_staff := public.is_super_admin(v_user) or public.is_campus_admin(v_user);
+  if v_staff then return new; end if;
+
+  if new.title = 'Emergency safety alert' then
+    if not private.has_recent_institutional_consent(
+      v_user,
+      'emergency_location',
+      array['granted']::text[],
+      interval '10 minutes'
+    ) then
+      raise exception 'Current emergency identity/location consent is required';
+    end if;
+  else
+    if not private.has_recent_institutional_consent(
+      v_user,
+      'incident_report',
+      array['granted','acknowledged']::text[],
+      interval '10 minutes'
+    ) then
+      raise exception 'Current incident-report governance acknowledgement is required';
+    end if;
+  end if;
+
+  return new;
+end;
+$$;
+
+revoke all on function public.guard_incident_creation_consent() from public, anon, authenticated;
+
+drop trigger if exists incidents_governance_consent on public.incidents;
+create trigger incidents_governance_consent
+before insert on public.incidents
+for each row execute function public.guard_incident_creation_consent();
+
+create or replace function public.guard_mobility_session_consent()
+returns trigger
+language plpgsql
+security definer
+set search_path = public, private, auth
+as $$
+declare
+  v_user uuid := auth.uid();
+begin
+  if v_user is null then raise exception 'Authentication required'; end if;
+  if not private.has_recent_institutional_consent(
+    v_user,
+    'safety_mobility',
+    array['granted']::text[],
+    interval '10 minutes'
+  ) then
+    raise exception 'Current Safety Mobility consent is required';
+  end if;
+  return new;
+end;
+$$;
+
+revoke all on function public.guard_mobility_session_consent() from public, anon, authenticated;
+
+drop trigger if exists safety_mobility_governance_consent on public.safety_mobility_sessions;
+create trigger safety_mobility_governance_consent
+before insert on public.safety_mobility_sessions
+for each row execute function public.guard_mobility_session_consent();
