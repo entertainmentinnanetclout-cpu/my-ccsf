@@ -33,6 +33,7 @@ import Judiciary from './pages/Judiciary';
 import Security from './pages/Security';
 import SafetyQuest from './pages/SafetyQuest';
 import Traffic from './pages/Traffic';
+import InformationGovernance from './pages/InformationGovernance';
 import DeveloperPortalV2 from './pages/DeveloperPortalV2';
 import PilotAuth from './pages/pilot/PilotAuth';
 import PilotLanding from './pages/pilot/PilotLanding';
@@ -83,6 +84,7 @@ const App = () => (
                       <Route element={<Layout />}>
                         <Route path="/" element={<Index />} />
                         <Route path="/traffic" element={<Traffic />} />
+                        <Route path="/governance" element={<InformationGovernance />} />
                         <Route path="/auth" element={<OfficialEntryIntentBoundary><Auth /></OfficialEntryIntentBoundary>} />
                         <Route path="/dashboard" element={<FeatureRoute feature="official_dashboard"><ProtectedRoute allowedRoles={['student']}><PilotPostProfileRedirect><Dashboard /></PilotPostProfileRedirect></ProtectedRoute></FeatureRoute>} />
                         <Route path="/security/*" element={<FeatureRoute feature="cps_portal"><ProtectedRoute allowedRoles={['security', 'admin']}><Security /></ProtectedRoute></FeatureRoute>} />
