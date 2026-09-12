@@ -69,6 +69,9 @@ jobs:
       - name: Verify admin visual intelligence
         run: npm run test:admin-visuals
 
+      - name: Verify institutional governance and PAIA/POPIA readiness
+        run: npm run test:institutional-governance
+
       - name: Lint application
         run: npm run lint
 
