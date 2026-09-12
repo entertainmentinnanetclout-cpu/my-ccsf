@@ -18,14 +18,6 @@ const CAMPUSES = [
 ] as const;
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const PRODUCTION_ORIGIN = 'https://my-ccsf.vercel.app';
-
-function originAllowed(origin: string | null): boolean {
-  if (!origin) return true;
-  if (origin === PRODUCTION_ORIGIN || origin === 'http://localhost:5173' || origin === 'http://127.0.0.1:5173') return true;
-  return /^https:\/\/my-ccsf(?:-[a-z0-9-]+)?\.vercel\.app$/i.test(origin);
-}
-
 async function sha256(value: string): Promise<string> {
   const bytes = new TextEncoder().encode(value);
   const digest = await crypto.subtle.digest('SHA-256', bytes);
@@ -37,10 +29,6 @@ Deno.serve(async (req) => {
   if (early) return early;
 
   try {
-    if (!originAllowed(req.headers.get('origin'))) {
-      throw new PilotHttpError(403, 'Pilot registration is available only through the official My CCSF application.', 'origin_denied');
-    }
-
     const url = Deno.env.get('SUPABASE_URL');
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     if (!url || !serviceKey) {
@@ -118,12 +106,12 @@ Deno.serve(async (req) => {
         metadata: { edge_function: 'pilot-student-signup', confirmation_required: false },
       });
 
-      return jsonResponse({ created: true, programme_id: enrolment.program.id }, 201);
+      return jsonResponse(req, { created: true, programme_id: enrolment.program.id }, 201);
     } catch (enrolmentError) {
       await adminClient.auth.admin.deleteUser(created.user.id).catch(() => undefined);
       throw enrolmentError;
     }
   } catch (error) {
-    return handleError(error);
+    return handleError(req, error);
   }
 });
