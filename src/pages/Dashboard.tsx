@@ -138,7 +138,7 @@ const Dashboard = () => {
           </div>
         </motion.div>
 
-        <footer className="mt-8 pb-6 text-center sm:mt-12"><div className="inline-flex items-center gap-2 rounded-full border border-border bg-muted/50 px-4 py-2"><Shield className="h-4 w-4 text-primary" aria-hidden="true" /><p className="text-xs font-semibold text-muted-foreground sm:text-sm">{BRAND.productLongName} · {BRAND.institutionName}</p></div></footer>
+        <footer className="mt-8 pb-6 text-center sm:mt-12"><div className="inline-flex flex-wrap items-center justify-center gap-2 rounded-full border border-border bg-muted/50 px-4 py-2"><Shield className="h-4 w-4 text-primary" aria-hidden="true" /><p className="text-xs font-semibold text-muted-foreground sm:text-sm">{BRAND.productLongName} · {BRAND.institutionName}</p><span className="text-muted-foreground/40">·</span><Link to="/governance" className="text-xs font-bold text-primary underline-offset-4 hover:underline sm:text-sm">Privacy · PAIA · Governance</Link></div></footer>
       </main>
       <MobileBottomNav items={navItems} activeView={activeView} onViewChange={(view) => changeView(view as StudentView)} ariaLabel="Student portal sections" />
     </div>
