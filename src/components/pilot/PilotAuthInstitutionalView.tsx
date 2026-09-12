@@ -69,11 +69,11 @@ export function PilotAuthInstitutionalView({
     <InstitutionalAuthFrame
       mode="pilot"
       eyebrow="Controlled Pilot Mode"
-      title="Help test the My CCSF student safety application"
+      title="Help test the Campus Safety App"
       description="Students can register directly for controlled Pilot testing. Verified campus-security and super-admin accounts continue to use administratively assigned access."
     >
       <Button variant="ghost" className="mb-6 -ml-3" onClick={onOfficialPortal}>
-        <ArrowLeft className="mr-2 h-4 w-4" aria-hidden="true" /> Official portal
+        <ArrowLeft className="mr-2 h-4 w-4" aria-hidden="true" /> Institutional portal
       </Button>
 
       <Card className="border-0 bg-transparent shadow-none">
