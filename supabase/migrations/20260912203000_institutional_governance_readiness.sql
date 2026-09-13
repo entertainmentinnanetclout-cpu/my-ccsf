@@ -138,7 +138,7 @@ create or replace function public.record_institutional_consent(
 language plpgsql
 security definer
 set search_path = public, auth
-as $
+as $governance$
 declare
   v_user uuid := auth.uid();
   v_row public.institutional_consent_events;
@@ -192,7 +192,7 @@ begin
 
   return v_row;
 end;
-$;
+$governance$;
 
 revoke all on function public.record_institutional_consent(text,text,text,text,jsonb) from public, anon;
 grant execute on function public.record_institutional_consent(text,text,text,text,jsonb) to authenticated;
@@ -207,13 +207,13 @@ language sql
 security definer
 stable
 set search_path = public, private
-as $
+as $governance$
   select e.action
   from public.institutional_consent_events e
   where e.user_id = p_user and e.feature = p_feature
   order by e.created_at desc
   limit 1;
-$;
+$governance$;
 
 revoke all on function private.latest_institutional_consent_action(uuid,text) from public, anon, authenticated;
 
@@ -227,7 +227,7 @@ language sql
 security definer
 stable
 set search_path = public, private
-as $
+as $governance$
   select exists (
     select 1
     from public.institutional_consent_events e
@@ -236,7 +236,7 @@ as $
       and e.action = any(p_actions)
       and e.created_at >= now() - p_max_age
   );
-$;
+$governance$;
 
 revoke all on function private.has_recent_institutional_consent(uuid,text,text[],interval) from public, anon, authenticated;
 
