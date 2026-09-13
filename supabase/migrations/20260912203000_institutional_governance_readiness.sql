@@ -59,7 +59,7 @@ using (
 );
 
 revoke update, delete, truncate on public.institutional_consent_events from anon, authenticated;
-grant select, insert on public.institutional_consent_events to authenticated;
+grant select on public.institutional_consent_events to authenticated;
 
 create index if not exists institutional_consent_events_user_created_idx
   on public.institutional_consent_events(user_id, created_at desc);
@@ -90,10 +90,11 @@ create table if not exists public.institutional_control_register (
 alter table public.institutional_control_register enable row level security;
 
 drop policy if exists institutional_control_register_authenticated_read on public.institutional_control_register;
-create policy institutional_control_register_authenticated_read
+drop policy if exists institutional_control_register_admin_read on public.institutional_control_register;
+create policy institutional_control_register_admin_read
 on public.institutional_control_register
 for select to authenticated
-using (true);
+using (public.is_super_admin((select auth.uid())));
 
 drop policy if exists institutional_control_register_admin_write on public.institutional_control_register;
 create policy institutional_control_register_admin_write
@@ -137,12 +138,44 @@ create or replace function public.record_institutional_consent(
 language plpgsql
 security definer
 set search_path = public, auth
-as $$
+as $
 declare
   v_user uuid := auth.uid();
   v_row public.institutional_consent_events;
+  v_expected_version constant text := 'campus-safety-governance-2026-09-12-v1';
+  v_expected_purpose text;
 begin
   if v_user is null then raise exception 'Authentication required'; end if;
+
+  if p_feature not in (
+    'incident_report',
+    'emergency_location',
+    'safety_mobility',
+    'campus_radar_exact',
+    'campus_radar_approximate'
+  ) then raise exception 'Unsupported institutional consent feature'; end if;
+
+  if p_feature = 'incident_report' and p_action not in ('granted','acknowledged','withdrawn') then
+    raise exception 'Unsupported report-consent action';
+  elsif p_feature <> 'incident_report' and p_action not in ('granted','withdrawn') then
+    raise exception 'Unsupported consent action';
+  end if;
+
+  if p_consent_version is distinct from v_expected_version then
+    raise exception 'Institutional consent notice version mismatch';
+  end if;
+
+  v_expected_purpose := case p_feature
+    when 'incident_report' then 'Process the submitted incident and any identified reporter information for authorised TUT safety, security and case-management purposes.'
+    when 'emergency_location' then 'Use the signed-in profile and current device location to create and maintain an emergency safety case for authorised TUT safety personnel.'
+    when 'safety_mobility' then 'Collect consented live location during an active Safety Mobility session for the selected safety-sharing purpose.'
+    when 'campus_radar_exact' then 'Share an exact live campus position with opted-in authorised Campus Radar participants for the selected limited period.'
+    when 'campus_radar_approximate' then 'Share an approximate campus-area position with opted-in Campus Radar participants for the selected limited period.'
+  end;
+
+  if p_purpose is distinct from v_expected_purpose then
+    raise exception 'Institutional consent purpose mismatch';
+  end if;
 
   insert into public.institutional_consent_events(
     user_id, campus, feature, action, consent_version, purpose, context
@@ -151,18 +184,61 @@ begin
     public.get_user_campus(v_user),
     p_feature,
     p_action,
-    p_consent_version,
-    p_purpose,
+    v_expected_version,
+    v_expected_purpose,
     coalesce(p_context, '{}'::jsonb)
   )
   returning * into v_row;
 
   return v_row;
 end;
-$$;
+$;
 
 revoke all on function public.record_institutional_consent(text,text,text,text,jsonb) from public, anon;
 grant execute on function public.record_institutional_consent(text,text,text,text,jsonb) to authenticated;
+
+
+-- Private consent helpers are created before high-risk RPCs reference them.
+create or replace function private.latest_institutional_consent_action(
+  p_user uuid,
+  p_feature text
+) returns text
+language sql
+security definer
+stable
+set search_path = public, private
+as $
+  select e.action
+  from public.institutional_consent_events e
+  where e.user_id = p_user and e.feature = p_feature
+  order by e.created_at desc
+  limit 1;
+$;
+
+revoke all on function private.latest_institutional_consent_action(uuid,text) from public, anon, authenticated;
+
+create or replace function private.has_recent_institutional_consent(
+  p_user uuid,
+  p_feature text,
+  p_actions text[],
+  p_max_age interval default interval '10 minutes'
+) returns boolean
+language sql
+security definer
+stable
+set search_path = public, private
+as $
+  select exists (
+    select 1
+    from public.institutional_consent_events e
+    where e.user_id = p_user
+      and e.feature = p_feature
+      and e.action = any(p_actions)
+      and e.created_at >= now() - p_max_age
+  );
+$;
+
+revoke all on function private.has_recent_institutional_consent(uuid,text,text[],interval) from public, anon, authenticated;
 
 
 -- ---------------------------------------------------------------------------
