@@ -1,16 +1,11 @@
-const headers = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Content-Type': 'application/json',
-  'Cache-Control': 'no-store',
-};
+import { corsPreflight, jsonResponse, rejectUnapprovedBrowserOrigin } from '../_shared/cors.ts';
 
 Deno.serve((req) => {
-  if (req.method === 'OPTIONS') return new Response(null, { headers });
-  return new Response(JSON.stringify({
+  const preflight = corsPreflight(req); if (preflight) return preflight;
+  const originRejection = rejectUnapprovedBrowserOrigin(req); if (originRejection) return originRejection;
+  return jsonResponse(req, {
     error: 'retired_endpoint',
     message: 'pilot-export-results is not an operational CCSF endpoint.',
     replacement: 'Use the audited pilot_export_data RPC.',
-  }), { status: 410, headers });
+  }, 410);
 });
