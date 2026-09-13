@@ -6,7 +6,6 @@ Deno.serve(async (req) => {
   const originRejection = rejectUnapprovedBrowserOrigin(req); if (originRejection) return originRejection;
   const json = (body: unknown, status = 200) => jsonResponse(req, body, status);
   const started = Date.now();
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
   const authHeader = req.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) return json({ error: "Unauthorized" }, 401);
