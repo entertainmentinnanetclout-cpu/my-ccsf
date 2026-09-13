@@ -1,8 +1,8 @@
-export const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+import {
+  corsPreflight,
+  jsonResponse as institutionalJsonResponse,
+  rejectUnapprovedBrowserOrigin,
+} from '../cors.ts';
 
 export class PilotHttpError extends Error {
   constructor(public status: number, message: string, public code = 'pilot_error') {
@@ -10,10 +10,8 @@ export class PilotHttpError extends Error {
   }
 }
 
-export const jsonResponse = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
-  status,
-  headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
-});
+export const jsonResponse = (req: Request, body: unknown, status = 200) =>
+  institutionalJsonResponse(req, body, status);
 
 export async function readJson(req: Request): Promise<Record<string, unknown>> {
   try {
@@ -25,15 +23,18 @@ export async function readJson(req: Request): Promise<Record<string, unknown>> {
   }
 }
 
-export function handleError(error: unknown): Response {
-  if (error instanceof PilotHttpError) return jsonResponse({ error: error.message, code: error.code }, error.status);
+export function handleError(req: Request, error: unknown): Response {
+  if (error instanceof PilotHttpError) return jsonResponse(req, { error: error.message, code: error.code }, error.status);
   console.error('Pilot Edge Function error', error);
   const message = error instanceof Error ? error.message : 'Unexpected Pilot service error.';
-  return jsonResponse({ error: message, code: 'internal_error' }, 500);
+  return jsonResponse(req, { error: message, code: 'internal_error' }, 500);
 }
 
 export function requirePost(req: Request): Response | null {
-  if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
-  if (req.method !== 'POST') return jsonResponse({ error: 'Method not allowed.', code: 'method_not_allowed' }, 405);
+  const preflight = corsPreflight(req);
+  if (preflight) return preflight;
+  const originRejection = rejectUnapprovedBrowserOrigin(req);
+  if (originRejection) return originRejection;
+  if (req.method !== 'POST') return jsonResponse(req, { error: 'Method not allowed.', code: 'method_not_allowed' }, 405);
   return null;
 }

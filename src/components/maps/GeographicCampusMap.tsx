@@ -20,6 +20,7 @@ import type { CampusLocation } from '@/types/pilot';
 const TILE_SIZE = 256;
 const MIN_ZOOM = 14;
 const MAX_ZOOM = 19;
+const EXTERNAL_MAP_TILES_ENABLED = import.meta.env.VITE_EXTERNAL_MAP_TILES_ENABLED === 'true';
 
 export interface GeographicMapMarker {
   id: string;
@@ -217,12 +218,12 @@ export function GeographicCampusMap({
         <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <Badge className="bg-[#F2A900] text-[#002F6C] hover:bg-[#F2A900]"><Navigation className="mr-1 h-3.5 w-3.5" />Real campus map</Badge>
+              <Badge className="bg-[#F2A900] text-[#002F6C] hover:bg-[#F2A900]"><Navigation className="mr-1 h-3.5 w-3.5" />{EXTERNAL_MAP_TILES_ENABLED ? 'Geographic campus map' : 'Institutional coordinate map'}</Badge>
               <Badge variant="outline" className="border-white/30 text-white">{geography.points.length} verified point(s)</Badge>
             </div>
             <CardTitle className="mt-3 text-xl text-white sm:text-2xl">{title ?? `${geography.name} · Geographic Map`}</CardTitle>
             <CardDescription className="mt-2 max-w-3xl text-white/72">
-              {description ?? geography.address}. Buildings and roads come from the live OpenStreetMap layer; CCSF pins are placed only where a published or captured coordinate exists.
+              {description ?? geography.address}. {EXTERNAL_MAP_TILES_ENABLED ? 'The optional OpenStreetMap layer is enabled for this deployment; verified Campus Safety App pins are placed only where a published or captured coordinate exists.' : 'External map tiles are disabled pending institutional approval. Verified TUT campus points and captured device coordinates remain available without sending the map view to a third-party tile service.'}
             </CardDescription>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -242,7 +243,7 @@ export function GeographicCampusMap({
           aria-label={`Interactive geographic map of ${geography.name}`}
         >
           <div className="absolute inset-0 bg-slate-200" aria-hidden="true">
-            {tiles.map((tile) => (
+            {EXTERNAL_MAP_TILES_ENABLED ? tiles.map((tile) => (
               <img
                 key={`${zoom}-${tile.x}-${tile.y}`}
                 src={`https://tile.openstreetmap.org/${zoom}/${tile.sourceX}/${tile.y}.png`}
@@ -252,7 +253,13 @@ export function GeographicCampusMap({
                 style={{ left: tile.left, top: tile.top }}
                 loading="eager"
               />
-            ))}
+            )) : (
+              <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(0,47,108,0.08)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,47,108,0.08)_1px,transparent_1px)] bg-[size:32px_32px]">
+                <div className="absolute inset-x-4 bottom-4 rounded-xl border border-[#002F6C]/15 bg-white/90 p-3 text-center text-xs font-semibold text-[#002F6C] shadow-sm">
+                  Third-party map tiles are disabled by default. Enable only after TUT ICT / Privacy approves the external mapping service.
+                </div>
+              </div>
+            )}
           </div>
 
           {device && devicePixel && deviceAccuracyRadius > 0 && (
@@ -294,14 +301,16 @@ export function GeographicCampusMap({
             <Button size="icon" variant="secondary" className="h-9 w-9 shadow-lg" onClick={() => setZoom((value) => Math.max(MIN_ZOOM, value - 1))} disabled={zoom <= MIN_ZOOM} aria-label="Zoom map out"><ZoomOut className="h-4 w-4" /></Button>
           </div>
 
-          <a
-            href="https://www.openstreetmap.org/copyright"
-            target="_blank"
-            rel="noreferrer"
-            className="absolute bottom-2 right-2 z-30 rounded bg-white/90 px-2 py-1 text-[10px] font-semibold text-slate-700 shadow-sm hover:underline"
-          >
-            © OpenStreetMap contributors
-          </a>
+          {EXTERNAL_MAP_TILES_ENABLED && (
+            <a
+              href="https://www.openstreetmap.org/copyright"
+              target="_blank"
+              rel="noreferrer"
+              className="absolute bottom-2 right-2 z-30 rounded bg-white/90 px-2 py-1 text-[10px] font-semibold text-slate-700 shadow-sm hover:underline"
+            >
+              © OpenStreetMap contributors
+            </a>
+          )}
         </div>
 
         <div className="border-t bg-background p-4 sm:p-5">
@@ -321,10 +330,10 @@ export function GeographicCampusMap({
               <p className="mt-3 max-w-4xl text-xs leading-5 text-muted-foreground">{geography.sourceNote}</p>
               {locationError && <p className="mt-2 text-xs font-semibold text-destructive" role="alert">{locationError}</p>}
             </div>
-            {selected && (
+            {selected && EXTERNAL_MAP_TILES_ENABLED && (
               <Button asChild variant="outline" size="sm">
                 <a href={`https://www.openstreetmap.org/?mlat=${selected.latitude}&mlon=${selected.longitude}#map=19/${selected.latitude}/${selected.longitude}`} target="_blank" rel="noreferrer">
-                  <ExternalLink className="mr-2 h-4 w-4" />Open full map
+                  <ExternalLink className="mr-2 h-4 w-4" />Open external map
                 </a>
               </Button>
             )}

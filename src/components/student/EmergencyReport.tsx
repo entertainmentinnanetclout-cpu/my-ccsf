@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { AlertTriangle, Loader2, MapPin, Radio, StopCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -15,6 +16,7 @@ import { captureBrowserPosition, normalizeGeolocationError } from '@/lib/browser
 import { formatCoordinatePair, reverseGeocodeCoordinates } from '@/lib/reverseGeocode';
 import { CampusEmergencyContact } from './CampusEmergencyContact';
 import type { Database } from '@/integrations/supabase/types';
+import { recordGovernanceConsent } from '@/services/institutionalGovernanceService';
 
 type IncidentCategory = Database['public']['Enums']['incident_category'];
 const EMERGENCY_TYPES: Array<{ value: IncidentCategory; label: string }> = [
@@ -70,6 +72,12 @@ export const EmergencyReport = () => {
         toast({ title: 'Location unavailable', description: `The emergency case will still be created. ${normalized.message}` });
       }
 
+      await recordGovernanceConsent('emergency_location', 'granted', {
+        category,
+        location_shared: latitude !== null && longitude !== null,
+        location_accuracy_meters: accuracy,
+      });
+
       const { data, error } = await supabase.rpc('create_emergency_alert' as never, {
         p_category: category,
         p_reason: details.trim(),
@@ -105,7 +113,7 @@ export const EmergencyReport = () => {
         >
           <div className="flex max-w-[calc(100vw-2rem)] items-center gap-3 rounded-2xl bg-destructive p-3 text-destructive-foreground shadow-2xl">
             <Radio className="h-4 w-4 shrink-0 animate-pulse" aria-hidden="true" />
-            <span className="text-xs font-bold sm:text-sm">Live tracking active while My CCSF is open</span>
+            <span className="text-xs font-bold sm:text-sm">Live tracking active while the Campus Safety App is open</span>
             <Button size="sm" variant="ghost" className="h-9 shrink-0 hover:bg-white/10" onClick={stopTracking}>
               <StopCircle className="mr-1 h-4 w-4" />Stop
             </Button>
@@ -162,7 +170,7 @@ export const EmergencyReport = () => {
             <div className="rounded-xl border border-warning/25 bg-warning/10 p-4">
               <div className="flex items-start gap-3">
                 <Checkbox id="emergency-consent" checked={consentAgreed} onCheckedChange={(checked) => setConsentAgreed(checked === true)} />
-                <Label htmlFor="emergency-consent" className="cursor-pointer leading-5">I confirm this is a genuine emergency and consent to sharing my profile identity and current location with authorised safety personnel.</Label>
+                <Label htmlFor="emergency-consent" className="cursor-pointer leading-5">I confirm this is a genuine emergency and consent to my signed-in profile and current device location being processed for authorised TUT safety and security response. Location may be unavailable if my device or browser blocks it. See the <Link to="/governance" className="font-bold text-primary underline underline-offset-2">information-governance notice</Link>.</Label>
               </div>
             </div>
             <CampusEmergencyContact />

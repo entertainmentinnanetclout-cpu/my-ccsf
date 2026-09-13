@@ -285,8 +285,8 @@ Deno.serve(async (req) => {
       },
     });
 
-    return jsonResponse({ report, receipt }, 201);
+    return jsonResponse(req, { report, receipt }, 201);
   } catch (error) {
-    return handleError(error);
+    return handleError(req, error);
   }
 });

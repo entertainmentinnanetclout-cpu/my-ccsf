@@ -1,6 +1,6 @@
 export interface ReverseGeocodeResult {
   address: string | null;
-  source: 'nominatim' | 'unavailable';
+  source: 'nominatim' | 'disabled' | 'unavailable';
 }
 
 interface NominatimResponse {
@@ -8,11 +8,17 @@ interface NominatimResponse {
 }
 
 const REVERSE_GEOCODE_TIMEOUT_MS = 8000;
+const EXTERNAL_REVERSE_GEOCODING_ENABLED =
+  import.meta.env.VITE_EXTERNAL_REVERSE_GEOCODING_ENABLED === 'true';
 
 export async function reverseGeocodeCoordinates(
   latitude: number,
   longitude: number,
 ): Promise<ReverseGeocodeResult> {
+  if (!EXTERNAL_REVERSE_GEOCODING_ENABLED) {
+    return { address: null, source: 'disabled' };
+  }
+
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), REVERSE_GEOCODE_TIMEOUT_MS);
 

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { CheckCircle2, CloudOff, FileText, Loader2, MapPin, Navigation, PenTool, RefreshCw, Send, Trash2, WifiOff } from 'lucide-react';
 import SignatureCanvas from 'react-signature-canvas';
 import { useAuth } from '@/contexts/AuthContext';
@@ -45,6 +45,7 @@ import {
 } from '@/services/evidenceSubmissionService';
 import type { Database } from '@/integrations/supabase/types';
 import type { CampusLocation } from '@/types/pilot';
+import { recordGovernanceConsent } from '@/services/institutionalGovernanceService';
 
 type IncidentCategory = Database['public']['Enums']['incident_category'];
 
@@ -228,6 +229,12 @@ export function ReportIncidentV2() {
   };
 
   const processOnline = async (payload: Record<string, unknown>, evidence: File[], submittedOffline = false) => {
+    await recordGovernanceConsent('incident_report', payload.is_anonymous === true ? 'acknowledged' : 'granted', {
+      anonymous: payload.is_anonymous === true,
+      evidence_count: evidence.length,
+      submitted_offline: submittedOffline,
+      campus,
+    });
     const payloadHash = JSON.stringify(payload);
     let draft = activeSubmissionRef.current?.payloadHash === payloadHash ? activeSubmissionRef.current.draft : null;
     if (!draft) {
@@ -289,6 +296,12 @@ export function ReportIncidentV2() {
     setFileStates(Object.fromEntries(item.files.map((file) => [evidenceUploadKey(file), { status: 'queued', progress: 0 }] as const)));
     try {
       const queuedCampus = (item.context.campus ?? campus) as CampusLocation | null;
+      await recordGovernanceConsent('incident_report', item.payload.is_anonymous === true ? 'acknowledged' : 'granted', {
+        anonymous: item.payload.is_anonymous === true,
+        evidence_count: item.files.length,
+        submitted_offline: true,
+        campus: queuedCampus,
+      });
       const draft = await createEvidenceSubmissionDraft({ scope: 'official', payload: item.payload, campus: queuedCampus });
       const manifest = await uploadSubmissionEvidence({ draft, files: item.files, onState: (key, state) => setFileStates((current) => ({ ...current, [key]: state })) });
       const result = await finalizeOfficialSubmission({ submissionId: draft.id, evidence: manifest, submittedOffline: true });
@@ -315,6 +328,13 @@ export function ReportIncidentV2() {
 
       <Card className="shadow-medium" data-testid="official-mobile-report-form">
         <CardHeader><CardTitle>Report an Incident</CardTitle><CardDescription>Your unfinished report and selected evidence are restored automatically. Evidence is uploaded and verified before the case is finalised.</CardDescription></CardHeader>
+        <CardContent className="border-b pb-4 pt-0">
+          <div className="rounded-xl border border-[#002F6C]/20 bg-[#002F6C]/5 p-4 text-sm leading-6">
+            <p className="font-extrabold text-primary">How your report information is handled</p>
+            <p className="mt-1 text-muted-foreground">Report information is processed for authorised TUT safety and security purposes. Access is controlled by role and campus scope. Evidence and location should be limited to what is relevant to the incident.</p>
+            <Button asChild variant="link" className="mt-1 h-auto p-0 font-bold"><Link to="/governance">Privacy, PAIA and information-governance details</Link></Button>
+          </div>
+        </CardContent>
         <CardContent>
           <form onSubmit={submit} className="space-y-6">
             {!navigator.onLine && <div className="flex items-start gap-3 rounded-lg border border-amber-500/40 bg-amber-500/10 p-4"><WifiOff className="mt-0.5 h-5 w-5" /><div><p className="font-semibold">Offline mode</p><p className="text-sm text-muted-foreground">Non-emergency reports can be saved on this device, but they are not delivered until you reconnect and choose Send now.</p></div></div>}
@@ -326,9 +346,9 @@ export function ReportIncidentV2() {
 
             <div className="space-y-2"><Label>Photos, video or documents</Label><MobileEvidencePicker files={files} onFilesChange={validateAndSetFiles} acceptPdf maxFiles={MAX_EVIDENCE_FILES} disabled={loading} helpText="Up to 3 JPG, PNG, WebP, HEIC/HEIF, MP4 or PDF files; maximum 10 MB each after processing." fileStates={fileStates} /></div>
 
-            <div className="flex items-center justify-between rounded-lg bg-muted/50 p-4"><div><Label>Report anonymously</Label><p className="text-sm text-muted-foreground">Your identity will not be attached to the case.</p></div><Switch checked={formData.isAnonymous} onCheckedChange={(checked) => { setFormData((current) => ({ ...current, isAnonymous: checked })); if (checked) { setConsentAgreed(false); clearSignature(); } }} /></div>
+            <div className="flex items-center justify-between gap-4 rounded-lg bg-muted/50 p-4"><div><Label>Report anonymously</Label><p className="text-sm text-muted-foreground">Your identity is not shown in the ordinary case identity field. Protected technical ownership and audit records may still be retained for continuity, abuse prevention and authorised governance.</p></div><Switch checked={formData.isAnonymous} onCheckedChange={(checked) => { setFormData((current) => ({ ...current, isAnonymous: checked })); if (checked) { setConsentAgreed(false); clearSignature(); } }} /></div>
 
-            {!formData.isAnonymous && <div className="space-y-4 rounded-lg border-2 border-primary/20 bg-primary/5 p-4"><div className="flex items-start gap-2"><PenTool className="mt-0.5 h-5 w-5 text-primary" /><div><h3 className="font-semibold">Consent declaration</h3><p className="text-sm text-muted-foreground">Confirm the information is accurate and sign below.</p></div></div><div className="flex items-start gap-3 rounded-lg border bg-background p-3"><Checkbox checked={consentAgreed} onCheckedChange={(checked) => setConsentAgreed(checked === true)} id="official-report-consent" /><Label htmlFor="official-report-consent" className="leading-relaxed">I confirm that this report is accurate to the best of my knowledge and consent to an authorised investigation.</Label></div><div className="space-y-2"><div className="flex items-center justify-between"><Label>Your signature *</Label><Button type="button" size="sm" variant="ghost" onClick={clearSignature}><Trash2 className="mr-1 h-4 w-4" />Clear</Button></div><div className="overflow-hidden rounded-lg border-2 border-dashed bg-background"><SignatureCanvas ref={signatureRef} canvasProps={{ className: 'h-32 w-full cursor-crosshair', style: { width: '100%', height: '128px' } }} penColor="black" backgroundColor="transparent" onEnd={saveSignature} /></div><p className="text-xs text-muted-foreground">{signatureData ? 'Signature captured and saved with this unfinished draft.' : 'Sign using your finger, stylus or mouse.'}</p></div></div>}
+            {!formData.isAnonymous && <div className="space-y-4 rounded-lg border-2 border-primary/20 bg-primary/5 p-4"><div className="flex items-start gap-2"><PenTool className="mt-0.5 h-5 w-5 text-primary" /><div><h3 className="font-semibold">Consent declaration</h3><p className="text-sm text-muted-foreground">Confirm the information is accurate and sign below.</p></div></div><div className="flex items-start gap-3 rounded-lg border bg-background p-3"><Checkbox checked={consentAgreed} onCheckedChange={(checked) => setConsentAgreed(checked === true)} id="official-report-consent" /><Label htmlFor="official-report-consent" className="leading-relaxed">I confirm that this report is accurate to the best of my knowledge and consent to the identified information being processed for an authorised TUT safety and security investigation. I have reviewed the <Link to="/governance" className="font-bold text-primary underline underline-offset-2">information-governance notice</Link>.</Label></div><div className="space-y-2"><div className="flex items-center justify-between"><Label>Your signature *</Label><Button type="button" size="sm" variant="ghost" onClick={clearSignature}><Trash2 className="mr-1 h-4 w-4" />Clear</Button></div><div className="overflow-hidden rounded-lg border-2 border-dashed bg-background"><SignatureCanvas ref={signatureRef} canvasProps={{ className: 'h-32 w-full cursor-crosshair', style: { width: '100%', height: '128px' } }} penColor="black" backgroundColor="transparent" onEnd={saveSignature} /></div><p className="text-xs text-muted-foreground">{signatureData ? 'Signature captured and saved with this unfinished draft.' : 'Sign using your finger, stylus or mouse.'}</p></div></div>}
 
             <div className="rounded-lg bg-muted/40 px-4 py-3 text-sm text-muted-foreground"><FileText className="mr-2 inline h-4 w-4" />The case becomes visible to authorised staff only after required fields and all selected evidence have been securely verified.</div>
             <Button type="submit" className="h-12 w-full font-bold" disabled={loading}>{loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Uploading and verifying…</> : navigator.onLine ? <><MapPin className="mr-2 h-4 w-4" />Submit report</> : <><CloudOff className="mr-2 h-4 w-4" />Save non-emergency report offline</>}</Button>

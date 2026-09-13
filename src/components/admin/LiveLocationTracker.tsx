@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Radio, ExternalLink, Clock, Navigation, Target } from 'lucide-react';
+import { MapPin, Radio, Copy, Clock, Navigation, Target } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -170,15 +170,15 @@ export const LiveLocationTracker = ({
             <span className="text-xs text-muted-foreground font-mono">
               {displayLat.toFixed(6)}, {displayLng.toFixed(6)}
             </span>
-            <a
-              href={`https://www.google.com/maps?q=${displayLat},${displayLng}`}
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              type="button"
+              onClick={() => void navigator.clipboard.writeText(`${displayLat},${displayLng}`)}
               className="text-primary hover:underline text-xs flex items-center gap-1"
+              title="Copy coordinates without disclosing them to a third-party map service"
             >
-              <ExternalLink className="h-3 w-3" />
-              Open in Maps
-            </a>
+              <Copy className="h-3 w-3" />
+              Copy coordinates
+            </button>
           </div>
         )}
       </div>
@@ -215,15 +215,15 @@ export const LiveLocationTracker = ({
                         </Badge>
                       )}
                     </div>
-                    <a
-                      href={`https://www.google.com/maps?q=${update.location_lat},${update.location_lng}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      type="button"
+                      onClick={() => void navigator.clipboard.writeText(`${update.location_lat},${update.location_lng}`)}
                       className="text-primary hover:underline flex items-center gap-1"
+                      title="Copy coordinates without disclosing them to a third-party map service"
                     >
-                      <ExternalLink className="h-3 w-3" />
-                      View
-                    </a>
+                      <Copy className="h-3 w-3" />
+                      Copy
+                    </button>
                   </div>
                   <p className="text-foreground line-clamp-2">
                     {update.location_address || `${update.location_lat.toFixed(4)}, ${update.location_lng.toFixed(4)}`}

@@ -44,7 +44,7 @@ export function CommunityHub({ environment, identity, onCompleteProfile }: Commu
         <div className="relative grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center">
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <Badge className="border-[#F2A900]/70 bg-[#F2A900] font-extrabold text-[#002F6C]">Official Campus Safety App {environment === 'pilot' ? 'Pilot ' : ''}Community</Badge>
+              <Badge className="border-[#F2A900]/70 bg-[#F2A900] font-extrabold text-[#002F6C]">Campus Safety App {environment === 'pilot' ? 'Pilot ' : ''}Community</Badge>
               <Badge variant="outline" className="border-white/30 text-white">Registered TUT students</Badge>
             </div>
             <h1 className="mt-4 text-3xl font-black tracking-tight sm:text-4xl">Join the Community</h1>

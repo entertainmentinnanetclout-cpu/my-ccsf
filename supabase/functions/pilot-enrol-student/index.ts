@@ -29,12 +29,12 @@ Deno.serve(async (req) => {
       });
     }
 
-    return jsonResponse({
+    return jsonResponse(req, {
       participant: result.participant,
       program: result.program,
       created: result.created,
     }, result.created ? 201 : 200);
   } catch (error) {
-    return handleError(error);
+    return handleError(req, error);
   }
 });
