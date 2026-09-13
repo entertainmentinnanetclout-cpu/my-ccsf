@@ -1,12 +1,13 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.87.1';
 import { corsPreflight, jsonResponse, rejectUnapprovedBrowserOrigin } from '../_shared/cors.ts';
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 Deno.serve(async (req) => {
   const preflight = corsPreflight(req); if (preflight) return preflight;
   const originRejection = rejectUnapprovedBrowserOrigin(req); if (originRejection) return originRejection;
   const json = (body: unknown, status = 200) => jsonResponse(req, body, status);
   const started = Date.now();
-  if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
   if (req.method !== 'POST') return json({ error: 'Method not allowed.' }, 405);
   try {
     const authorization = req.headers.get('Authorization');
