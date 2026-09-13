@@ -1,6 +1,9 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.87.1";
 import { corsPreflight, jsonResponse, rejectUnapprovedBrowserOrigin } from '../_shared/cors.ts';
 
+const asString = (value: unknown, max = 500) => typeof value === "string" ? value.trim().slice(0, max) : "";
+const objectValue = (value: unknown): Record<string, unknown> => value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
+
 function decodeJwtPayload(token: string): Record<string, unknown> {
   try {
     const part = token.split(".")[1];
