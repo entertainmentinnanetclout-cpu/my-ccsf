@@ -14,6 +14,18 @@ export const TUT_GOVERNANCE = {
     label: 'Information Regulator PAIA forms',
     href: 'https://inforegulator.org.za/paia-forms/',
   },
+  ipPolicy: {
+    label: 'TUT Intellectual Property Policy',
+    href: 'https://jupiter.tut.ac.za/staffportal/file_store/files/709/ippolicy.pdf',
+  },
+  researchEthics: {
+    label: 'TUT Research Ethics',
+    href: 'https://www.tut.ac.za/research-ethics/commitment-to-ethical-research/',
+  },
+  executiveManagement: {
+    label: 'TUT Executive Management Committee',
+    href: 'https://www.tut.ac.za/about/executive-management-committee/',
+  },
   informationOfficerEmail: 'paia@tut.ac.za',
   privacyEmail: 'popia@tut.ac.za',
   cybersecurityEmail: 'tut_security_matters@tut.ac.za',

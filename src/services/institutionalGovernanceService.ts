@@ -36,6 +36,76 @@ export type AssuranceEvidenceResult =
   | 'conditional'
   | 'not_applicable';
 
+
+export type InstitutionalSignoffStatus =
+  | 'not_requested'
+  | 'requested'
+  | 'under_review'
+  | 'changes_required'
+  | 'conditionally_approved'
+  | 'approved'
+  | 'not_applicable';
+
+export type InstitutionalSignoffEventType =
+  | 'request_created'
+  | 'submission_sent'
+  | 'review_started'
+  | 'changes_requested'
+  | 'conditional_approval'
+  | 'approval'
+  | 'not_applicable'
+  | 'reopened'
+  | 'evidence_added'
+  | 'note';
+
+export interface InstitutionalSignoffRow {
+  signoff_key: string;
+  sequence_no: number;
+  domain: string;
+  title: string;
+  authority_role: string;
+  approval_scope: string;
+  mandatory: boolean;
+  conditional_when: string | null;
+  mapped_control_keys: string[];
+  source_basis: string | null;
+  status: InstitutionalSignoffStatus;
+  request_reference: string | null;
+  decision_reference: string | null;
+  conditions: string | null;
+  notes: string | null;
+  requested_at: string | null;
+  last_decision_at: string | null;
+  updated_by: string | null;
+  updated_at: string;
+}
+
+export interface InstitutionalSignoffEventRow {
+  id: string;
+  signoff_key: string;
+  event_type: InstitutionalSignoffEventType;
+  authority_name: string | null;
+  authority_role: string | null;
+  evidence_reference: string | null;
+  conditions: string | null;
+  notes: string | null;
+  recorded_by: string;
+  created_at: string;
+}
+
+export interface InstitutionalReleaseDecision {
+  authorised: boolean;
+  mandatory_total?: number;
+  approved?: number;
+  not_applicable?: number;
+  conditional?: number;
+  changes_required?: number;
+  under_review?: number;
+  requested?: number;
+  not_requested?: number;
+  ready_for_formal_production_designation?: boolean;
+}
+
 export interface InstitutionalControlRow {
   control_key: string;
   control_domain: string;
@@ -163,5 +233,58 @@ export async function recordInstitutionalAssuranceEvidence(input: {
     p_notes: input.notes ?? null,
     p_supersedes_id: input.supersedesId ?? null,
   } as never);
+  if (error) throw new Error(error.message);
+}
+
+
+export async function loadInstitutionalSignoffRegister(): Promise<InstitutionalSignoffRow[]> {
+  const client = supabase as any;
+  const { data, error } = await client
+    .from('institutional_signoff_register')
+    .select('signoff_key,sequence_no,domain,title,authority_role,approval_scope,mandatory,conditional_when,mapped_control_keys,source_basis,status,request_reference,decision_reference,conditions,notes,requested_at,last_decision_at,updated_by,updated_at')
+    .order('sequence_no')
+    .order('signoff_key');
+
+  if (error) throw new Error(error.message);
+  return (data ?? []) as InstitutionalSignoffRow[];
+}
+
+export async function loadInstitutionalSignoffEvents(): Promise<InstitutionalSignoffEventRow[]> {
+  const client = supabase as any;
+  const { data, error } = await client
+    .from('institutional_signoff_events')
+    .select('id,signoff_key,event_type,authority_name,authority_role,evidence_reference,conditions,notes,recorded_by,created_at')
+    .order('created_at', { ascending: false })
+    .limit(1000);
+
+  if (error) throw new Error(error.message);
+  return (data ?? []) as InstitutionalSignoffEventRow[];
+}
+
+export async function loadInstitutionalReleaseDecision(): Promise<InstitutionalReleaseDecision> {
+  const { data, error } = await supabase.rpc('get_institutional_release_decision' as never);
+  if (error) throw new Error(error.message);
+  return (data ?? { authorised: false }) as InstitutionalReleaseDecision;
+}
+
+export async function recordInstitutionalSignoffEvent(input: {
+  signoffKey: string;
+  eventType: InstitutionalSignoffEventType;
+  authorityName?: string | null;
+  authorityRole?: string | null;
+  evidenceReference?: string | null;
+  conditions?: string | null;
+  notes?: string | null;
+}): Promise<void> {
+  const { error } = await supabase.rpc('record_institutional_signoff_event' as never, {
+    p_signoff_key: input.signoffKey,
+    p_event_type: input.eventType,
+    p_authority_name: input.authorityName ?? null,
+    p_authority_role: input.authorityRole ?? null,
+    p_evidence_reference: input.evidenceReference ?? null,
+    p_conditions: input.conditions ?? null,
+    p_notes: input.notes ?? null,
+  } as never);
+
   if (error) throw new Error(error.message);
 }
